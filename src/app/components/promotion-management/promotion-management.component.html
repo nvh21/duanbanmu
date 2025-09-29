@@ -1,0 +1,119 @@
+<div class="promotion-management">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="page-title">
+        <i class="bi bi-gift"></i>
+        <h1>Quản lý chương trình khuyến mãi</h1>
+      </div>
+      <p class="page-subtitle">Quản lý chương trình khuyến mãi</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline-secondary" (click)="onExportExcel()">
+        <i class="bi bi-download"></i>
+        Xuất Excel
+      </button>
+      <button class="btn btn-outline-secondary" (click)="onImportExcel()">
+        <i class="bi bi-upload"></i>
+        Nhập Excel
+      </button>
+      <button class="btn btn-primary" (click)="onAddPromotion()">
+        <i class="bi bi-plus"></i>
+        + Thêm khuyến mãi
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="search-filter-section">
+    <div class="search-bar">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Tìm kiếm chương trình khuyến mãi..."
+        [(ngModel)]="searchTerm"
+        (keyup)="onSearch()"
+      />
+    </div>
+    <button class="btn btn-outline-primary" (click)="onFilter()">
+      <i class="bi bi-funnel"></i>
+      Lọc theo trạng thái
+    </button>
+  </div>
+
+  <!-- Table Section -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3>Danh sách chương trình khuyến mãi ({{ promotions.length }} chương trình)</h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Mã KM</th>
+            <th>Tên chương trình</th>
+            <th>Loại giảm giá</th>
+            <th>Giá trị giảm</th>
+            <th>Ngày bắt đầu</th>
+            <th>Ngày kết thúc</th>
+            <th>Điều kiện</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let promotion of promotions">
+            <td>
+              <strong>{{ promotion.code }}</strong>
+            </td>
+            <td>{{ promotion.name }}</td>
+            <td>{{ promotion.discountType }}</td>
+            <td>
+              <strong>{{ promotion.discountValue }}</strong>
+            </td>
+            <td>{{ promotion.startDate }}</td>
+            <td>{{ promotion.endDate }}</td>
+            <td>{{ promotion.condition }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(promotion.status)">
+                {{ promotion.status }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-sm btn-outline-info" (click)="onView(promotion)" title="Xem">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-warning"
+                  (click)="onEdit(promotion)"
+                  title="Sửa"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="onDelete(promotion)"
+                  title="Xóa"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Promotion Modal -->
+  <app-promotion-modal
+    [isVisible]="showModal"
+    [isEditMode]="isEditMode"
+    [promotionData]="selectedPromotion"
+    (close)="onModalClose()"
+    (save)="onModalSave($event)"
+  ></app-promotion-modal>
+</div>

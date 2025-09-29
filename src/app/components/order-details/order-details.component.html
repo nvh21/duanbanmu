@@ -1,0 +1,99 @@
+<div class="order-details">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="page-title">
+        <h1>chi_tiet_don_hang</h1>
+        <p>Chi tiết sản phẩm trong đơn hàng</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="search-filter-section">
+    <div class="search-bar">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Tìm kiếm..."
+        [(ngModel)]="searchTerm"
+        (keyup)="onSearch()"
+      />
+    </div>
+    <button class="btn btn-outline-primary" (click)="onFilter()">
+      <i class="bi bi-funnel"></i>
+      Lọc
+    </button>
+    <div class="header-actions">
+      <button class="btn btn-outline-secondary" (click)="onExport()">
+        <i class="bi bi-download"></i>
+        Xuất
+      </button>
+      <button class="btn btn-outline-secondary" (click)="onImport()">
+        <i class="bi bi-upload"></i>
+        Nhập
+      </button>
+      <button class="btn btn-primary" (click)="onAddNew()">
+        <i class="bi bi-plus"></i>
+        + Thêm mới
+      </button>
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3>Dữ liệu bảng ({{ orderDetails.length }} bản ghi)</h3>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>ma_don_hang</th>
+            <th>ma_san_pham</th>
+            <th>so_luong</th>
+            <th>gia_ban</th>
+            <th>thanh_tien</th>
+            <th>ghi_chu</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let detail of orderDetails">
+            <td>{{ detail.id }}</td>
+            <td>
+              <strong>{{ detail.ma_don_hang }}</strong>
+            </td>
+            <td>{{ detail.ma_san_pham }}</td>
+            <td>{{ detail.so_luong }}</td>
+            <td>{{ formatCurrency(detail.gia_ban) }}</td>
+            <td>
+              <strong>{{ formatCurrency(detail.thanh_tien) }}</strong>
+            </td>
+            <td>{{ detail.ghi_chu }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-sm btn-outline-info" (click)="onView(detail)" title="Xem">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-warning" (click)="onEdit(detail)" title="Sửa">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="onDelete(detail)"
+                  title="Xóa"
+                >
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

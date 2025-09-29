@@ -1,0 +1,108 @@
+.helmets {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.page-header {
+  padding: 30px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #e9ecef;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-header p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.content-placeholder {
+  padding: 60px 30px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.tab-btn {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+.tab-btn.active {
+  background: #111827;
+  color: #ffffff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+}
+.table th,
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f3f5;
+  text-align: left;
+  font-size: 14px;
+}
+.table thead th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+}
+.badge.success {
+  background: #e7f7ef;
+  color: #0b8f4d;
+  border: 1px solid #b9ebd3;
+}
+.badge.muted {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.action-btn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  margin-right: 6px;
+}
+.action-btn.danger {
+  color: #dc2626;
+}
+
+.content-placeholder i {
+  font-size: 48px;
+  margin-bottom: 20px;
+  color: #dee2e6;
+}
+
+.content-placeholder h3 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  color: #495057;
+}
+
+.content-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}

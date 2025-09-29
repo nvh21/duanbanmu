@@ -1,0 +1,55 @@
+<div class="sidebar" [class.compact]="false">
+  <div class="sidebar-header">
+    <div class="logo">
+      <img src="/z7063456867854_195cc272faa6f958e404079bf5042ae7.jpg" alt="logo" class="logo-img" />
+      <div class="logo-text">
+        <div class="title">TDK Store</div>
+        <div class="subtitle">Bán mũ bảo hiểm</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <li *ngFor="let item of menuItems" class="nav-item" [class.has-submenu]="item.hasSubmenu">
+        <a
+          [routerLink]="item.hasSubmenu ? null : item.route"
+          class="nav-link"
+          [class.active]="item.active"
+          [class.has-submenu]="item.hasSubmenu"
+          (click)="item.hasSubmenu ? toggleSubmenu(item) : null"
+        >
+          <i class="bi" [ngClass]="item.icon"></i>
+          <span>{{ item.label }}</span>
+          <i
+            *ngIf="item.hasSubmenu"
+            class="bi bi-chevron-down"
+            [class.rotated]="item.isExpanded"
+          ></i>
+        </a>
+
+        <ul *ngIf="item.hasSubmenu && item.isExpanded" class="submenu">
+          <li *ngFor="let subItem of item.submenu" class="submenu-item">
+            <a [routerLink]="subItem.route" class="submenu-link" [class.active]="subItem.active">
+              <span>{{ subItem.label }}</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="user-card">
+    <div class="user-info">
+      <img class="avatar" src="https://i.pravatar.cc/80" alt="avatar" />
+      <div>
+        <div class="name">Trịnh Quốc Khánh</div>
+        <div class="role">Admin</div>
+      </div>
+    </div>
+    <button class="logout-btn" type="button">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Đăng xuất</span>
+    </button>
+  </div>
+</div>

@@ -1,0 +1,56 @@
+.app-container {
+  display: flex;
+  height: 100vh;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 250px;
+  min-height: 100vh;
+}
+
+.sidebar-hidden .main-content {
+  margin-left: 0;
+}
+
+.sidebar-hidden app-sidebar {
+  display: block;
+}
+
+.sidebar-hidden app-sidebar .sidebar {
+  width: 64px;
+}
+
+.sidebar-hidden .main-content {
+  margin-left: 64px;
+}
+
+/* Hide texts when compact */
+.sidebar-hidden app-sidebar .sidebar .logo-text,
+.sidebar-hidden app-sidebar .sidebar .user-card,
+.sidebar-hidden app-sidebar .sidebar .submenu,
+.sidebar-hidden app-sidebar .sidebar .nav-link span,
+.sidebar-hidden app-sidebar .sidebar .nav-link .bi-chevron-down {
+  display: none;
+}
+.sidebar-hidden app-sidebar .sidebar .nav-item {
+  margin: 8px 6px;
+}
+.sidebar-hidden app-sidebar .sidebar .nav-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+.sidebar-hidden app-sidebar .sidebar .nav-link i:first-child {
+  margin-right: 0;
+}
+
+.content-wrapper {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  min-height: calc(100vh - 80px);
+}
