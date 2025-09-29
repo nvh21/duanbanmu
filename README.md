@@ -1,59 +1,159 @@
-# Banmubaohiem
+# Helmet Store - Hệ thống quản lý cửa hàng mũ bảo hiểm
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.3.
+## Mô tả dự án
 
-## Development server
+Đây là hệ thống quản lý cửa hàng mũ bảo hiểm được xây dựng bằng Angular 20. Hệ thống bao gồm các chức năng chính:
 
-To start a local development server, run:
+- **Dashboard**: Tổng quan hệ thống với các thống kê cơ bản
+- **Quản lý hóa đơn**: Quản lý và theo dõi các hóa đơn bán hàng
+- **Quản lý sản phẩm**: Quản lý danh mục sản phẩm mũ bảo hiểm
+- **Khách hàng**: Quản lý thông tin khách hàng
+- **Nhập hàng**: Quản lý nhập hàng và tồn kho
+- **Quản lý**: Quản lý chương trình khuyến mãi (đã hoàn thiện)
 
-```bash
-ng serve
-```
+## Công nghệ sử dụng
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Angular 20
+- TypeScript
+- Bootstrap 5
+- Bootstrap Icons
+- SCSS
 
-## Code scaffolding
+## Cài đặt và chạy dự án
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### Yêu cầu hệ thống
 
-```bash
-ng generate component component-name
-```
+- Node.js (phiên bản 18 trở lên)
+- npm hoặc yarn
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Các bước cài đặt
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+1. **Cài đặt dependencies:**
 
 ```bash
-ng test
+cd banmubaohiem
+npm install
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+2. **Chạy dự án:**
 
 ```bash
-ng e2e
+npm start
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+3. **Mở trình duyệt:**
+   Truy cập `http://localhost:4200` để xem ứng dụng
 
-## Additional Resources
+### Các lệnh khác
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- **Build dự án:**
+
+```bash
+npm run build
+```
+
+- **Chạy tests:**
+
+```bash
+npm test
+```
+
+## Cấu trúc dự án
+
+```
+src/
+├── app/
+│   ├── components/
+│   │   ├── sidebar/                    # Component sidebar navigation
+│   │   ├── header/                     # Component header
+│   │   ├── dashboard/                  # Trang dashboard nâng cao
+│   │   ├── invoice-management/         # Quản lý hóa đơn
+│   │   ├── product-management/         # Quản lý sản phẩm
+│   │   ├── customer-management/        # Quản lý khách hàng
+│   │   ├── import-management/          # Quản lý nhập hàng
+│   │   ├── promotion-management/       # Quản lý khuyến mãi (hoàn thiện)
+│   │   ├── promotion-modal/            # Modal thêm/sửa khuyến mãi
+│   │   └── loading-spinner/            # Component loading spinner
+│   ├── services/
+│   │   └── data.service.ts             # Service quản lý dữ liệu
+│   ├── app.component.*                 # Component chính
+│   ├── app.routes.ts                   # Cấu hình routing
+│   └── app.config.ts                   # Cấu hình ứng dụng
+├── styles.scss                         # Global styles với Bootstrap
+└── index.html                          # File HTML chính
+```
+
+## Tính năng đã hoàn thiện
+
+### 1. Layout chính
+
+- Sidebar navigation với menu đa cấp như trong ảnh
+- Menu "Quản lý hóa đơn" có submenu: Đơn hàng, Chi tiết đơn hàng, Thanh toán, Giao hàng
+- Header với breadcrumb và thông tin user
+- Responsive design cho mobile và desktop
+- Animation và transition mượt mà
+
+### 2. Dashboard nâng cao
+
+- 4 card thống kê với animation hover
+- Hoạt động gần đây với timeline
+- Sản phẩm bán chạy với ranking
+- Thao tác nhanh với quick actions
+- Responsive grid layout
+
+### 3. Quản lý chương trình khuyến mãi (Hoàn thiện 100%)
+
+- Giao diện quản lý hoàn chỉnh theo thiết kế
+- Bảng dữ liệu với 5 chương trình khuyến mãi mẫu
+- Modal thêm/sửa khuyến mãi với form validation
+- Các nút chức năng: Xuất Excel, Nhập Excel, Thêm khuyến mãi
+- Tìm kiếm và lọc theo trạng thái
+- Các thao tác: Xem, Sửa, Xóa với confirmation
+- Status badges với màu sắc phân biệt
+
+### 4. Components bổ sung
+
+- **PromotionModalComponent**: Modal thêm/sửa khuyến mãi
+- **LoadingSpinnerComponent**: Spinner loading đa kích thước
+- **DataService**: Service quản lý dữ liệu với RxJS
+
+### 5. Trang Chi tiết đơn hàng (Hoàn thiện 100%)
+
+- Giao diện giống hệt ảnh bạn cung cấp
+- Bảng dữ liệu với 10 bản ghi mẫu
+- Các cột: id, ma_don_hang, ma_san_pham, so_luong, gia_ban, thanh_tien, ghi_chu
+- Tìm kiếm, lọc, xuất, nhập, thêm mới
+- Thao tác: Xem, Sửa, Xóa cho từng dòng
+
+### 6. Menu đa cấp cho Quản lý sản phẩm (Hoàn thiện 100%)
+
+- **HelmetsComponent**: Sản phẩm mũ bảo hiểm ✅
+- **InventoryComponent**: Tồn kho ✅
+- **WarehouseComponent**: Quản lý kho ✅
+- **ReviewsComponent**: Đánh giá sản phẩm ✅
+
+### 7. Các trang khác
+
+- Layout cơ bản cho các chức năng còn lại
+- Sẵn sàng để phát triển thêm
+
+## Hướng dẫn phát triển
+
+### Thêm component mới
+
+1. Tạo thư mục component trong `src/app/components/`
+2. Tạo các file: `.ts`, `.html`, `.scss`
+3. Thêm route vào `app.routes.ts`
+4. Cập nhật menu trong `sidebar.component.ts`
+
+### Styling
+
+- Sử dụng Bootstrap 5 cho layout và components
+- SCSS cho custom styling
+- Bootstrap Icons cho icons
+- Responsive design với mobile-first approach
+
+## Liên hệ
+
+Dự án được phát triển cho mục đích học tập và nghiên cứu.
+# duanbanmu
