@@ -1,0 +1,239 @@
+.account-page {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.page-header {
+  padding: 24px 28px;
+  border-bottom: 1px solid #e9ecef;
+  background: linear-gradient(135deg, #f8f9fa 0%, #eef2f7 100%);
+}
+.page-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.page-header p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 13px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 28px;
+  gap: 12px;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: 10px 12px;
+  border-radius: 8px;
+  min-width: 320px;
+}
+.search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+}
+.filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.filters select {
+  padding: 10px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+}
+.btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+.btn-primary {
+  background: #0d6efd;
+  color: white;
+}
+.btn-primary:hover {
+  background: #0b5ed7;
+}
+.btn-secondary {
+  background: white;
+  border-color: #e9ecef;
+}
+
+.table-container {
+  padding: 0 28px 28px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table thead th {
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  padding: 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+.table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f3f5;
+}
+.no-data {
+  text-align: center;
+  color: #6c757d;
+  padding: 24px 0;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: white;
+}
+.action-btn.view {
+  color: #0d6efd;
+}
+.action-btn.edit {
+  color: #f59e0b;
+}
+.action-btn.danger {
+  color: #dc3545;
+}
+
+.status-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-locked {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.role-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.role-admin {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.role-warehouse {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+.role-accounting {
+  background: #fef3c7;
+  color: #92400e;
+}
+.role-staff {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+.modal-content {
+  width: 680px;
+  max-width: 100%;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+.modal-body {
+  padding: 20px;
+  overflow: auto;
+}
+.close-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.form-group input,
+.form-group select {
+  padding: 10px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

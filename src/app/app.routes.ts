@@ -5,6 +5,7 @@ import { ProductManagementComponent } from './components/product-management/prod
 import { CustomerManagementComponent } from './components/customer-management/customer-management.component';
 import { ImportManagementComponent } from './components/import-management/import-management.component';
 import { PromotionManagementComponent } from './components/promotion-management/promotion-management.component';
+import { AccountManagementComponent } from './components/account-management/account-management.component';
 import { OrderDetailsComponent } from './components/order-details/order-details.component';
 import { OrdersComponent } from './components/orders/orders.component';
 import { PaymentsComponent } from './components/payments/payments.component';
@@ -26,6 +27,6 @@ export const routes: Routes = [
   { path: 'products/inventory', component: InventoryComponent },
   { path: 'customers', component: CustomerManagementComponent },
   { path: 'import', component: ImportManagementComponent },
-  { path: 'management', component: PromotionManagementComponent },
+  { path: 'management', component: AccountManagementComponent },
   { path: '**', redirectTo: '/dashboard' },
 ];
