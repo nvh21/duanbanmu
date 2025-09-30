@@ -117,7 +117,7 @@
   color: #383d41;
 }
 
-.content-grid {
+.charts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
@@ -152,6 +152,93 @@
 
 .card-body {
   padding: 20px;
+}
+
+/* Line chart */
+.line-chart {
+  width: 100%;
+}
+.line-path {
+  fill: none;
+  stroke: #4f46e5;
+  stroke-width: 2;
+}
+.line-dot {
+  fill: #4f46e5;
+}
+.x-labels {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+  color: #6c757d;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Bar chart */
+.bar-chart {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+  gap: 14px;
+  height: 240px;
+}
+.bar {
+  position: relative;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  border-radius: 6px 6px 0 0;
+  min-height: 12px;
+}
+.bar-value {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #212529;
+}
+.bar-label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* Donut chart */
+.donut-chart {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  align-items: center;
+  gap: 20px;
+}
+.donut-bg {
+  fill: none;
+  stroke: #e9ecef;
+  stroke-width: 18;
+}
+.donut-seg {
+  fill: none;
+  stroke-width: 18;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.donut-legend {
+  display: grid;
+  gap: 10px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #495057;
+}
+.legend-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
 .activity-list {
@@ -324,7 +411,7 @@
 }
 
 @media (max-width: 768px) {
-  .content-grid {
+  .charts-grid {
     grid-template-columns: 1fr;
   }
 
