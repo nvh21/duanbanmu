@@ -4,47 +4,298 @@
     <p>Quản lý danh mục sản phẩm mũ bảo hiểm</p>
   </div>
 
-  <div style="padding: 16px">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-section">
+      <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input
+          type="text"
+          placeholder="Tìm kiếm theo tên, mã sản phẩm, nhà sản xuất..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+        />
+      </div>
+      <select [(ngModel)]="selectedStatus" (change)="onStatusChange()" class="status-filter">
+        <option value="all">Tất cả trạng thái</option>
+        <option value="Đang bán">Đang bán</option>
+        <option value="Ngừng bán">Ngừng bán</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="bi bi-plus"></i> Thêm sản phẩm
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
     <table class="table">
       <thead>
         <tr>
-          <th>Ảnh sản phẩm</th>
-          <th>Mã sản phẩm</th>
-          <th>Nhà sản xuất</th>
+          <th>Ảnh</th>
+          <th>Mã SP</th>
+          <th>Tên sản phẩm</th>
+          <th>Nhà SX</th>
           <th>Màu sắc</th>
           <th>Kích thước</th>
           <th>Số lượng</th>
+          <th>Giá (VNĐ)</th>
           <th>Trạng thái</th>
           <th>Thao tác</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let h of helmetProducts">
+        <tr *ngFor="let product of filteredProducts">
           <td>
-            <img
-              [src]="h.image"
-              alt="image"
-              style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover"
-            />
+            <img [src]="product.image" [alt]="product.name" class="product-image" />
           </td>
-          <td>{{ h.code }}</td>
-          <td>{{ h.manufacturer }}</td>
-          <td>{{ h.color }}</td>
-          <td>{{ h.size }}</td>
-          <td>
-            {{ h.quantity }}
+          <td class="code-cell">{{ product.code }}</td>
+          <td class="name-cell">{{ product.name }}</td>
+          <td>{{ product.manufacturer }}</td>
+          <td>{{ product.color }}</td>
+          <td>{{ product.size }}</td>
+          <td class="quantity-cell">
+            <span [ngClass]="product.quantity === 0 ? 'out-of-stock' : ''">
+              {{ product.quantity }}
+            </span>
           </td>
+          <td class="price-cell">{{ product.price | number : '1.0-0' }}</td>
           <td>
-            <span [ngClass]="h.status === 'Đang bán' ? 'badge success' : 'badge muted'">{{
-              h.status
-            }}</span>
+            <span [ngClass]="product.status === 'Đang bán' ? 'badge success' : 'badge muted'">
+              {{ product.status }}
+            </span>
           </td>
-          <td>
-            <button class="action-btn"><i class="bi bi-pencil"></i></button>
-            <button class="action-btn danger"><i class="bi bi-trash"></i></button>
+          <td class="actions-cell">
+            <button class="action-btn view" (click)="viewProduct(product)" title="Xem chi tiết">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button class="action-btn edit" (click)="openEditModal(product)" title="Sửa">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="action-btn danger" (click)="deleteProduct(product)" title="Xóa">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredProducts.length === 0">
+          <td colspan="10" class="no-data">
+            <i class="bi bi-inbox"></i>
+            <p>Không tìm thấy sản phẩm nào</p>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <i class="bi bi-shield"></i>
+          {{ isViewMode ? 'Chi tiết sản phẩm' : isEditMode ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới' }}
+        </h3>
+        <button class="close-btn" (click)="closeModal()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form (ngSubmit)="saveProduct()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mã sản phẩm *</label>
+              <input
+                type="text"
+                [(ngModel)]="newProduct.code"
+                name="code"
+                required
+                placeholder="VD: P001"
+                [disabled]="isViewMode"
+              />
+            </div>
+            <div class="form-group">
+              <label>Tên sản phẩm *</label>
+              <input
+                type="text"
+                [(ngModel)]="newProduct.name"
+                name="name"
+                required
+                placeholder="Tên sản phẩm"
+                [disabled]="isViewMode"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nhà sản xuất *</label>
+              <input
+                type="text"
+                [(ngModel)]="newProduct.manufacturer"
+                name="manufacturer"
+                required
+                placeholder="VD: AGV, Shoei, Arai"
+                [disabled]="isViewMode"
+              />
+            </div>
+            <div class="form-group">
+              <label>Màu sắc *</label>
+              <input
+                type="text"
+                [(ngModel)]="newProduct.color"
+                name="color"
+                required
+                placeholder="VD: Đen, Đỏ, Trắng"
+                [disabled]="isViewMode"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kích thước *</label>
+              <select [(ngModel)]="newProduct.size" name="size" required [disabled]="isViewMode">
+                <option value="">Chọn kích thước</option>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+                <option value="XXL">XXL</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Số lượng *</label>
+              <input
+                type="number"
+                [(ngModel)]="newProduct.quantity"
+                name="quantity"
+                required
+                min="0"
+                placeholder="0"
+                [disabled]="isViewMode"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Giá bán (VNĐ) *</label>
+              <input
+                type="number"
+                [(ngModel)]="newProduct.price"
+                name="price"
+                required
+                min="0"
+                placeholder="0"
+                [disabled]="isViewMode"
+              />
+            </div>
+            <div class="form-group">
+              <label>Trạng thái *</label>
+              <select
+                [(ngModel)]="newProduct.status"
+                name="status"
+                required
+                [disabled]="isViewMode"
+              >
+                <option value="Đang bán">Đang bán</option>
+                <option value="Ngừng bán">Ngừng bán</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Ảnh sản phẩm *</label>
+            <div class="image-upload-section">
+              <div class="image-preview" *ngIf="imagePreview">
+                <img [src]="imagePreview" alt="Preview" class="preview-image" />
+                <button
+                  type="button"
+                  class="remove-image-btn"
+                  (click)="removeImage()"
+                  *ngIf="!isViewMode"
+                >
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+              <div class="upload-area" *ngIf="!imagePreview && !isViewMode">
+                <input
+                  type="file"
+                  id="imageUpload"
+                  accept="image/*"
+                  (change)="onFileSelected($event)"
+                  style="display: none"
+                />
+                <label for="imageUpload" class="upload-btn">
+                  <i class="bi bi-cloud-upload"></i>
+                  <span>Chọn ảnh từ máy tính</span>
+                  <small>Hỗ trợ: JPG, PNG, GIF, WebP</small>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Mô tả sản phẩm</label>
+            <textarea
+              [(ngModel)]="newProduct.description"
+              name="description"
+              rows="3"
+              placeholder="Mô tả chi tiết về sản phẩm..."
+              [disabled]="isViewMode"
+            ></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          {{ isViewMode ? 'Đóng' : 'Hủy' }}
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveProduct()" *ngIf="!isViewMode">
+          <i class="bi bi-check"></i>
+          {{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="openEditModal(selectedProduct!)"
+          *ngIf="isViewMode"
+        >
+          <i class="bi bi-pencil"></i>
+          Chỉnh sửa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+    <div class="delete-modal" (click)="$event.stopPropagation()">
+      <div class="delete-modal-header">
+        <div class="warning-icon">
+          <i class="bi bi-exclamation-triangle"></i>
+        </div>
+        <h3>Xóa sản phẩm</h3>
+        <button class="close-btn" (click)="closeDeleteModal()">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+
+      <div class="delete-modal-body">
+        <p>
+          Bạn có chắc chắn muốn xóa sản phẩm <strong>"{{ productToDelete?.name }}"</strong>?
+        </p>
+      </div>
+
+      <div class="delete-modal-actions">
+        <button type="button" class="btn btn-cancel" (click)="closeDeleteModal()">Hủy</button>
+        <button type="button" class="btn btn-delete" (click)="confirmDelete()">
+          <i class="bi bi-trash"></i>
+          Xóa
+        </button>
+      </div>
+    </div>
   </div>
 </div>

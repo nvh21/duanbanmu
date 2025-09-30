@@ -16,6 +16,8 @@ export class AppComponent {
   sidebarHidden = false;
 
   toggleSidebar() {
+    console.log('Toggle sidebar called, current state:', this.sidebarHidden);
     this.sidebarHidden = !this.sidebarHidden;
+    console.log('New state:', this.sidebarHidden);
   }
 }

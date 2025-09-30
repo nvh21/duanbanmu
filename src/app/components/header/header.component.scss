@@ -7,16 +7,38 @@
 
 .header-content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 20px;
+}
+
+.header-title h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
 }
 
 .menu-btn {
   border: 1px solid #e5e7eb;
   background: #ffffff;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   margin-right: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-btn:hover {
+  background: #f8f9fa;
+  border-color: #d1d5db;
+}
+
+.menu-btn i {
+  font-size: 18px;
+  color: #374151;
 }
 
 .breadcrumb {

@@ -10,6 +10,41 @@
   flex-direction: column;
   color: #111827;
   border-right: 1px solid #e5e7eb;
+  transition: width 0.3s ease;
+}
+
+/* Compact mode styles */
+.sidebar.collapsed {
+  width: 64px !important;
+}
+
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .user-card,
+.sidebar.collapsed .submenu,
+.sidebar.collapsed .nav-link span,
+.sidebar.collapsed .nav-link .bi-chevron-down {
+  display: none !important;
+}
+
+.sidebar.collapsed .nav-item {
+  margin: 8px 6px;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.sidebar.collapsed .nav-link i:first-child {
+  margin-right: 0;
+}
+
+.sidebar.collapsed .logo {
+  justify-content: center;
+}
+
+.sidebar.collapsed .logo .logo-img {
+  margin-right: 0;
 }
 
 .sidebar-header {
@@ -90,28 +125,6 @@
 
 .nav-link span {
   flex: 1;
-}
-
-/* Compact (icon-only) mode */
-.sidebar {
-  transition: width 0.2s ease;
-}
-.sidebar.compact .logo-text,
-.sidebar.compact .submenu,
-.sidebar.compact .user-card,
-.sidebar.compact .nav-link span,
-.sidebar.compact .nav-link i.bi-chevron-down {
-  display: none;
-}
-.sidebar.compact .nav-item {
-  margin: 8px 6px;
-}
-.sidebar.compact .nav-link {
-  justify-content: center;
-  padding: 10px 0;
-}
-.sidebar.compact .nav-link i:first-child {
-  margin-right: 0;
 }
 
 .nav-link i:last-child {

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -9,8 +9,10 @@ import { filter } from 'rxjs/operators';
   imports: [CommonModule, RouterModule],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
+  encapsulation: ViewEncapsulation.None,
 })
 export class SidebarComponent implements OnInit {
+  @Input() isCollapsed = false;
   menuItems = [
     {
       icon: 'bi-clipboard-data',
@@ -50,18 +52,8 @@ export class SidebarComponent implements OnInit {
           active: false,
         },
         {
-          label: 'Tồn kho',
-          route: '/products/inventory',
-          active: false,
-        },
-        {
           label: 'Quản lý kho',
-          route: '/products/warehouse',
-          active: false,
-        },
-        {
-          label: 'Đánh giá sản phẩm',
-          route: '/products/reviews',
+          route: '/products/inventory',
           active: false,
         },
       ],

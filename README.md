@@ -128,9 +128,7 @@ src/
 ### 6. Menu đa cấp cho Quản lý sản phẩm (Hoàn thiện 100%)
 
 - **HelmetsComponent**: Sản phẩm mũ bảo hiểm ✅
-- **InventoryComponent**: Tồn kho ✅
-- **WarehouseComponent**: Quản lý kho ✅
-- **ReviewsComponent**: Đánh giá sản phẩm ✅
+- **InventoryComponent**: Quản lý kho ✅
 
 ### 7. Các trang khác
 
@@ -156,5 +154,7 @@ src/
 ## Liên hệ
 
 Dự án được phát triển cho mục đích học tập và nghiên cứu.
+
 # duanbanmu
+
 # DuAnBnMuBaoHien

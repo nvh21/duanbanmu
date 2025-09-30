@@ -11,8 +11,6 @@ import { PaymentsComponent } from './components/payments/payments.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
 import { InventoryComponent } from './components/inventory/inventory.component';
-import { WarehouseComponent } from './components/warehouse/warehouse.component';
-import { ReviewsComponent } from './components/reviews/reviews.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -26,8 +24,6 @@ export const routes: Routes = [
   { path: 'products', component: ProductManagementComponent },
   { path: 'products/helmets', component: HelmetsComponent },
   { path: 'products/inventory', component: InventoryComponent },
-  { path: 'products/warehouse', component: WarehouseComponent },
-  { path: 'products/reviews', component: ReviewsComponent },
   { path: 'customers', component: CustomerManagementComponent },
   { path: 'import', component: ImportManagementComponent },
   { path: 'management', component: PromotionManagementComponent },
