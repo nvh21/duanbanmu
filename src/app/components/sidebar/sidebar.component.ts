@@ -67,6 +67,22 @@ export class SidebarComponent implements OnInit {
       submenu: [],
     },
     {
+      icon: 'bi-person-workspace',
+      label: 'Quản lý nhân viên',
+      route: '/staff',
+      active: false,
+      hasSubmenu: false,
+      submenu: [],
+    },
+    {
+      icon: 'bi-people',
+      label: 'Quản lý khách hàng',
+      route: '/customers',
+      active: false,
+      hasSubmenu: false,
+      submenu: [],
+    },
+    {
       icon: 'bi-megaphone',
       label: 'Quản lý khuyến mại',
       route: '/promotions',

@@ -6,6 +6,7 @@ import { CustomerManagementComponent } from './components/customer-management/cu
 import { ImportManagementComponent } from './components/import-management/import-management.component';
 import { PromotionManagementComponent } from './components/promotion-management/promotion-management.component';
 import { AccountManagementComponent } from './components/account-management/account-management.component';
+import { StaffManagementComponent } from './components/staff-management/staff-management.component';
 import { OrderDetailsComponent } from './components/order-details/order-details.component';
 import { OrdersComponent } from './components/orders/orders.component';
 import { PaymentsComponent } from './components/payments/payments.component';
@@ -28,5 +29,6 @@ export const routes: Routes = [
   { path: 'customers', component: CustomerManagementComponent },
   { path: 'import', component: ImportManagementComponent },
   { path: 'management', component: AccountManagementComponent },
+  { path: 'staff', component: StaffManagementComponent },
   { path: '**', redirectTo: '/dashboard' },
 ];

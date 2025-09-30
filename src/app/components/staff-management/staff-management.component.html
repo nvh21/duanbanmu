@@ -1,0 +1,176 @@
+<div class="page">
+  <div class="page-header">
+    <h1><i class="bi bi-person-workspace"></i> Quản lý nhân viên</h1>
+    <p>Quản lý hồ sơ nhân viên, phòng ban và trạng thái làm việc</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input
+        type="text"
+        placeholder="Tìm theo tên, email, số điện thoại"
+        [(ngModel)]="searchTerm"
+        (input)="onSearchChange()"
+      />
+    </div>
+    <div class="filters">
+      <select [(ngModel)]="selectedDept" (change)="onDeptChange()">
+        <option value="all">Tất cả phòng ban</option>
+        <option>Bán hàng</option>
+        <option>Kho</option>
+        <option>Kế toán</option>
+        <option>Marketing</option>
+        <option>CSKH</option>
+      </select>
+      <select [(ngModel)]="selectedStatus" (change)="onStatusChange()">
+        <option value="all">Tất cả trạng thái</option>
+        <option>Hoạt động</option>
+        <option>Tạm nghỉ</option>
+        <option>Nghỉ việc</option>
+      </select>
+      <button class="btn btn-primary" (click)="openAdd()">
+        <i class="bi bi-plus-lg"></i> Thêm nhân viên
+      </button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Họ tên</th>
+          <th>Email</th>
+          <th>Điện thoại</th>
+          <th>Phòng ban</th>
+          <th>Trạng thái</th>
+          <th>Ngày vào</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of filtered">
+          <td>{{ s.id }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.email }}</td>
+          <td>{{ s.phone }}</td>
+          <td>{{ s.department }}</td>
+          <td>
+            <span class="status-badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span>
+          </td>
+          <td>{{ s.joinDate | date : 'dd/MM/yyyy' }}</td>
+          <td class="actions">
+            <button class="action-btn view" (click)="view(s)"><i class="bi bi-eye"></i></button>
+            <button class="action-btn edit" (click)="openEdit(s)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="action-btn danger" (click)="remove(s)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="filtered.length === 0">
+          <td colspan="8" class="no-data"><i class="bi bi-inbox"></i> Không có nhân viên</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal-overlay" *ngIf="showModal" (click)="close()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <i class="bi bi-person-badge"></i>
+          {{
+            isViewMode ? 'Xem chi tiết nhân viên' : isEditMode ? 'Sửa nhân viên' : 'Thêm nhân viên'
+          }}
+        </h3>
+        <button class="close-btn" (click)="close()"><i class="bi bi-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="save()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Họ tên *</label>
+              <input
+                type="text"
+                [(ngModel)]="form.name"
+                name="name"
+                required
+                [disabled]="isViewMode"
+              />
+            </div>
+            <div class="form-group">
+              <label>Email *</label>
+              <input
+                type="email"
+                [(ngModel)]="form.email"
+                name="email"
+                required
+                [disabled]="isViewMode"
+              />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Điện thoại *</label>
+              <input
+                type="text"
+                [(ngModel)]="form.phone"
+                name="phone"
+                required
+                [disabled]="isViewMode"
+              />
+            </div>
+            <div class="form-group">
+              <label>Phòng ban *</label>
+              <select
+                [(ngModel)]="form.department"
+                name="department"
+                required
+                [disabled]="isViewMode"
+              >
+                <option>Bán hàng</option>
+                <option>Kho</option>
+                <option>Kế toán</option>
+                <option>Marketing</option>
+                <option>CSKH</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Trạng thái *</label>
+              <select [(ngModel)]="form.status" name="status" required [disabled]="isViewMode">
+                <option>Hoạt động</option>
+                <option>Tạm nghỉ</option>
+                <option>Nghỉ việc</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Ngày vào *</label>
+              <input
+                type="date"
+                [ngModel]="form.joinDate | date : 'yyyy-MM-dd'"
+                (ngModelChange)="form.joinDate = $event ? dateFrom($event) : form.joinDate"
+                name="joinDate"
+                required
+                [disabled]="isViewMode"
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="close()">
+              {{ isViewMode ? 'Đóng' : 'Hủy' }}
+            </button>
+            <button type="submit" class="btn btn-primary" *ngIf="!isViewMode">
+              <i class="bi bi-check"></i> {{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
