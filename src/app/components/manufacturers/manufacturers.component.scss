@@ -1,0 +1,375 @@
+// CSS chung cho tất cả bảng
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  margin-bottom: 0;
+
+  thead {
+    th {
+      background-color: #343a40;
+      color: white;
+      border: none;
+      font-weight: 600;
+      text-align: center;
+      vertical-align: middle;
+      padding: 12px 8px;
+      font-size: 0.9rem;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #f8f9fa;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    td {
+      vertical-align: middle;
+      padding: 12px 8px;
+      border-top: 1px solid #dee2e6;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Styling cho các cột cụ thể
+.manufacturer-code {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #007bff;
+  background-color: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.manufacturer-name {
+  font-weight: 600;
+  color: #495057;
+}
+
+.manufacturer-country {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6c757d;
+
+  i {
+    font-size: 0.8rem;
+  }
+}
+
+.established-year {
+  font-weight: 500;
+  color: #495057;
+}
+
+.contact-email,
+.contact-phone {
+  font-size: 0.85rem;
+  color: #495057;
+}
+
+.manufacturer-address {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+.manufacturer-description {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  color: #6c757d;
+  font-size: 0.85rem;
+}
+
+// Styling cho tags và badges
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 200px;
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+}
+
+// Styling cho buttons
+.btn-group {
+  .btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    margin: 0 2px;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .table {
+    thead th {
+      padding: 8px 4px;
+      font-size: 0.8rem;
+    }
+
+    tbody td {
+      padding: 8px 4px;
+      font-size: 0.8rem;
+    }
+  }
+
+  .manufacturer-description {
+    max-width: 150px;
+  }
+
+  .tags-container {
+    max-width: 150px;
+  }
+}
+
+// Page header styling
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+
+  h2 {
+    margin: 0;
+    color: #495057;
+    font-weight: 600;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// Filter section styling
+.filter-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid #e9ecef;
+
+  .form-group {
+    margin-bottom: 0;
+
+    label {
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .form-control {
+      border-radius: 6px;
+      border: 1px solid #ced4da;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+    }
+  }
+}
+
+// Empty state styling
+.text-center {
+  .display-1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  h4 {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: #6c757d;
+    font-size: 1.1rem;
+  }
+}
+
+// Modal styling improvements
+.modal {
+  .modal-dialog {
+    .modal-content {
+      border-radius: 8px;
+      border: none;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      border-radius: 8px 8px 0 0;
+
+      .modal-title {
+        font-weight: 600;
+      }
+
+      .btn-close {
+        filter: invert(1);
+      }
+    }
+
+    .modal-body {
+      padding: 2rem;
+
+      .form-group {
+        margin-bottom: 1.5rem;
+
+        label {
+          font-weight: 600;
+          color: #495057;
+          margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+          border-radius: 6px;
+          border: 1px solid #ced4da;
+          padding: 10px 12px;
+          transition: all 0.2s ease;
+
+          &:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+          }
+        }
+      }
+    }
+
+    .modal-footer {
+      border-top: 1px solid #e9ecef;
+      padding: 1rem 2rem;
+
+      .btn {
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+// Logo upload container
+.logo-upload-container {
+  .logo-preview {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1rem;
+
+    .preview-logo {
+      width: 120px;
+      height: 80px;
+      object-fit: contain;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f8f9fa;
+    }
+
+    .remove-logo-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .logo-placeholder {
+    width: 120px;
+    height: 80px;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    color: #6c757d;
+
+    i {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+// Checkbox group styling
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 1rem;
+
+  .form-check {
+    margin-bottom: 0;
+
+    .form-check-input {
+      margin-right: 8px;
+    }
+
+    .form-check-label {
+      font-size: 0.9rem;
+      color: #495057;
+    }
+  }
+}

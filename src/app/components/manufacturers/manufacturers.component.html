@@ -1,0 +1,302 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="page-header">
+        <h2>Quản lý nhà sản xuất</h2>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="bi bi-plus-circle"></i>
+          Thêm nhà sản xuất mới
+        </button>
+      </div>
+
+      <!-- Bộ lọc -->
+      <div class="filter-section">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Tìm kiếm:</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Tìm theo mã, tên, quốc gia, mô tả..."
+                [(ngModel)]="searchTerm"
+                (input)="onSearchChange()"
+              />
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label>Quốc gia:</label>
+              <select
+                class="form-control"
+                [(ngModel)]="selectedCountry"
+                (change)="onCountryChange()"
+              >
+                <option value="all">Tất cả</option>
+                <option *ngFor="let country of countries" [value]="country">
+                  {{ country }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button class="btn btn-outline-secondary w-100" (click)="filterManufacturers()">
+                <i class="bi bi-funnel"></i>
+                Lọc
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng nhà sản xuất -->
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Mã nhà sản xuất</th>
+              <th>Tên nhà sản xuất</th>
+              <th>Quốc gia</th>
+              <th>Email</th>
+              <th>Điện thoại</th>
+              <th>Địa chỉ</th>
+              <th>Mô tả</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let manufacturer of filteredManufacturers; trackBy: trackByManufacturerId">
+              <td>
+                <span class="manufacturer-code">{{ manufacturer.code }}</span>
+              </td>
+              <td>
+                <span class="manufacturer-name">{{ manufacturer.name }}</span>
+              </td>
+              <td>
+                <span class="manufacturer-country">
+                  <i class="bi bi-geo-alt"></i>
+                  {{ manufacturer.country }}
+                </span>
+              </td>
+              <td>
+                <span class="contact-email" *ngIf="manufacturer.contactEmail">{{
+                  manufacturer.contactEmail
+                }}</span>
+                <span class="text-muted" *ngIf="!manufacturer.contactEmail">-</span>
+              </td>
+              <td>
+                <span class="contact-phone" *ngIf="manufacturer.contactPhone">{{
+                  manufacturer.contactPhone
+                }}</span>
+                <span class="text-muted" *ngIf="!manufacturer.contactPhone">-</span>
+              </td>
+              <td>
+                <span class="manufacturer-address" [title]="manufacturer.address">
+                  {{ manufacturer.address }}
+                </span>
+              </td>
+              <td>
+                <span class="manufacturer-description" [title]="manufacturer.description">
+                  {{ manufacturer.description }}
+                </span>
+              </td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    (click)="viewManufacturer(manufacturer)"
+                    title="Xem chi tiết"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-warning"
+                    (click)="openEditModal(manufacturer)"
+                    title="Chỉnh sửa"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="deleteManufacturer(manufacturer)"
+                    title="Xóa"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Thông báo khi không có nhà sản xuất -->
+      <div *ngIf="filteredManufacturers.length === 0" class="text-center py-5">
+        <i class="bi bi-building display-1 text-muted"></i>
+        <h4 class="text-muted mt-3">Không tìm thấy nhà sản xuất nào</h4>
+        <p class="text-muted">Hãy thử thay đổi bộ lọc hoặc thêm nhà sản xuất mới</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal thêm/sửa/xem nhà sản xuất -->
+<div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <span *ngIf="isViewMode">Xem chi tiết nhà sản xuất</span>
+          <span *ngIf="isEditMode">Chỉnh sửa nhà sản xuất</span>
+          <span *ngIf="!isViewMode && !isEditMode">Thêm nhà sản xuất mới</span>
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label>Mã nhà sản xuất <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="newManufacturer.code"
+                  name="code"
+                  placeholder="VD: AGV001"
+                  [readonly]="isViewMode"
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label>Tên nhà sản xuất <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="newManufacturer.name"
+                  name="name"
+                  [readonly]="isViewMode"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label>Quốc gia <span class="text-danger">*</span></label>
+                <select
+                  class="form-control"
+                  [(ngModel)]="newManufacturer.country"
+                  name="country"
+                  [disabled]="isViewMode"
+                >
+                  <option value="">Chọn quốc gia</option>
+                  <option *ngFor="let country of countries" [value]="country">
+                    {{ country }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label>Email liên hệ</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  [(ngModel)]="newManufacturer.contactEmail"
+                  name="contactEmail"
+                  [readonly]="isViewMode"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label>Số điện thoại</label>
+                <input
+                  type="tel"
+                  class="form-control"
+                  [(ngModel)]="newManufacturer.contactPhone"
+                  name="contactPhone"
+                  [readonly]="isViewMode"
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group mb-3">
+                <label>Địa chỉ</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [(ngModel)]="newManufacturer.address"
+                  name="address"
+                  [readonly]="isViewMode"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label>Mô tả</label>
+            <textarea
+              class="form-control"
+              rows="4"
+              [(ngModel)]="newManufacturer.description"
+              name="description"
+              [readonly]="isViewMode"
+            ></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          {{ isViewMode ? 'Đóng' : 'Hủy' }}
+        </button>
+        <button
+          *ngIf="!isViewMode"
+          type="button"
+          class="btn btn-primary"
+          (click)="saveManufacturer()"
+        >
+          {{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div
+  class="modal fade"
+  [class.show]="showDeleteModal"
+  [style.display]="showDeleteModal ? 'block' : 'none'"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Xác nhận xóa</h5>
+        <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Bạn có chắc chắn muốn xóa nhà sản xuất
+          <strong>{{ manufacturerToDelete?.name }}</strong> không?
+        </p>
+        <p class="text-danger">Hành động này không thể hoàn tác!</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteModal()">Hủy</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay cho modal -->
+<div *ngIf="showModal || showDeleteModal" class="modal-backdrop fade show"></div>

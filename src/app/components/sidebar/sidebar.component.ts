@@ -2,6 +2,7 @@ import { Component, OnInit, ViewEncapsulation, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-sidebar',
@@ -49,6 +50,16 @@ export class SidebarComponent implements OnInit {
         {
           label: 'Sản phẩm mũ bảo hiểm',
           route: '/products/helmets',
+          active: false,
+        },
+        {
+          label: 'Nhà sản xuất',
+          route: '/products/manufacturers',
+          active: false,
+        },
+        {
+          label: 'Chi tiết sản phẩm',
+          route: '/products/details',
           active: false,
         },
         {
@@ -100,7 +111,7 @@ export class SidebarComponent implements OnInit {
     },
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
     this.router.events
@@ -132,5 +143,10 @@ export class SidebarComponent implements OnInit {
     if (item.hasSubmenu) {
       item.isExpanded = !item.isExpanded;
     }
+  }
+
+  onLogout() {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }
