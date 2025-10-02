@@ -1,12 +1,313 @@
-<div class="invoice-management">
-  <div class="page-header">
-    <h1><i class="bi bi-file-text"></i> Quản lý hóa đơn</h1>
-    <p>Quản lý và theo dõi các hóa đơn bán hàng</p>
-  </div>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="page-header">
+        <h2>Quản lý hóa đơn</h2>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="bi bi-plus-circle"></i>
+          Tạo hóa đơn mới
+        </button>
+      </div>
 
-  <div class="content-placeholder">
-    <i class="bi bi-file-text"></i>
-    <h3>Quản lý hóa đơn</h3>
-    <p>Chức năng quản lý hóa đơn sẽ được phát triển ở đây</p>
+      <!-- Bộ lọc -->
+      <div class="filter-section">
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Tìm kiếm:</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Tìm theo số hóa đơn, tên khách hàng, SĐT..."
+                [(ngModel)]="searchTerm"
+                (input)="onSearchChange()"
+              />
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>Trạng thái:</label>
+              <select class="form-control" [(ngModel)]="selectedStatus" (change)="onStatusChange()">
+                <option *ngFor="let option of statusOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>Thanh toán:</label>
+              <select
+                class="form-control"
+                [(ngModel)]="selectedPaymentStatus"
+                (change)="onPaymentStatusChange()"
+              >
+                <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label>Phương thức:</label>
+              <select
+                class="form-control"
+                [(ngModel)]="selectedPaymentMethod"
+                (change)="onPaymentMethodChange()"
+              >
+                <option *ngFor="let option of paymentMethodOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" (click)="filterInvoices()">
+                  <i class="bi bi-search"></i>
+                  Lọc
+                </button>
+                <button class="btn btn-outline-secondary" (click)="resetFilters()">
+                  <i class="bi bi-arrow-clockwise"></i>
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng hóa đơn -->
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th class="sortable" (click)="sort('invoiceNumber')">
+                Số hóa đơn
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'invoiceNumber'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'invoiceNumber' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'invoiceNumber' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th class="sortable" (click)="sort('customerName')">
+                Khách hàng
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'customerName'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'customerName' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'customerName' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th class="sortable" (click)="sort('totalAmount')">
+                Tổng tiền
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'totalAmount'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'totalAmount' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'totalAmount' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th class="sortable" (click)="sort('status')">
+                Trạng thái
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'status'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'status' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'status' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th class="sortable" (click)="sort('paymentStatus')">
+                Thanh toán
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'paymentStatus'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'paymentStatus' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'paymentStatus' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th class="sortable" (click)="sort('paymentMethod')">
+                Phương thức
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'paymentMethod'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'paymentMethod' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'paymentMethod' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th class="sortable" (click)="sort('createdAt')">
+                Ngày tạo
+                <i class="bi bi-arrow-up-down" *ngIf="sortColumn !== 'createdAt'"></i>
+                <i
+                  class="bi bi-arrow-up-short"
+                  *ngIf="sortColumn === 'createdAt' && sortDirection === 'asc'"
+                ></i>
+                <i
+                  class="bi bi-arrow-down-short"
+                  *ngIf="sortColumn === 'createdAt' && sortDirection === 'desc'"
+                ></i>
+              </th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let invoice of paginatedInvoices">
+              <td>
+                <span class="invoice-number">{{ invoice.invoiceNumber }}</span>
+              </td>
+              <td>
+                <div class="customer-info">
+                  <div class="customer-name">{{ invoice.customerName }}</div>
+                  <div class="customer-phone text-muted">{{ invoice.customerPhone }}</div>
+                </div>
+              </td>
+              <td>
+                <span class="total-amount">{{ formatCurrency(invoice.totalAmount) }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatusClass(invoice.status)">
+                  {{ getStatusLabel(invoice.status) }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getPaymentStatusClass(invoice.paymentStatus)">
+                  {{ getPaymentStatusLabel(invoice.paymentStatus) }}
+                </span>
+              </td>
+              <td>
+                <span class="payment-method">{{
+                  getPaymentMethodLabel(invoice.paymentMethod)
+                }}</span>
+              </td>
+              <td>
+                <span class="created-date">{{ formatDate(invoice.createdAt) }}</span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    (click)="openViewModal(invoice)"
+                    title="Xem chi tiết"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-warning"
+                    (click)="openEditModal(invoice)"
+                    title="Chỉnh sửa"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="openDeleteModal(invoice)"
+                    title="Xóa"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div
+        class="d-flex justify-content-between align-items-center mt-3"
+        *ngIf="filteredInvoices.length > 0"
+      >
+        <div class="d-flex align-items-center">
+          <label class="form-label me-2 mb-0">Hiển thị:</label>
+          <select
+            class="form-select form-select-sm"
+            style="width: auto"
+            [value]="itemsPerPage"
+            (change)="onItemsPerPageChange($event)"
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+          <span class="ms-2 text-muted">mục mỗi trang</span>
+        </div>
+
+        <div class="pagination-info">
+          Hiển thị {{ (currentPage - 1) * itemsPerPage + 1 }} -
+          {{ Math.min(currentPage * itemsPerPage, totalItems) }} trong tổng số {{ totalItems }} mục
+        </div>
+
+        <nav aria-label="Page navigation">
+          <ul class="pagination justify-content-end mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <a class="page-link" (click)="onPageChange(1)" aria-label="First">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <a class="page-link" (click)="onPageChange(currentPage - 1)" aria-label="Previous">
+                <span aria-hidden="true">&lsaquo;</span>
+              </a>
+            </li>
+            <li
+              class="page-item"
+              [class.disabled]="currentPage === Math.ceil(totalItems / itemsPerPage)"
+            >
+              <a class="page-link" (click)="onPageChange(currentPage + 1)" aria-label="Next">
+                <span aria-hidden="true">&rsaquo;</span>
+              </a>
+            </li>
+            <li
+              class="page-item"
+              [class.disabled]="currentPage === Math.ceil(totalItems / itemsPerPage)"
+            >
+              <a
+                class="page-link"
+                (click)="onPageChange(Math.ceil(totalItems / itemsPerPage))"
+                aria-label="Last"
+              >
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      <!-- Empty state -->
+      <div class="text-center py-5" *ngIf="filteredInvoices.length === 0">
+        <i class="bi bi-receipt display-1 text-muted"></i>
+        <h4 class="text-muted mt-3">Không có hóa đơn nào</h4>
+        <p class="text-muted">Chưa có hóa đơn nào phù hợp với bộ lọc hiện tại</p>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="bi bi-plus-circle"></i>
+          Tạo hóa đơn đầu tiên
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Modals sẽ được thêm sau -->

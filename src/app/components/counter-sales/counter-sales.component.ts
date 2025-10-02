@@ -1,22 +1,34 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Invoice, InvoiceItem, InvoiceFilter } from '../../interfaces/invoice.interface';
+import {
+  CounterSale,
+  CounterSaleItem,
+  CartItem,
+  CounterSaleFilter,
+} from '../../interfaces/counter-sale.interface';
 
 @Component({
-  selector: 'app-invoice-management',
+  selector: 'app-counter-sales',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './invoice-management.component.html',
-  styleUrls: ['./invoice-management.component.scss'],
+  templateUrl: './counter-sales.component.html',
+  styleUrls: ['./counter-sales.component.scss'],
 })
-export class InvoiceManagementComponent implements OnInit {
-  invoices: Invoice[] = [];
-  filteredInvoices: Invoice[] = [];
-  paginatedInvoices: Invoice[] = [];
+export class CounterSalesComponent implements OnInit {
+  counterSales: CounterSale[] = [];
+  filteredSales: CounterSale[] = [];
+  paginatedSales: CounterSale[] = [];
 
   // Math object for template
   Math = Math;
+
+  // Cart
+  cart: CartItem[] = [];
+  cartTotal: number = 0;
+  cartSubtotal: number = 0;
+  cartDiscount: number = 0;
+  cartTax: number = 10;
 
   // Pagination
   currentPage: number = 1;
@@ -38,13 +50,13 @@ export class InvoiceManagementComponent implements OnInit {
   showEditModal: boolean = false;
   showViewModal: boolean = false;
   showDeleteModal: boolean = false;
+  showCartModal: boolean = false;
 
   // Form data
-  newInvoice: Partial<Invoice> = {
-    invoiceNumber: '',
+  newSale: Partial<CounterSale> = {
+    saleNumber: '',
     customerName: '',
     customerPhone: '',
-    customerEmail: '',
     staffId: 1,
     staffName: 'Nguyễn Văn A',
     items: [],
@@ -64,16 +76,19 @@ export class InvoiceManagementComponent implements OnInit {
     updatedBy: 1,
   };
 
-  selectedInvoice: Invoice | null = null;
-  editingInvoice: Invoice | null = null;
+  selectedSale: CounterSale | null = null;
+  editingSale: CounterSale | null = null;
+
+  // Product search
+  productSearchTerm: string = '';
+  availableProducts: any[] = [];
 
   // Status options
   statusOptions = [
     { value: 'all', label: 'Tất cả' },
     { value: 'draft', label: 'Nháp' },
-    { value: 'confirmed', label: 'Xác nhận' },
-    { value: 'shipped', label: 'Đã giao' },
-    { value: 'delivered', label: 'Hoàn thành' },
+    { value: 'processing', label: 'Đang xử lý' },
+    { value: 'completed', label: 'Hoàn thành' },
     { value: 'cancelled', label: 'Hủy' },
   ];
 
@@ -97,18 +112,18 @@ export class InvoiceManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSampleData();
-    this.filterInvoices();
+    this.loadAvailableProducts();
+    this.filterSales();
   }
 
   loadSampleData(): void {
-    this.invoices = [
+    this.counterSales = [
       {
         id: 1,
-        invoiceNumber: 'INV-2024-001',
+        saleNumber: 'CS-2024-001',
         customerId: 1,
         customerName: 'Nguyễn Văn An',
         customerPhone: '0123456789',
-        customerEmail: 'an.nguyen@email.com',
         staffId: 1,
         staffName: 'Nguyễn Văn A',
         items: [
@@ -117,23 +132,25 @@ export class InvoiceManagementComponent implements OnInit {
             productId: 1,
             productCode: 'P001',
             productName: 'AGV K1 Helmet',
-            quantity: 2,
+            category: 'Mũ bảo hiểm toàn đầu',
+            quantity: 1,
             unitPrice: 1500000,
-            totalPrice: 3000000,
+            totalPrice: 1500000,
             discount: 5,
-            discountAmount: 150000,
+            discountAmount: 75000,
+            stockQuantity: 50,
           },
         ],
-        subtotal: 3000000,
+        subtotal: 1500000,
         discount: 5,
-        discountAmount: 150000,
+        discountAmount: 75000,
         tax: 10,
-        taxAmount: 285000,
-        totalAmount: 3135000,
+        taxAmount: 142500,
+        totalAmount: 1567500,
         paymentMethod: 'cash',
         paymentStatus: 'paid',
-        status: 'delivered',
-        notes: 'Giao hàng tận nơi',
+        status: 'completed',
+        notes: 'Bán tại quầy',
         createdAt: new Date('2024-01-15'),
         updatedAt: new Date('2024-01-15'),
         createdBy: 1,
@@ -141,11 +158,10 @@ export class InvoiceManagementComponent implements OnInit {
       },
       {
         id: 2,
-        invoiceNumber: 'INV-2024-002',
+        saleNumber: 'CS-2024-002',
         customerId: 2,
         customerName: 'Trần Thị Bình',
         customerPhone: '0987654321',
-        customerEmail: 'binh.tran@email.com',
         staffId: 2,
         staffName: 'Trần Thị B',
         items: [
@@ -154,11 +170,13 @@ export class InvoiceManagementComponent implements OnInit {
             productId: 2,
             productCode: 'P002',
             productName: 'Shoei X14 Helmet',
+            category: 'Mũ bảo hiểm đua xe',
             quantity: 1,
             unitPrice: 2500000,
             totalPrice: 2500000,
             discount: 0,
             discountAmount: 0,
+            stockQuantity: 30,
           },
         ],
         subtotal: 2500000,
@@ -169,68 +187,58 @@ export class InvoiceManagementComponent implements OnInit {
         totalAmount: 2750000,
         paymentMethod: 'card',
         paymentStatus: 'paid',
-        status: 'confirmed',
+        status: 'completed',
         notes: '',
         createdAt: new Date('2024-01-16'),
         updatedAt: new Date('2024-01-16'),
         createdBy: 2,
         updatedBy: 2,
       },
+    ];
+  }
+
+  loadAvailableProducts(): void {
+    this.availableProducts = [
+      {
+        id: 1,
+        code: 'P001',
+        name: 'AGV K1 Helmet',
+        category: 'Mũ bảo hiểm toàn đầu',
+        price: 1500000,
+        stock: 50,
+      },
+      {
+        id: 2,
+        code: 'P002',
+        name: 'Shoei X14 Helmet',
+        category: 'Mũ bảo hiểm đua xe',
+        price: 2500000,
+        stock: 30,
+      },
       {
         id: 3,
-        invoiceNumber: 'INV-2024-003',
-        customerId: 3,
-        customerName: 'Lê Văn Cường',
-        customerPhone: '0369258147',
-        customerEmail: 'cuong.le@email.com',
-        staffId: 1,
-        staffName: 'Nguyễn Văn A',
-        items: [
-          {
-            id: 3,
-            productId: 3,
-            productCode: 'P003',
-            productName: 'Arai RX7V Helmet',
-            quantity: 1,
-            unitPrice: 3200000,
-            totalPrice: 3200000,
-            discount: 10,
-            discountAmount: 320000,
-          },
-        ],
-        subtotal: 3200000,
-        discount: 10,
-        discountAmount: 320000,
-        tax: 10,
-        taxAmount: 288000,
-        totalAmount: 3168000,
-        paymentMethod: 'transfer',
-        paymentStatus: 'pending',
-        status: 'draft',
-        notes: 'Khách hàng VIP',
-        createdAt: new Date('2024-01-17'),
-        updatedAt: new Date('2024-01-17'),
-        createdBy: 1,
-        updatedBy: 1,
+        code: 'P003',
+        name: 'Arai RX7V Helmet',
+        category: 'Mũ bảo hiểm toàn đầu',
+        price: 3200000,
+        stock: 25,
       },
     ];
   }
 
-  filterInvoices(): void {
-    this.filteredInvoices = this.invoices.filter((invoice) => {
+  filterSales(): void {
+    this.filteredSales = this.counterSales.filter((sale) => {
       const matchesSearch =
         !this.searchTerm ||
-        invoice.invoiceNumber.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        invoice.customerName?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        invoice.customerPhone?.includes(this.searchTerm);
+        sale.saleNumber.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        sale.customerName?.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        sale.customerPhone?.includes(this.searchTerm);
 
-      const matchesStatus = this.selectedStatus === 'all' || invoice.status === this.selectedStatus;
+      const matchesStatus = this.selectedStatus === 'all' || sale.status === this.selectedStatus;
       const matchesPaymentStatus =
-        this.selectedPaymentStatus === 'all' ||
-        invoice.paymentStatus === this.selectedPaymentStatus;
+        this.selectedPaymentStatus === 'all' || sale.paymentStatus === this.selectedPaymentStatus;
       const matchesPaymentMethod =
-        this.selectedPaymentMethod === 'all' ||
-        invoice.paymentMethod === this.selectedPaymentMethod;
+        this.selectedPaymentMethod === 'all' || sale.paymentMethod === this.selectedPaymentMethod;
 
       return matchesSearch && matchesStatus && matchesPaymentStatus && matchesPaymentMethod;
     });
@@ -241,9 +249,9 @@ export class InvoiceManagementComponent implements OnInit {
 
   applySorting(): void {
     if (this.sortColumn && this.sortDirection) {
-      this.filteredInvoices.sort((a, b) => {
-        let aValue: any = a[this.sortColumn as keyof Invoice];
-        let bValue: any = b[this.sortColumn as keyof Invoice];
+      this.filteredSales.sort((a, b) => {
+        let aValue: any = a[this.sortColumn as keyof CounterSale];
+        let bValue: any = b[this.sortColumn as keyof CounterSale];
 
         if (this.sortColumn === 'createdAt' || this.sortColumn === 'updatedAt') {
           aValue = new Date(aValue).getTime();
@@ -275,50 +283,49 @@ export class InvoiceManagementComponent implements OnInit {
   }
 
   updatePagination(): void {
-    this.totalItems = this.filteredInvoices.length;
+    this.totalItems = this.filteredSales.length;
     this.currentPage = 1;
-    this.paginateInvoices();
+    this.paginateSales();
   }
 
-  paginateInvoices(): void {
+  paginateSales(): void {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
-    this.paginatedInvoices = this.filteredInvoices.slice(startIndex, endIndex);
+    this.paginatedSales = this.filteredSales.slice(startIndex, endIndex);
   }
 
   onPageChange(page: number): void {
     this.currentPage = page;
-    this.paginateInvoices();
+    this.paginateSales();
   }
 
   onItemsPerPageChange(event: any): void {
     this.itemsPerPage = parseInt(event.target.value, 10);
     this.currentPage = 1;
-    this.paginateInvoices();
+    this.paginateSales();
   }
 
   onSearchChange(): void {
-    this.filterInvoices();
+    this.filterSales();
   }
 
   onStatusChange(): void {
-    this.filterInvoices();
+    this.filterSales();
   }
 
   onPaymentStatusChange(): void {
-    this.filterInvoices();
+    this.filterSales();
   }
 
   onPaymentMethodChange(): void {
-    this.filterInvoices();
+    this.filterSales();
   }
 
   openAddModal(): void {
-    this.newInvoice = {
-      invoiceNumber: this.generateInvoiceNumber(),
+    this.newSale = {
+      saleNumber: this.generateSaleNumber(),
       customerName: '',
       customerPhone: '',
-      customerEmail: '',
       staffId: 1,
       staffName: 'Nguyễn Văn A',
       items: [],
@@ -337,22 +344,28 @@ export class InvoiceManagementComponent implements OnInit {
       createdBy: 1,
       updatedBy: 1,
     };
+    this.cart = [];
+    this.calculateCartTotal();
     this.showAddModal = true;
   }
 
-  openEditModal(invoice: Invoice): void {
-    this.editingInvoice = { ...invoice };
+  openEditModal(sale: CounterSale): void {
+    this.editingSale = { ...sale };
     this.showEditModal = true;
   }
 
-  openViewModal(invoice: Invoice): void {
-    this.selectedInvoice = invoice;
+  openViewModal(sale: CounterSale): void {
+    this.selectedSale = sale;
     this.showViewModal = true;
   }
 
-  openDeleteModal(invoice: Invoice): void {
-    this.selectedInvoice = invoice;
+  openDeleteModal(sale: CounterSale): void {
+    this.selectedSale = sale;
     this.showDeleteModal = true;
+  }
+
+  openCartModal(): void {
+    this.showCartModal = true;
   }
 
   closeModals(): void {
@@ -360,11 +373,12 @@ export class InvoiceManagementComponent implements OnInit {
     this.showEditModal = false;
     this.showViewModal = false;
     this.showDeleteModal = false;
-    this.selectedInvoice = null;
-    this.editingInvoice = null;
+    this.showCartModal = false;
+    this.selectedSale = null;
+    this.editingSale = null;
   }
 
-  generateInvoiceNumber(): string {
+  generateSaleNumber(): string {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -372,15 +386,122 @@ export class InvoiceManagementComponent implements OnInit {
     const random = Math.floor(Math.random() * 1000)
       .toString()
       .padStart(3, '0');
-    return `INV-${year}${month}${day}-${random}`;
+    return `CS-${year}${month}${day}-${random}`;
+  }
+
+  // Cart methods
+  addToCart(product: any): void {
+    const existingItem = this.cart.find((item) => item.productId === product.id);
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      this.cart.push({
+        productId: product.id,
+        productCode: product.code,
+        productName: product.name,
+        category: product.category,
+        quantity: 1,
+        unitPrice: product.price,
+        totalPrice: product.price,
+        discount: 0,
+        discountAmount: 0,
+        stockQuantity: product.stock,
+      });
+    }
+
+    this.calculateCartTotal();
+  }
+
+  removeFromCart(productId: number): void {
+    this.cart = this.cart.filter((item) => item.productId !== productId);
+    this.calculateCartTotal();
+  }
+
+  updateCartQuantity(productId: number, quantity: string | number): void {
+    const item = this.cart.find((item) => item.productId === productId);
+    if (item) {
+      const qty = typeof quantity === 'string' ? parseInt(quantity, 10) : quantity;
+      item.quantity = Math.max(1, qty);
+      item.totalPrice = item.unitPrice * item.quantity;
+      this.calculateCartTotal();
+    }
+  }
+
+  updateCartDiscount(productId: number, discount: string | number): void {
+    const item = this.cart.find((item) => item.productId === productId);
+    if (item) {
+      const disc = typeof discount === 'string' ? parseFloat(discount) : discount;
+      item.discount = Math.max(0, Math.min(100, disc));
+      item.discountAmount = (item.totalPrice * item.discount) / 100;
+      this.calculateCartTotal();
+    }
+  }
+
+  calculateCartTotal(): void {
+    this.cartSubtotal = this.cart.reduce((sum, item) => sum + item.totalPrice, 0);
+    this.cartDiscount = this.cart.reduce((sum, item) => sum + item.discountAmount, 0);
+    this.cartTotal =
+      this.cartSubtotal -
+      this.cartDiscount +
+      (this.cartSubtotal - this.cartDiscount) * (this.cartTax / 100);
+  }
+
+  processSale(): void {
+    if (this.cart.length === 0) {
+      alert('Giỏ hàng trống!');
+      return;
+    }
+
+    const newSale: CounterSale = {
+      id: this.counterSales.length + 1,
+      saleNumber: this.newSale.saleNumber!,
+      customerId: this.newSale.customerId,
+      customerName: this.newSale.customerName,
+      customerPhone: this.newSale.customerPhone,
+      staffId: this.newSale.staffId!,
+      staffName: this.newSale.staffName!,
+      items: this.cart.map((item) => ({
+        id: item.productId,
+        productId: item.productId,
+        productCode: item.productCode,
+        productName: item.productName,
+        category: item.category,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalPrice,
+        discount: item.discount,
+        discountAmount: item.discountAmount,
+        stockQuantity: item.stockQuantity,
+      })),
+      subtotal: this.cartSubtotal,
+      discount: this.cartDiscount,
+      discountAmount: this.cartDiscount,
+      tax: this.cartTax,
+      taxAmount: (this.cartSubtotal - this.cartDiscount) * (this.cartTax / 100),
+      totalAmount: this.cartTotal,
+      paymentMethod: this.newSale.paymentMethod!,
+      paymentStatus: this.newSale.paymentStatus!,
+      status: 'completed',
+      notes: this.newSale.notes,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: this.newSale.createdBy!,
+      updatedBy: this.newSale.updatedBy!,
+    };
+
+    this.counterSales.unshift(newSale);
+    this.cart = [];
+    this.calculateCartTotal();
+    this.closeModals();
+    this.filterSales();
   }
 
   getStatusClass(status: string): string {
     const statusClasses: { [key: string]: string } = {
       draft: 'badge-secondary',
-      confirmed: 'badge-primary',
-      shipped: 'badge-info',
-      delivered: 'badge-success',
+      processing: 'badge-primary',
+      completed: 'badge-success',
       cancelled: 'badge-danger',
     };
     return statusClasses[status] || 'badge-secondary';
@@ -389,9 +510,8 @@ export class InvoiceManagementComponent implements OnInit {
   getStatusLabel(status: string): string {
     const statusLabels: { [key: string]: string } = {
       draft: 'Nháp',
-      confirmed: 'Xác nhận',
-      shipped: 'Đã giao',
-      delivered: 'Hoàn thành',
+      processing: 'Đang xử lý',
+      completed: 'Hoàn thành',
       cancelled: 'Hủy',
     };
     return statusLabels[status] || status;
@@ -443,6 +563,6 @@ export class InvoiceManagementComponent implements OnInit {
     this.selectedStatus = 'all';
     this.selectedPaymentStatus = 'all';
     this.selectedPaymentMethod = 'all';
-    this.filterInvoices();
+    this.filterSales();
   }
 }

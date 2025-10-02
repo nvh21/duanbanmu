@@ -39,7 +39,7 @@ interface Manufacturer {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './helmets.component.html',
-  styleUrls: ['./helmets.component.scss', './table-styles.scss', './delete-modal.component.scss'],
+  styleUrls: ['./helmets.component.scss', './table-styles.scss'],
 })
 export class HelmetsComponent implements OnInit {
   helmetProducts: HelmetProduct[] = [];

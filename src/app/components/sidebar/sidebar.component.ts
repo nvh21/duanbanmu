@@ -34,7 +34,7 @@ export class SidebarComponent implements OnInit {
     {
       icon: 'bi-cart',
       label: 'Bán Tại Quầy',
-      route: '/invoices/orders',
+      route: '/counter-sales',
       active: false,
       hasSubmenu: false,
       submenu: [],
