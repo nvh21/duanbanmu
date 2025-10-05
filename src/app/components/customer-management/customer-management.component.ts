@@ -1,53 +1,74 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Customer, CustomerFormData } from '../../interfaces/customer.interface';
+import { Customer } from '../../interfaces/customer.interface';
+import { Address, AddressFormData, Province, District, Ward } from '../../interfaces/address.interface';
 
 @Component({
   selector: 'app-customer-management',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './customer-management.component.html',
-  styleUrls: ['./customer-management.component.scss'],
+  styleUrl: './customer-management.component.scss'
 })
 export class CustomerManagementComponent implements OnInit {
+  // Customer data
   customers: Customer[] = [];
   filteredCustomers: Customer[] = [];
-  currentPage = 1;
-  itemsPerPage = 10;
-  totalPages = 0;
-  totalItems = 0;
-  
-  // Sorting
-  sortField = '';
-  sortDirection: 'asc' | 'desc' = 'asc';
-  
-  // Search
-  searchTerm = '';
+  paginatedCustomers: Customer[] = [];
   
   // Modal states
   showAddModal = false;
   showEditModal = false;
-  showDetailModal = false;
-  showDeleteModal = false;
-  
-  // Form data
   selectedCustomer: Customer | null = null;
-  customerForm: CustomerFormData = {
+  
+  // Customer form data
+  customerForm = {
     name: '',
     email: '',
     phone: '',
     address: '',
     dateOfBirth: new Date(),
-    gender: 'Nam',
+    gender: 'Nam' as 'Nam' | 'Nữ' | 'Khác',
     notes: ''
   };
+
+  // Search and filter
+  searchTerm = '';
+  statusFilter = 'all';
+
+  // Pagination
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalPages = 0;
+
+  // Address management
+  addresses: Address[] = [];
+  showAddressAddModal = false;
+  showAddressEditModal = false;
+  selectedAddress: Address | null = null;
+  currentAddressIndex = 0;
+
+  // Address form data
+  addressForm: AddressFormData = {
+    specificAddress: '',
+    province: '',
+    district: '',
+    ward: '',
+    isDefault: false
+  };
   
-  // Form validation
-  formErrors: { [key: string]: string } = {};
+  // Location data
+  provinces: Province[] = [];
+  districts: District[] = [];
+  wards: Ward[] = [];
+  filteredDistricts: District[] = [];
+  filteredWards: Ward[] = [];
 
   ngOnInit() {
     this.loadSampleData();
+    this.loadLocationData();
+    this.loadAddressSampleData();
     this.applyFilters();
   }
 
@@ -55,161 +76,340 @@ export class CustomerManagementComponent implements OnInit {
     this.customers = [
       {
         id: 1,
+        customerCode: 'KH00001',
         name: 'Nguyễn Văn An',
         email: 'an.nguyen@email.com',
         phone: '0123456789',
-        address: '123 Đường ABC, Quận 1, TP.HCM',
+        address: '123 Nguyễn Huệ, Q1, TP.HCM',
         dateOfBirth: new Date('1990-05-15'),
         gender: 'Nam',
         registrationDate: new Date('2023-01-15'),
-        totalOrders: 25,
-        totalSpent: 15000000,
+        totalOrders: 5,
+        totalSpent: 2500000,
         status: 'Active',
         notes: 'Khách hàng VIP'
       },
       {
         id: 2,
+        customerCode: 'KH00002',
         name: 'Trần Thị Bình',
         email: 'binh.tran@email.com',
         phone: '0987654321',
-        address: '456 Đường XYZ, Quận 2, TP.HCM',
+        address: '456 Lê Lợi, Q1, TP.HCM',
         dateOfBirth: new Date('1985-08-20'),
         gender: 'Nữ',
-        registrationDate: new Date('2023-02-20'),
-        totalOrders: 15,
-        totalSpent: 8500000,
+        registrationDate: new Date('2023-02-10'),
+        totalOrders: 3,
+        totalSpent: 1800000,
         status: 'Active',
-        notes: 'Khách hàng thường xuyên'
-      },
-      {
-        id: 3,
-        name: 'Lê Văn Cường',
-        email: 'cuong.le@email.com',
-        phone: '0369852147',
-        address: '789 Đường DEF, Quận 3, TP.HCM',
-        dateOfBirth: new Date('1992-12-10'),
-        gender: 'Nam',
-        registrationDate: new Date('2023-03-10'),
-        totalOrders: 8,
-        totalSpent: 4200000,
-        status: 'Inactive',
-        notes: 'Khách hàng mới'
-      },
-      {
-        id: 4,
-        name: 'Phạm Thị Dung',
-        email: 'dung.pham@email.com',
-        phone: '0741852963',
-        address: '321 Đường GHI, Quận 4, TP.HCM',
-        dateOfBirth: new Date('1988-03-25'),
-        gender: 'Nữ',
-        registrationDate: new Date('2023-04-05'),
-        totalOrders: 32,
-        totalSpent: 18500000,
-        status: 'Active',
-        notes: 'Khách hàng VIP, mua nhiều'
-      },
-      {
-        id: 5,
-        name: 'Hoàng Văn Em',
-        email: 'em.hoang@email.com',
-        phone: '0527419638',
-        address: '654 Đường JKL, Quận 5, TP.HCM',
-        dateOfBirth: new Date('1995-07-18'),
-        gender: 'Nam',
-        registrationDate: new Date('2023-05-12'),
-        totalOrders: 12,
-        totalSpent: 6800000,
-        status: 'Active',
-        notes: 'Khách hàng trẻ tuổi'
+        notes: 'Khách hàng thân thiết'
       }
     ];
   }
 
-  applyFilters() {
-    let filtered = [...this.customers];
-    
-    // Apply search filter
-    if (this.searchTerm) {
-      const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(customer => 
-        customer.name.toLowerCase().includes(term) ||
-        customer.email.toLowerCase().includes(term) ||
-        customer.phone.includes(term) ||
-        customer.address.toLowerCase().includes(term)
-      );
+  // Customer Form Methods
+  saveCustomer() {
+    if (!this.customerForm.name || !this.customerForm.email || !this.customerForm.phone || !this.customerForm.gender) {
+      alert('❌ Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
     }
-    
-    // Apply sorting
-    if (this.sortField) {
-      filtered.sort((a, b) => {
-        const aValue = this.getFieldValue(a, this.sortField);
-        const bValue = this.getFieldValue(b, this.sortField);
-        
-        if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
-        if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-    
-    this.filteredCustomers = filtered;
-    this.totalItems = filtered.length;
-    this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-    this.currentPage = 1;
-  }
 
-  getFieldValue(customer: Customer, field: string): any {
-    switch (field) {
-      case 'name': return customer.name;
-      case 'email': return customer.email;
-      case 'phone': return customer.phone;
-      case 'totalOrders': return customer.totalOrders;
-      case 'totalSpent': return customer.totalSpent;
-      case 'registrationDate': return customer.registrationDate;
-      case 'status': return customer.status;
-      default: return '';
+    // Tạo địa chỉ chính từ địa chỉ mặc định hoặc địa chỉ đầu tiên
+    let primaryAddress = this.customerForm.address.trim();
+    if (this.addresses.length > 0) {
+      const defaultAddress = this.addresses.find(addr => addr.isDefault) || this.addresses[0];
+      primaryAddress = `${defaultAddress.specificAddress}, ${defaultAddress.ward}, ${defaultAddress.district}, ${defaultAddress.province}`;
     }
-  }
 
-  sort(field: string) {
-    if (this.sortField === field) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    if (this.showEditModal && this.selectedCustomer) {
+      // Update existing customer
+      const index = this.customers.findIndex(c => c.id === this.selectedCustomer!.id);
+      if (index > -1) {
+        this.customers[index] = {
+          ...this.customers[index],
+          name: this.customerForm.name.trim(),
+          email: this.customerForm.email.trim(),
+          phone: this.customerForm.phone.trim(),
+          address: primaryAddress,
+          addresses: [...this.addresses], // Lưu danh sách địa chỉ chi tiết
+          dateOfBirth: this.customerForm.dateOfBirth,
+          gender: this.customerForm.gender,
+          notes: this.customerForm.notes.trim()
+        };
+        alert('✅ Cập nhật khách hàng thành công!');
+      }
     } else {
-      this.sortField = field;
-      this.sortDirection = 'asc';
+      // Add new customer
+      const customerCode = 'KH' + Date.now().toString().slice(-6);
+      const newCustomer: Customer = {
+        id: Date.now(),
+        customerCode: customerCode,
+        name: this.customerForm.name.trim(),
+        email: this.customerForm.email.trim(),
+        phone: this.customerForm.phone.trim(),
+        address: primaryAddress,
+        addresses: [...this.addresses], // Lưu danh sách địa chỉ chi tiết
+        dateOfBirth: this.customerForm.dateOfBirth,
+        gender: this.customerForm.gender,
+        registrationDate: new Date(),
+        totalOrders: 0,
+        totalSpent: 0,
+        status: 'Active',
+        notes: this.customerForm.notes.trim()
+      };
+      
+      this.customers.push(newCustomer);
+      alert('✅ Thêm khách hàng thành công!');
     }
+    
+    this.applyFilters();
+    this.closeModals();
+  }
+
+  // Address Management Methods
+  loadLocationData() {
+    // Sample provinces
+    this.provinces = [
+      { id: 'hcm', name: 'Thành phố Hồ Chí Minh' },
+      { id: 'hn', name: 'Hà Nội' },
+      { id: 'dn', name: 'Đà Nẵng' }
+    ];
+
+    // Sample districts
+    this.districts = [
+      { id: 'q1', name: 'Quận 1', provinceId: 'hcm' },
+      { id: 'q2', name: 'Quận 2', provinceId: 'hcm' },
+      { id: 'bt', name: 'Quận Ba Đình', provinceId: 'hn' },
+      { id: 'hk', name: 'Quận Hoàn Kiếm', provinceId: 'hn' },
+      { id: 'hc', name: 'Quận Hải Châu', provinceId: 'dn' }
+    ];
+
+    // Sample wards
+    this.wards = [
+      { id: 'p1', name: 'Phường Bến Nghé', districtId: 'q1' },
+      { id: 'p2', name: 'Phường Bến Thành', districtId: 'q1' },
+      { id: 'p3', name: 'Phường Cầu Kho', districtId: 'q1' },
+      { id: 'p4', name: 'Phường Thạnh Xuân', districtId: 'q2' },
+      { id: 'p5', name: 'Phường Thủ Thiêm', districtId: 'q2' },
+      { id: 'p6', name: 'Phường Phúc Xá', districtId: 'bt' },
+      { id: 'p7', name: 'Phường Trúc Bạch', districtId: 'bt' },
+      { id: 'p8', name: 'Phường Hàng Bạc', districtId: 'hk' },
+      { id: 'p9', name: 'Phường Hàng Buồm', districtId: 'hk' },
+      { id: 'p10', name: 'Phường Hải Châu I', districtId: 'hc' }
+    ];
+  }
+
+  loadAddressSampleData() {
+    this.addresses = [
+      {
+        id: 1,
+        specificAddress: '123 Nguyễn Huệ',
+        province: 'Thành phố Hồ Chí Minh',
+        district: 'Quận 1',
+        ward: 'Phường Bến Nghé',
+        isDefault: true,
+        createdAt: new Date('2023-01-15'),
+        updatedAt: new Date('2023-01-15')
+      }
+    ];
+  }
+
+  // Address Navigation
+  previousAddress() {
+    if (this.currentAddressIndex > 0) {
+      this.currentAddressIndex--;
+    }
+  }
+
+  nextAddress() {
+    if (this.currentAddressIndex < this.addresses.length - 1) {
+      this.currentAddressIndex++;
+    }
+  }
+
+  // Address Modal methods
+  openAddressAddModal() {
+    this.resetAddressForm();
+    this.showAddressAddModal = true;
+  }
+
+  openAddressEditModal(address: Address) {
+    this.selectedAddress = address;
+    this.addressForm = {
+      specificAddress: address.specificAddress,
+      province: this.getProvinceIdByName(address.province),
+      district: this.getDistrictIdByName(address.district),
+      ward: this.getWardIdByName(address.ward),
+      isDefault: address.isDefault
+    };
+    this.onProvinceChange();
+    this.onDistrictChange();
+    this.showAddressEditModal = true;
+  }
+
+
+  closeAddressModals() {
+    this.showAddressAddModal = false;
+    this.showAddressEditModal = false;
+    this.selectedAddress = null;
+    this.resetAddressForm();
+  }
+
+  resetAddressForm() {
+    this.addressForm = {
+      specificAddress: '',
+      province: '',
+      district: '',
+      ward: '',
+      isDefault: false
+    };
+    this.filteredDistricts = [];
+    this.filteredWards = [];
+  }
+
+  // Address Form methods
+  onProvinceChange() {
+    this.filteredDistricts = this.districts.filter(d => d.provinceId === this.addressForm.province);
+    this.addressForm.district = '';
+    this.addressForm.ward = '';
+    this.filteredWards = [];
+  }
+
+  onDistrictChange() {
+    this.filteredWards = this.wards.filter(w => w.districtId === this.addressForm.district);
+    this.addressForm.ward = '';
+  }
+
+  saveAddress() {
+    if (!this.addressForm.specificAddress || !this.addressForm.province || !this.addressForm.district || !this.addressForm.ward) {
+      alert('❌ Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
+    }
+
+    if (this.showAddressEditModal && this.selectedAddress) {
+      // Update existing address
+      const index = this.addresses.findIndex(a => a.id === this.selectedAddress!.id);
+      if (index > -1) {
+        this.addresses[index] = {
+          ...this.addresses[index],
+          specificAddress: this.addressForm.specificAddress.trim(),
+          province: this.getProvinceNameById(this.addressForm.province),
+          district: this.getDistrictNameById(this.addressForm.district),
+          ward: this.getWardNameById(this.addressForm.ward),
+          isDefault: this.addressForm.isDefault,
+          updatedAt: new Date()
+        };
+        
+        // If setting as default, unset other defaults
+        if (this.addressForm.isDefault) {
+          this.addresses.forEach((addr, i) => {
+            if (i !== index) {
+              addr.isDefault = false;
+            }
+          });
+        }
+        
+        alert('✅ Cập nhật địa chỉ thành công!');
+      }
+    } else {
+      // Add new address
+      const newId = this.addresses.length > 0 ? Math.max(...this.addresses.map(a => a.id)) + 1 : 1;
+      const newAddress: Address = {
+        id: newId,
+        specificAddress: this.addressForm.specificAddress.trim(),
+        province: this.getProvinceNameById(this.addressForm.province),
+        district: this.getDistrictNameById(this.addressForm.district),
+        ward: this.getWardNameById(this.addressForm.ward),
+        isDefault: this.addressForm.isDefault,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      // If setting as default, unset other defaults
+      if (this.addressForm.isDefault) {
+        this.addresses.forEach(addr => {
+          addr.isDefault = false;
+        });
+      }
+      
+      this.addresses.push(newAddress);
+      this.currentAddressIndex = this.addresses.length - 1; // Navigate to new address
+      alert('✅ Thêm địa chỉ thành công!');
+    }
+    
+    this.closeAddressModals();
+  }
+
+
+  setAddressAsDefault(address: Address) {
+    if (!address.isDefault) {
+      // Unset all other defaults
+      this.addresses.forEach(addr => {
+        addr.isDefault = false;
+      });
+      
+      // Set this as default
+      address.isDefault = true;
+      address.updatedAt = new Date();
+      alert('✅ Đã đặt làm địa chỉ mặc định!');
+    }
+  }
+
+  // Address Helper methods
+  getProvinceIdByName(name: string): string {
+    const province = this.provinces.find(p => p.name === name);
+    return province ? province.id : '';
+  }
+
+  getDistrictIdByName(name: string): string {
+    const district = this.districts.find(d => d.name === name);
+    return district ? district.id : '';
+  }
+
+  getWardIdByName(name: string): string {
+    const ward = this.wards.find(w => w.name === name);
+    return ward ? ward.id : '';
+  }
+
+  getProvinceNameById(id: string): string {
+    const province = this.provinces.find(p => p.id === id);
+    return province ? province.name : '';
+  }
+
+  getDistrictNameById(id: string): string {
+    const district = this.districts.find(d => d.id === id);
+    return district ? district.name : '';
+  }
+
+  getWardNameById(id: string): string {
+    const ward = this.wards.find(w => w.id === id);
+    return ward ? ward.name : '';
+  }
+
+  // Customer Management Methods
+  applyFilters() {
+    this.filteredCustomers = this.customers.filter(customer => {
+      const matchesSearch = !this.searchTerm || 
+        customer.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        customer.phone.includes(this.searchTerm) ||
+        (customer.customerCode && customer.customerCode.toLowerCase().includes(this.searchTerm.toLowerCase()));
+      
+      const matchesStatus = this.statusFilter === 'all' || customer.status === this.statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+    
+    this.updatePagination();
+  }
+
+  resetFilters() {
+    this.searchTerm = '';
+    this.statusFilter = 'all';
     this.applyFilters();
   }
 
-  getPaginatedCustomers(): Customer[] {
-    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-    const endIndex = startIndex + this.itemsPerPage;
-    return this.filteredCustomers.slice(startIndex, endIndex);
-  }
-
-  goToPage(page: number) {
-    if (page >= 1 && page <= this.totalPages) {
-      this.currentPage = page;
-    }
-  }
-
-  getPageNumbers(): number[] {
-    const pages: number[] = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-    return pages;
-  }
-
-  // Modal functions
+  // Modal Methods
   openAddModal() {
     this.resetForm();
     this.showAddModal = true;
@@ -222,28 +422,22 @@ export class CustomerManagementComponent implements OnInit {
       email: customer.email,
       phone: customer.phone,
       address: customer.address,
-      dateOfBirth: new Date(customer.dateOfBirth),
+      dateOfBirth: customer.dateOfBirth,
       gender: customer.gender,
       notes: customer.notes || ''
     };
+    
+    // Load địa chỉ chi tiết của khách hàng
+    this.addresses = customer.addresses ? [...customer.addresses] : [];
+    this.currentAddressIndex = 0;
+    
     this.showEditModal = true;
   }
 
-  openDetailModal(customer: Customer) {
-    this.selectedCustomer = customer;
-    this.showDetailModal = true;
-  }
-
-  openDeleteModal(customer: Customer) {
-    this.selectedCustomer = customer;
-    this.showDeleteModal = true;
-  }
 
   closeModals() {
     this.showAddModal = false;
     this.showEditModal = false;
-    this.showDetailModal = false;
-    this.showDeleteModal = false;
     this.selectedCustomer = null;
     this.resetForm();
   }
@@ -255,193 +449,88 @@ export class CustomerManagementComponent implements OnInit {
       phone: '',
       address: '',
       dateOfBirth: new Date(),
-      gender: 'Nam',
+      gender: 'Nam' as 'Nam' | 'Nữ' | 'Khác',
       notes: ''
     };
-    this.formErrors = {};
+    // Reset địa chỉ chi tiết
+    this.addresses = [];
+    this.currentAddressIndex = 0;
   }
 
-  // Method to clear form errors when user starts typing
-  clearError(field: string) {
-    if (this.formErrors[field]) {
-      delete this.formErrors[field];
-    }
+
+  toggleCustomerStatus(customer: Customer) {
+    customer.status = customer.status === 'Active' ? 'Inactive' : 'Active';
+    alert(`✅ Đã ${customer.status === 'Active' ? 'kích hoạt' : 'vô hiệu hóa'} khách hàng ${customer.name}`);
   }
 
-  validateForm(): boolean {
-    this.formErrors = {};
-    let isValid = true;
-
-    if (!this.customerForm.name.trim()) {
-      this.formErrors['name'] = 'Tên khách hàng không được để trống';
-      isValid = false;
-    }
-
-    if (!this.customerForm.email.trim()) {
-      this.formErrors['email'] = 'Email không được để trống';
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.customerForm.email)) {
-      this.formErrors['email'] = 'Email không hợp lệ';
-      isValid = false;
-    } else {
-      // Check for duplicate email (only when adding new customer or editing with different email)
-      const isDuplicate = this.customers.some(customer => 
-        customer.email.toLowerCase() === this.customerForm.email.toLowerCase().trim() &&
-        (!this.selectedCustomer || customer.id !== this.selectedCustomer.id)
-      );
-      
-      if (isDuplicate) {
-        this.formErrors['email'] = 'Email này đã được sử dụng';
-        isValid = false;
-      }
-    }
-
-    if (!this.customerForm.phone.trim()) {
-      this.formErrors['phone'] = 'Số điện thoại không được để trống';
-      isValid = false;
-    } else if (!/^[0-9]{10,11}$/.test(this.customerForm.phone)) {
-      this.formErrors['phone'] = 'Số điện thoại phải có 10-11 chữ số';
-      isValid = false;
-    } else {
-      // Check for duplicate phone (only when adding new customer or editing with different phone)
-      const isDuplicate = this.customers.some(customer => 
-        customer.phone === this.customerForm.phone.trim() &&
-        (!this.selectedCustomer || customer.id !== this.selectedCustomer.id)
-      );
-      
-      if (isDuplicate) {
-        this.formErrors['phone'] = 'Số điện thoại này đã được sử dụng';
-        isValid = false;
-      }
-    }
-
-    if (!this.customerForm.address.trim()) {
-      this.formErrors['address'] = 'Địa chỉ không được để trống';
-      isValid = false;
-    }
-
-    return isValid;
-  }
-
-  addCustomer() {
-    if (!this.validateForm()) return;
-
-    const newCustomer: Customer = {
-      id: this.customers.length > 0 ? Math.max(...this.customers.map(c => c.id)) + 1 : 1,
-      name: this.customerForm.name.trim(),
-      email: this.customerForm.email.trim(),
-      phone: this.customerForm.phone.trim(),
-      address: this.customerForm.address.trim(),
-      dateOfBirth: this.customerForm.dateOfBirth,
-      gender: this.customerForm.gender,
-      registrationDate: new Date(),
-      totalOrders: 0,
-      totalSpent: 0,
-      status: 'Active',
-      notes: this.customerForm.notes?.trim() || ''
-    };
-
-    this.customers.push(newCustomer);
-    this.applyFilters();
-    this.closeModals();
+  // Pagination Methods
+  updatePagination() {
+    this.totalPages = Math.ceil(this.filteredCustomers.length / this.itemsPerPage);
+    this.currentPage = Math.min(this.currentPage, this.totalPages || 1);
     
-    // Show success message
-    alert('✅ Khách hàng đã được thêm thành công!');
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.paginatedCustomers = this.filteredCustomers.slice(startIndex, endIndex);
   }
 
-  updateCustomer() {
-    if (!this.validateForm() || !this.selectedCustomer) return;
+  onItemsPerPageChange() {
+    this.currentPage = 1;
+    this.updatePagination();
+  }
 
-    const index = this.customers.findIndex(c => c.id === this.selectedCustomer!.id);
-    if (index !== -1) {
-      this.customers[index] = {
-        ...this.customers[index],
-        name: this.customerForm.name.trim(),
-        email: this.customerForm.email.trim(),
-        phone: this.customerForm.phone.trim(),
-        address: this.customerForm.address.trim(),
-        dateOfBirth: this.customerForm.dateOfBirth,
-        gender: this.customerForm.gender,
-        notes: this.customerForm.notes?.trim() || ''
-      };
+  goToPage(page: number) {
+    this.currentPage = page;
+    this.updatePagination();
+  }
+
+  previousPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePagination();
     }
+  }
 
-    this.applyFilters();
-    this.closeModals();
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePagination();
+    }
+  }
+
+  goToFirstPage() {
+    this.currentPage = 1;
+    this.updatePagination();
+  }
+
+  goToLastPage() {
+    this.currentPage = this.totalPages;
+    this.updatePagination();
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages, start + maxVisible - 1);
     
-    // Show success message
-    alert('✅ Khách hàng đã được cập nhật thành công!');
-  }
-
-  deleteCustomer() {
-    if (!this.selectedCustomer) return;
-
-    const index = this.customers.findIndex(c => c.id === this.selectedCustomer!.id);
-    if (index !== -1) {
-      this.customers.splice(index, 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
     }
-
-    this.applyFilters();
-    this.closeModals();
     
-    // Show success message
-    alert('✅ Khách hàng đã được xóa thành công!');
-  }
-
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  }
-
-  formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('vi-VN').format(new Date(date));
-  }
-
-  getStatusClass(status: string): string {
-    return status === 'Active' ? 'status-active' : 'status-inactive';
-  }
-
-  // Helper method for template
-  getMathMin(a: number, b: number): number {
-    return Math.min(a, b);
-  }
-
-  // Helper method to format date for input
-  getDateInputValue(date: Date): string {
-    if (!date) return '';
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-
-  // Helper method to convert date string to Date object
-  convertToDate(dateString: string): Date {
-    return new Date(dateString);
-  }
-
-  // Method to handle form submission with Enter key
-  onFormSubmit(event: Event) {
-    event.preventDefault();
-    if (this.showAddModal) {
-      this.addCustomer();
-    } else if (this.showEditModal) {
-      this.updateCustomer();
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
     }
+    
+    return pages;
   }
 
-  // Method to handle modal close with Escape key
-  onKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      this.closeModals();
-    }
+  // Utility Methods
+  onMouseEnter(event: any) {
+    (event.target as HTMLElement).style.backgroundColor = '#f8f9fa';
   }
 
-  // Method to check if modal is open
-  isModalOpen(): boolean {
-    return this.showAddModal || this.showEditModal || this.showDetailModal || this.showDeleteModal;
+  onMouseLeave(event: any) {
+    (event.target as HTMLElement).style.backgroundColor = '';
   }
+
 }

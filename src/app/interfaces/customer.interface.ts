@@ -1,9 +1,13 @@
+import { Address } from './address.interface';
+
 export interface Customer {
   id: number;
+  customerCode?: string;
   name: string;
   email: string;
   phone: string;
   address: string;
+  addresses?: Address[]; // Danh sách địa chỉ chi tiết
   dateOfBirth: Date;
   gender: 'Nam' | 'Nữ' | 'Khác';
   registrationDate: Date;

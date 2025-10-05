@@ -91,6 +91,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'test-customers',
+    component: CustomerManagementComponent,
+    // canActivate: [AuthGuard], // Tạm thời bỏ AuthGuard để test
+  },
+  {
     path: 'import',
     component: ImportManagementComponent,
     canActivate: [AuthGuard],
