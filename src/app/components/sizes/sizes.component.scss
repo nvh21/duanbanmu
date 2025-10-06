@@ -1,0 +1,10 @@
+.table thead th {
+  background-color: #212529;
+  color: #fff;
+}
+.table thead th:first-child {
+  border-top-left-radius: 0.25rem;
+}
+.table thead th:last-child {
+  border-top-right-radius: 0.25rem;
+}

@@ -14,9 +14,13 @@ import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
 import { ManufacturersComponent } from './components/manufacturers/manufacturers.component';
 import { ProductDetailsComponent } from './components/product-details/product-details.component';
-import { InventoryComponent } from './components/inventory/inventory.component';
+// import { InventoryComponent } from './components/inventory/inventory.component';
 import { LoginComponent } from './components/login/login';
 import { AuthGuard } from './guards/auth-guard';
+import { ColorsComponent } from './components/colors/colors.component';
+import { HelmetStylesComponent } from './components/helmet-styles/helmet-styles.component';
+import { SizesComponent } from './components/sizes/sizes.component';
+import { MaterialsComponent } from './components/materials/materials.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -76,15 +80,31 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'products/colors',
+    component: ColorsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'products/helmet-styles',
+    component: HelmetStylesComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'products/sizes',
+    component: SizesComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'products/materials',
+    component: MaterialsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'products/details',
     component: ProductDetailsComponent,
     canActivate: [AuthGuard],
   },
-  {
-    path: 'products/inventory',
-    component: InventoryComponent,
-    canActivate: [AuthGuard],
-  },
+  // { path: 'products/inventory', component: InventoryComponent, canActivate: [AuthGuard] },
   {
     path: 'customers',
     component: CustomerManagementComponent,
