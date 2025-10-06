@@ -12,7 +12,7 @@
       <!-- Bộ lọc -->
       <div class="filter-section">
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-12">
             <div class="form-group">
               <label>Tìm kiếm:</label>
               <input
@@ -24,30 +24,6 @@
               />
             </div>
           </div>
-          <div class="col-md-4">
-            <div class="form-group">
-              <label>Quốc gia:</label>
-              <select
-                class="form-control"
-                [(ngModel)]="selectedCountry"
-                (change)="onCountryChange()"
-              >
-                <option value="all">Tất cả</option>
-                <option *ngFor="let country of countries" [value]="country">
-                  {{ country }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="form-group">
-              <label>&nbsp;</label>
-              <button class="btn btn-outline-secondary w-100" (click)="filterManufacturers()">
-                <i class="bi bi-funnel"></i>
-                Lọc
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -56,50 +32,37 @@
         <table class="table table-striped table-hover">
           <thead class="table-dark">
             <tr>
-              <th>Mã nhà sản xuất</th>
-              <th>Tên nhà sản xuất</th>
-              <th>Quốc gia</th>
-              <th>Email</th>
-              <th>Điện thoại</th>
-              <th>Địa chỉ</th>
-              <th>Mô tả</th>
-              <th>Thao tác</th>
+              <th class="text-start" (click)="setSort('tenNhaSanXuat')" style="cursor: pointer">
+                Tên nhà sản xuất {{ getSortSymbol('tenNhaSanXuat') }}
+              </th>
+              <th class="text-start" (click)="setSort('quocGia')" style="cursor: pointer">
+                Quốc gia {{ getSortSymbol('quocGia') }}
+              </th>
+              <th class="text-start" (click)="setSort('moTa')" style="cursor: pointer">
+                Mô tả {{ getSortSymbol('moTa') }}
+              </th>
+              <th class="text-start" (click)="setSort('trangThai')" style="cursor: pointer">
+                Trạng thái {{ getSortSymbol('trangThai') }}
+              </th>
+              <th class="text-start">Thao tác</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let manufacturer of filteredManufacturers; trackBy: trackByManufacturerId">
               <td>
-                <span class="manufacturer-code">{{ manufacturer.code }}</span>
-              </td>
-              <td>
                 <span class="manufacturer-name">{{ manufacturer.name }}</span>
               </td>
               <td>
-                <span class="manufacturer-country">
-                  <i class="bi bi-geo-alt"></i>
-                  {{ manufacturer.country }}
-                </span>
-              </td>
-              <td>
-                <span class="contact-email" *ngIf="manufacturer.contactEmail">{{
-                  manufacturer.contactEmail
-                }}</span>
-                <span class="text-muted" *ngIf="!manufacturer.contactEmail">-</span>
-              </td>
-              <td>
-                <span class="contact-phone" *ngIf="manufacturer.contactPhone">{{
-                  manufacturer.contactPhone
-                }}</span>
-                <span class="text-muted" *ngIf="!manufacturer.contactPhone">-</span>
-              </td>
-              <td>
-                <span class="manufacturer-address" [title]="manufacturer.address">
-                  {{ manufacturer.address }}
-                </span>
+                <span>{{ manufacturer.country }}</span>
               </td>
               <td>
                 <span class="manufacturer-description" [title]="manufacturer.description">
-                  {{ manufacturer.description }}
+                  {{ manufacturer.description || '-' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="manufacturer.status ? 'bg-success' : 'bg-secondary'">
+                  {{ manufacturer.status ? 'Đang hoạt động' : 'Ngừng' }}
                 </span>
               </td>
               <td>
@@ -132,6 +95,38 @@
         </table>
       </div>
 
+      <!-- Pagination controls -->
+      <div class="d-flex align-items-center justify-content-between mt-2">
+        <div>
+          <button
+            class="btn btn-sm btn-outline-secondary me-2"
+            (click)="prevPage()"
+            [disabled]="currentPage === 0"
+          >
+            Trang trước
+          </button>
+          <button
+            class="btn btn-sm btn-outline-secondary"
+            (click)="nextPage()"
+            [disabled]="currentPage >= totalPages - 1"
+          >
+            Trang sau
+          </button>
+        </div>
+        <div>
+          <span class="me-2">Trang {{ currentPage + 1 }}/{{ totalPages }}</span>
+          <select
+            class="form-select form-select-sm d-inline-block w-auto"
+            [ngModel]="pageSize"
+            (ngModelChange)="changePageSize($event)"
+          >
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Thông báo khi không có nhà sản xuất -->
       <div *ngIf="filteredManufacturers.length === 0" class="text-center py-5">
         <i class="bi bi-building display-1 text-muted"></i>
@@ -157,20 +152,7 @@
       <div class="modal-body">
         <form>
           <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label>Mã nhà sản xuất <span class="text-danger">*</span></label>
-                <input
-                  type="text"
-                  class="form-control"
-                  [(ngModel)]="newManufacturer.code"
-                  name="code"
-                  placeholder="VD: AGV001"
-                  [readonly]="isViewMode"
-                />
-              </div>
-            </div>
-            <div class="col-md-6">
+            <div class="col-md-12">
               <div class="form-group mb-3">
                 <label>Tên nhà sản xuất <span class="text-danger">*</span></label>
                 <input
@@ -187,55 +169,26 @@
           <div class="row">
             <div class="col-md-6">
               <div class="form-group mb-3">
-                <label>Quốc gia <span class="text-danger">*</span></label>
+                <label>Trạng thái</label>
                 <select
                   class="form-control"
-                  [(ngModel)]="newManufacturer.country"
-                  name="country"
+                  [(ngModel)]="newManufacturer.status"
+                  name="status"
                   [disabled]="isViewMode"
                 >
-                  <option value="">Chọn quốc gia</option>
-                  <option *ngFor="let country of countries" [value]="country">
-                    {{ country }}
-                  </option>
+                  <option [ngValue]="true">Đang hoạt động</option>
+                  <option [ngValue]="false">Ngừng</option>
                 </select>
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group mb-3">
-                <label>Email liên hệ</label>
-                <input
-                  type="email"
-                  class="form-control"
-                  [(ngModel)]="newManufacturer.contactEmail"
-                  name="contactEmail"
-                  [readonly]="isViewMode"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label>Số điện thoại</label>
-                <input
-                  type="tel"
-                  class="form-control"
-                  [(ngModel)]="newManufacturer.contactPhone"
-                  name="contactPhone"
-                  [readonly]="isViewMode"
-                />
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-3">
-                <label>Địa chỉ</label>
+                <label>Quốc gia</label>
                 <input
                   type="text"
                   class="form-control"
-                  [(ngModel)]="newManufacturer.address"
-                  name="address"
+                  [(ngModel)]="newManufacturer.country"
+                  name="country"
                   [readonly]="isViewMode"
                 />
               </div>

@@ -2,6 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import {
+  ProductApiService,
+  SanPhamResponse,
+  PageResponse,
+} from '../../services/product-api.service';
 
 interface ProductDetail {
   id: number;
@@ -129,6 +134,8 @@ export class ProductDetailsComponent implements OnInit {
     'Adjustable fit system',
   ];
 
+  constructor(private productApi: ProductApiService) {}
+
   ngOnInit() {
     this.loadHelmetProducts();
     this.loadSampleData();
@@ -136,172 +143,31 @@ export class ProductDetailsComponent implements OnInit {
   }
 
   loadHelmetProducts() {
-    // Giả lập dữ liệu sản phẩm mũ bảo hiểm
-    this.helmetProducts = [
-      {
-        id: 1,
-        image: '',
-        code: 'P001',
-        name: 'AGV K1 Helmet',
-        manufacturerId: 1,
-        manufacturerName: 'AGV',
-        color: 'Đen mờ',
-        size: 'M',
-        quantity: 15,
-        price: 2500000,
-        status: 'Đang bán',
-        description: '',
-        specifications: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 2,
-        image: '',
-        code: 'P002',
-        name: 'Shoei X14 Helmet',
-        manufacturerId: 2,
-        manufacturerName: 'Shoei',
-        color: 'Đỏ',
-        size: 'L',
-        quantity: 8,
-        price: 3500000,
-        status: 'Đang bán',
-        description: '',
-        specifications: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 3,
-        image: '',
-        code: 'P003',
-        name: 'Arai RX7V Helmet',
-        manufacturerId: 3,
-        manufacturerName: 'Arai',
-        color: 'Trắng',
-        size: 'XL',
-        quantity: 0,
-        price: 4200000,
-        status: 'Ngừng bán',
-        description: '',
-        specifications: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 4,
-        image: '',
-        code: 'P004',
-        name: 'HJC RPHA 11 Helmet',
-        manufacturerId: 4,
-        manufacturerName: 'HJC',
-        color: 'Xanh dương',
-        size: 'M',
-        quantity: 12,
-        price: 1800000,
-        status: 'Đang bán',
-        description: '',
-        specifications: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        id: 5,
-        image: '',
-        code: 'P005',
-        name: 'Bell Race Star Helmet',
-        manufacturerId: 5,
-        manufacturerName: 'Bell',
-        color: 'Vàng',
-        size: 'L',
-        quantity: 5,
-        price: 2800000,
-        status: 'Đang bán',
-        description: '',
-        specifications: '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+    this.productApi
+      .search({ page: 0, size: 50, sort: 'id,desc' })
+      .subscribe((res: PageResponse<SanPhamResponse>) => {
+        this.helmetProducts = res.content.map((p) => ({
+          id: p.id,
+          image: '',
+          code: p.maSanPham,
+          name: p.tenSanPham,
+          manufacturerId: 0,
+          manufacturerName: '',
+          color: '',
+          size: '',
+          quantity: 0,
+          price: p.giaBan,
+          status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
+          description: p.moTa || '',
+          specifications: '',
+          createdAt: new Date(p.ngayTao || new Date()),
+          updatedAt: new Date(),
+        }));
+      });
   }
 
   loadSampleData() {
-    this.productDetails = [
-      {
-        id: 1,
-        productId: 1,
-        productCode: 'P001',
-        productName: 'AGV K1 Helmet',
-        category: 'Mũ bảo hiểm toàn đầu',
-        material: 'Polycarbonate',
-        weight: 1.2,
-        dimensions: '30cm x 25cm x 20cm',
-        safetyStandards: ['ECE 22.05', 'DOT (FMVSS 218)'],
-        features: [
-          'Pinlock visor',
-          'Ventilation system',
-          'Removable liner',
-          'Quick release buckle',
-        ],
-        warranty: '2 năm',
-        careInstructions: 'Làm sạch bằng nước ấm và xà phòng nhẹ. Tránh sử dụng hóa chất mạnh.',
-        compatibility: ['Xe máy', 'Xe tay ga', 'Xe số'],
-        colors: ['Đen mờ', 'Trắng', 'Đỏ', 'Xanh dương'],
-        sizes: ['S', 'M', 'L', 'XL'],
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-      },
-      {
-        id: 2,
-        productId: 2,
-        productCode: 'P002',
-        productName: 'Shoei X14 Helmet',
-        category: 'Mũ bảo hiểm đua xe',
-        material: 'Carbon Fiber',
-        weight: 1.1,
-        dimensions: '32cm x 26cm x 22cm',
-        safetyStandards: ['ECE 22.06', 'SNELL M2020'],
-        features: [
-          'Aerodynamic design',
-          'Drop-down sun visor',
-          'Bluetooth ready',
-          'Anti-fog coating',
-        ],
-        warranty: '3 năm',
-        careInstructions:
-          'Làm sạch bằng nước ấm. Sử dụng chất tẩy rửa chuyên dụng cho mũ bảo hiểm.',
-        compatibility: ['Xe đua', 'Xe thể thao'],
-        colors: ['Đỏ', 'Đen', 'Trắng', 'Xanh lá'],
-        sizes: ['M', 'L', 'XL'],
-        createdAt: new Date('2024-01-20'),
-        updatedAt: new Date('2024-01-20'),
-      },
-      {
-        id: 3,
-        productId: 3,
-        productCode: 'P003',
-        productName: 'Arai RX7V Helmet',
-        category: 'Mũ bảo hiểm toàn đầu',
-        material: 'Fiberglass',
-        weight: 1.3,
-        dimensions: '31cm x 25cm x 21cm',
-        safetyStandards: ['ECE 22.05', 'SNELL M2015'],
-        features: [
-          'Pinlock visor',
-          'Ventilation system',
-          'Adjustable fit system',
-          'Noise reduction',
-        ],
-        warranty: '2 năm',
-        careInstructions: 'Làm sạch bằng nước ấm và xà phòng nhẹ. Bảo quản nơi khô ráo.',
-        compatibility: ['Xe máy', 'Xe touring'],
-        colors: ['Trắng', 'Đen', 'Xám'],
-        sizes: ['L', 'XL', 'XXL'],
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-25'),
-      },
-    ];
+    this.productDetails = [];
   }
 
   filterDetails() {

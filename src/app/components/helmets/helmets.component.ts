@@ -2,12 +2,32 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import {
+  ProductApiService,
+  SanPhamResponse,
+  PageResponse,
+} from '../../services/product-api.service';
 
 interface HelmetProduct {
   id: number;
   image: string;
   code: string;
   name: string;
+  loaiMuBaoHiem?: string | null;
+  nhaSanXuat?: string | null;
+  chatLieuVo?: string | null;
+  trongLuong?: string | null;
+  xuatXu?: string | null;
+  kieuDangMu?: string | null;
+  congNgheAnToan?: string | null;
+  // ID liên kết để tạo mới
+  loaiMuBaoHiemId?: number | null;
+  nhaSanXuatId?: number | null;
+  chatLieuVoId?: number | null;
+  trongLuongId?: number | null;
+  xuatXuId?: number | null;
+  kieuDangMuId?: number | null;
+  congNgheAnToanId?: number | null;
   manufacturerId: number;
   manufacturerName: string;
   color: string;
@@ -59,6 +79,13 @@ export class HelmetsComponent implements OnInit {
     image: '',
     code: '',
     name: '',
+    loaiMuBaoHiemId: null,
+    nhaSanXuatId: null,
+    chatLieuVoId: null,
+    trongLuongId: null,
+    xuatXuId: null,
+    kieuDangMuId: null,
+    congNgheAnToanId: null,
     manufacturerId: 0,
     manufacturerName: '',
     color: '',
@@ -74,10 +101,43 @@ export class HelmetsComponent implements OnInit {
   selectedFile: File | null = null;
   imagePreview: string | null = null;
 
+  constructor(private productApi: ProductApiService) {}
+
   ngOnInit() {
     this.loadManufacturers();
-    this.loadSampleData();
-    this.filteredProducts = [...this.helmetProducts];
+    this.fetchProducts();
+  }
+
+  fetchProducts(page: number = 0) {
+    this.productApi
+      .search({ keyword: this.searchTerm || undefined, page, size: 20, sort: 'id,desc' })
+      .subscribe((res: PageResponse<SanPhamResponse>) => {
+        this.helmetProducts = res.content.map((p) => ({
+          id: p.id,
+          image: '',
+          code: p.maSanPham,
+          name: p.tenSanPham,
+          loaiMuBaoHiem: p.loaiMuBaoHiem ?? null,
+          nhaSanXuat: p.nhaSanXuat ?? null,
+          chatLieuVo: p.chatLieuVo ?? null,
+          trongLuong: p.trongLuong ?? null,
+          xuatXu: p.xuatXu ?? null,
+          kieuDangMu: p.kieuDangMu ?? null,
+          congNgheAnToan: p.congNgheAnToan ?? null,
+          manufacturerId: 0,
+          manufacturerName: '',
+          color: '',
+          size: '',
+          quantity: 0,
+          price: p.giaBan,
+          status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
+          description: p.moTa || '',
+          specifications: '',
+          createdAt: new Date(p.ngayTao || new Date()),
+          updatedAt: new Date(),
+        }));
+        this.filteredProducts = [...this.helmetProducts];
+      });
   }
 
   loadManufacturers() {
@@ -145,95 +205,7 @@ export class HelmetsComponent implements OnInit {
     ];
   }
 
-  loadSampleData() {
-    this.helmetProducts = [
-      {
-        id: 1,
-        image: 'https://via.placeholder.com/150x150/007bff/ffffff?text=AGV+K1',
-        code: 'P001',
-        name: 'AGV K1 Helmet',
-        manufacturerId: 1,
-        manufacturerName: 'AGV',
-        color: 'Đen mờ',
-        size: 'M',
-        quantity: 15,
-        price: 2500000,
-        status: 'Đang bán',
-        description: 'Mũ bảo hiểm AGV K1 chất lượng cao, phù hợp cho xe máy',
-        specifications: 'Chuẩn ECE 22.05, Trọng lượng: 1.2kg, Kích thước: M (55-56cm)',
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-      },
-      {
-        id: 2,
-        image: 'https://via.placeholder.com/150x150/28a745/ffffff?text=Shoei+X14',
-        code: 'P002',
-        name: 'Shoei X14 Helmet',
-        manufacturerId: 2,
-        manufacturerName: 'Shoei',
-        color: 'Đỏ',
-        size: 'L',
-        quantity: 8,
-        price: 3500000,
-        status: 'Đang bán',
-        description: 'Mũ bảo hiểm Shoei X14 cao cấp, thiết kế thể thao',
-        specifications: 'Chuẩn ECE 22.06, Trọng lượng: 1.1kg, Kích thước: L (57-58cm)',
-        createdAt: new Date('2024-01-20'),
-        updatedAt: new Date('2024-01-20'),
-      },
-      {
-        id: 3,
-        image: 'https://via.placeholder.com/150x150/dc3545/ffffff?text=Arai+RX7V',
-        code: 'P003',
-        name: 'Arai RX7V Helmet',
-        manufacturerId: 3,
-        manufacturerName: 'Arai',
-        color: 'Trắng',
-        size: 'XL',
-        quantity: 0,
-        price: 4200000,
-        status: 'Ngừng bán',
-        description: 'Mũ bảo hiểm Arai RX7V cao cấp, đã ngừng sản xuất',
-        specifications: 'Chuẩn ECE 22.05, Trọng lượng: 1.3kg, Kích thước: XL (59-60cm)',
-        createdAt: new Date('2024-01-10'),
-        updatedAt: new Date('2024-01-25'),
-      },
-      {
-        id: 4,
-        image: 'https://via.placeholder.com/150x150/ffc107/000000?text=HJC+RPHA+11',
-        code: 'P004',
-        name: 'HJC RPHA 11 Helmet',
-        manufacturerId: 4,
-        manufacturerName: 'HJC',
-        color: 'Xanh dương',
-        size: 'M',
-        quantity: 12,
-        price: 1800000,
-        status: 'Đang bán',
-        description: 'Mũ bảo hiểm HJC RPHA 11 giá rẻ, chất lượng tốt',
-        specifications: 'Chuẩn ECE 22.05, Trọng lượng: 1.4kg, Kích thước: M (55-56cm)',
-        createdAt: new Date('2024-02-01'),
-        updatedAt: new Date('2024-02-01'),
-      },
-      {
-        id: 5,
-        image: 'https://via.placeholder.com/150x150/6f42c1/ffffff?text=Bell+Race+Star',
-        code: 'P005',
-        name: 'Bell Race Star Helmet',
-        manufacturerId: 5,
-        manufacturerName: 'Bell',
-        color: 'Vàng',
-        size: 'L',
-        quantity: 5,
-        price: 2800000,
-        status: 'Đang bán',
-        description: 'Mũ bảo hiểm Bell Race Star thiết kế đua xe',
-        specifications: 'Chuẩn ECE 22.06, Trọng lượng: 1.0kg, Kích thước: L (57-58cm)',
-        createdAt: new Date('2024-02-05'),
-        updatedAt: new Date('2024-02-05'),
-      },
-    ];
-  }
+  // loadSampleData() { /* bỏ data giả, dùng BE */ }
 
   filterProducts() {
     this.filteredProducts = this.helmetProducts.filter((product) => {
@@ -271,44 +243,57 @@ export class HelmetsComponent implements OnInit {
   }
 
   saveProduct() {
-    // Validation: Kiểm tra ảnh bắt buộc
-    if (!this.newProduct.image || this.newProduct.image.trim() === '') {
-      alert('Vui lòng chọn ảnh sản phẩm!');
+    // Validation tối thiểu cho thêm mới vào DB (khớp BE)
+    if (!this.newProduct.name.trim() || !this.newProduct.code.trim()) {
+      alert('Vui lòng nhập mã và tên sản phẩm');
       return;
     }
-
-    // Validation: Kiểm tra các trường bắt buộc
-    if (
-      !this.newProduct.name.trim() ||
-      !this.newProduct.code.trim() ||
-      !this.newProduct.manufacturerId
-    ) {
-      alert('Vui lòng điền đầy đủ thông tin sản phẩm!');
+    if (!this.newProduct.price || this.newProduct.price <= 0) {
+      alert('Giá bán phải > 0');
       return;
-    }
-
-    // Cập nhật tên nhà sản xuất
-    const manufacturer = this.manufacturers.find((m) => m.id === this.newProduct.manufacturerId);
-    if (manufacturer) {
-      this.newProduct.manufacturerName = manufacturer.name;
     }
 
     if (this.isEditMode && this.selectedProduct) {
-      // Cập nhật sản phẩm
-      const index = this.helmetProducts.findIndex((p) => p.id === this.selectedProduct!.id);
-      if (index !== -1) {
-        this.helmetProducts[index] = { ...this.newProduct, updatedAt: new Date() };
-      }
-    } else {
-      // Thêm sản phẩm mới
-      this.newProduct.id = Math.max(...this.helmetProducts.map((p) => p.id)) + 1;
-      this.newProduct.createdAt = new Date();
-      this.newProduct.updatedAt = new Date();
-      this.helmetProducts.push({ ...this.newProduct });
+      // Chưa triển khai cập nhật lên BE trong yêu cầu này
+      alert('Tính năng cập nhật sẽ được bổ sung sau.');
+      return;
     }
 
-    this.filterProducts();
-    this.closeModal();
+    // Chuyển các ô nhập ID (đang là text) sang số nếu hợp lệ
+    const toId = (v: any) => {
+      const n = Number(v);
+      return Number.isInteger(n) && n > 0 ? n : undefined;
+    };
+
+    // Gọi API BE tạo mới Sản phẩm (BE chỉ nhận ID cho các liên kết)
+    const payload = {
+      maSanPham: this.newProduct.code,
+      tenSanPham: this.newProduct.name,
+      moTa: this.newProduct.description || '',
+      giaBan: this.newProduct.price || 0,
+      trangThai: this.newProduct.status !== 'Ngừng bán',
+      loaiMuBaoHiemId: toId(this.newProduct.loaiMuBaoHiemId),
+      nhaSanXuatId: toId(this.newProduct.nhaSanXuatId),
+      chatLieuVoId: toId(this.newProduct.chatLieuVoId),
+      trongLuongId: toId(this.newProduct.trongLuongId),
+      xuatXuId: toId(this.newProduct.xuatXuId),
+      kieuDangMuId: toId(this.newProduct.kieuDangMuId),
+      congNgheAnToanId: toId(this.newProduct.congNgheAnToanId),
+    } as any;
+
+    this.productApi.create(payload).subscribe({
+      next: () => {
+        this.fetchProducts(0);
+        this.closeModal();
+      },
+      error: (err) => {
+        console.error(err);
+        const msg =
+          (err?.error && (err.error.message || err.error.error)) ||
+          'Thêm mới thất bại. Vui lòng kiểm tra dữ liệu (mã SP không trùng, giá > 0).';
+        alert(msg);
+      },
+    });
   }
 
   deleteProduct(product: HelmetProduct) {
