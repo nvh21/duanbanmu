@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,7 +10,6 @@ import {
 
 interface HelmetProduct {
   id: number;
-  image: string;
   code: string;
   name: string;
   loaiMuBaoHiem?: string | null;
@@ -28,31 +27,14 @@ interface HelmetProduct {
   xuatXuId?: number | null;
   kieuDangMuId?: number | null;
   congNgheAnToanId?: number | null;
-  manufacturerId: number;
-  manufacturerName: string;
-  color: string;
-  size: string;
-  quantity: number;
   price: number;
   status: string;
   description: string;
-  specifications: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface Manufacturer {
-  id: number;
-  code: string;
-  name: string;
-  country: string;
-  description: string;
-  contactEmail: string;
-  contactPhone: string;
-  address: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Removed legacy Manufacturer demo interface
 
 @Component({
   selector: 'app-helmets',
@@ -64,10 +46,15 @@ interface Manufacturer {
 export class HelmetsComponent implements OnInit {
   helmetProducts: HelmetProduct[] = [];
   filteredProducts: HelmetProduct[] = [];
-  manufacturers: Manufacturer[] = [];
+  loaiMuList: { id: number; tenLoai: string }[] = [];
+  nsxList: { id: number; tenNhaSanXuat: string }[] = [];
+  chatLieuList: { id: number; tenChatLieu: string }[] = [];
+  trongLuongList: { id: number; giaTriTrongLuong: number }[] = [];
+  xuatXuList: { id: number; tenXuatXu: string }[] = [];
+  kieuDangList: { id: number; tenKieuDang: string }[] = [];
+  congNgheList: { id: number; tenCongNghe: string }[] = [];
   searchTerm: string = '';
   selectedStatus: string = 'all';
-  selectedManufacturer: string = 'all';
   showModal: boolean = false;
   isEditMode: boolean = false;
   isViewMode: boolean = false;
@@ -76,7 +63,6 @@ export class HelmetsComponent implements OnInit {
   productToDelete: HelmetProduct | null = null;
   newProduct: HelmetProduct = {
     id: 0,
-    image: '',
     code: '',
     name: '',
     loaiMuBaoHiemId: null,
@@ -86,138 +72,162 @@ export class HelmetsComponent implements OnInit {
     xuatXuId: null,
     kieuDangMuId: null,
     congNgheAnToanId: null,
-    manufacturerId: 0,
-    manufacturerName: '',
-    color: '',
-    size: '',
-    quantity: 0,
     price: 0,
     status: 'Đang bán',
     description: '',
-    specifications: '',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  selectedFile: File | null = null;
-  imagePreview: string | null = null;
 
-  constructor(private productApi: ProductApiService) {}
+  constructor(private productApi: ProductApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
-    this.loadManufacturers();
+    this.loadLookups();
     this.fetchProducts();
   }
 
-  fetchProducts(page: number = 0) {
+  loadLookups() {
+    this.productApi.getLoaiMuBaoHiemAll().subscribe((data) => {
+      this.loaiMuList = (data || []).map((x) => ({ id: x.id, tenLoai: x.tenLoai }));
+      this.cdr.detectChanges();
+    });
+    this.productApi.getNhaSanXuatAll().subscribe((res: any) => {
+      this.nsxList = (res.content || []).map((x: any) => ({
+        id: x.id,
+        tenNhaSanXuat: x.tenNhaSanXuat || x.ten,
+      }));
+      this.cdr.detectChanges();
+    });
+    this.productApi.getChatLieuVoAll().subscribe((res: any) => {
+      this.chatLieuList = (res.content || []).map((x: any) => ({
+        id: x.id,
+        tenChatLieu: x.tenChatLieu,
+      }));
+      this.cdr.detectChanges();
+    });
+    this.productApi.getTrongLuongAll().subscribe((data: any[]) => {
+      this.trongLuongList = (data || []).map((x: any) => ({
+        id: x.id,
+        giaTriTrongLuong: x.giaTriTrongLuong,
+      }));
+      this.cdr.detectChanges();
+    });
+    this.productApi.getXuatXuAll().subscribe((data: any[]) => {
+      this.xuatXuList = (data || []).map((x: any) => ({ id: x.id, tenXuatXu: x.tenXuatXu }));
+      this.cdr.detectChanges();
+    });
+    this.productApi.getKieuDangMuAll().subscribe((res: any) => {
+      this.kieuDangList = (res.content || []).map((x: any) => ({
+        id: x.id,
+        tenKieuDang: x.tenKieuDang,
+      }));
+      this.cdr.detectChanges();
+    });
+    this.productApi.getCongNgheAnToanAll().subscribe((data: any[]) => {
+      this.congNgheList = (data || []).map((x: any) => ({ id: x.id, tenCongNghe: x.tenCongNghe }));
+      this.cdr.detectChanges();
+    });
+  }
+
+  // pagination + sorting state
+  page: number = 0;
+  size: number = 10;
+  totalElements: number = 0;
+  totalPages: number = 0;
+  sortField: string = 'id';
+  sortDir: 'asc' | 'desc' = 'desc';
+
+  fetchProducts() {
     this.productApi
-      .search({ keyword: this.searchTerm || undefined, page, size: 20, sort: 'id,desc' })
-      .subscribe((res: PageResponse<SanPhamResponse>) => {
-        this.helmetProducts = res.content.map((p) => ({
-          id: p.id,
-          image: '',
-          code: p.maSanPham,
-          name: p.tenSanPham,
-          loaiMuBaoHiem: p.loaiMuBaoHiem ?? null,
-          nhaSanXuat: p.nhaSanXuat ?? null,
-          chatLieuVo: p.chatLieuVo ?? null,
-          trongLuong: p.trongLuong ?? null,
-          xuatXu: p.xuatXu ?? null,
-          kieuDangMu: p.kieuDangMu ?? null,
-          congNgheAnToan: p.congNgheAnToan ?? null,
-          manufacturerId: 0,
-          manufacturerName: '',
-          color: '',
-          size: '',
-          quantity: 0,
-          price: p.giaBan,
-          status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
-          description: p.moTa || '',
-          specifications: '',
-          createdAt: new Date(p.ngayTao || new Date()),
-          updatedAt: new Date(),
-        }));
-        this.filteredProducts = [...this.helmetProducts];
+      .search({
+        keyword: this.searchTerm || undefined,
+        page: this.page,
+        size: this.size,
+        sort: `${this.sortField},${this.sortDir}`,
+      })
+      .subscribe({
+        next: (res: PageResponse<SanPhamResponse>) => {
+          this.helmetProducts = (res.content || []).map((p) => ({
+            id: p.id,
+            code: (p as any).maSanPham ?? p.maSanPham ?? '',
+            name: (p as any).tenSanPham ?? p.tenSanPham ?? '',
+            // ids for editing
+            loaiMuBaoHiemId: (p as any).loaiMuBaoHiemId ?? p.loaiMuBaoHiemId ?? null,
+            nhaSanXuatId: (p as any).nhaSanXuatId ?? p.nhaSanXuatId ?? null,
+            chatLieuVoId: (p as any).chatLieuVoId ?? p.chatLieuVoId ?? null,
+            trongLuongId: (p as any).trongLuongId ?? p.trongLuongId ?? null,
+            xuatXuId: (p as any).xuatXuId ?? p.xuatXuId ?? null,
+            kieuDangMuId: (p as any).kieuDangMuId ?? p.kieuDangMuId ?? null,
+            congNgheAnToanId: (p as any).congNgheAnToanId ?? p.congNgheAnToanId ?? null,
+            loaiMuBaoHiem: p.loaiMuBaoHiemTen ?? null,
+            nhaSanXuat: p.nhaSanXuatTen ?? null,
+            chatLieuVo: p.chatLieuVoTen ?? null,
+            trongLuong: p.trongLuongTen ?? null,
+            xuatXu: p.xuatXuTen ?? null,
+            kieuDangMu: p.kieuDangMuTen ?? null,
+            congNgheAnToan: p.congNgheAnToanTen ?? null,
+            price: Number(p.giaBan ?? 0),
+            status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
+            description: p.moTa ?? '',
+            createdAt: new Date((p as any).ngayTao ?? new Date()),
+            updatedAt: new Date(),
+          }));
+          this.filteredProducts = [...this.helmetProducts];
+          this.totalElements = res.totalElements ?? 0;
+          this.totalPages = res.totalPages ?? 0;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('SanPham search error:', err);
+          this.helmetProducts = [];
+          this.filteredProducts = [];
+          this.totalElements = 0;
+          this.totalPages = 0;
+          this.cdr.detectChanges();
+        },
       });
   }
 
-  loadManufacturers() {
-    this.manufacturers = [
-      {
-        id: 1,
-        code: 'AGV001',
-        name: 'AGV',
-        country: 'Italy',
-        description: 'Nhà sản xuất mũ bảo hiểm cao cấp từ Italy',
-        contactEmail: 'info@agv.com',
-        contactPhone: '+39 02 1234567',
-        address: 'Via Roma 123, Milan, Italy',
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
-      },
-      {
-        id: 2,
-        code: 'SHO001',
-        name: 'Shoei',
-        country: 'Japan',
-        description: 'Thương hiệu mũ bảo hiểm nổi tiếng từ Nhật Bản',
-        contactEmail: 'info@shoei.com',
-        contactPhone: '+81 3 1234 5678',
-        address: '1-2-3 Shibuya, Tokyo, Japan',
-        createdAt: new Date('2024-01-02'),
-        updatedAt: new Date('2024-01-02'),
-      },
-      {
-        id: 3,
-        code: 'ARA001',
-        name: 'Arai',
-        country: 'Japan',
-        description: 'Nhà sản xuất mũ bảo hiểm chất lượng cao',
-        contactEmail: 'info@arai.com',
-        contactPhone: '+81 6 1234 5678',
-        address: '2-3-4 Osaka, Japan',
-        createdAt: new Date('2024-01-03'),
-        updatedAt: new Date('2024-01-03'),
-      },
-      {
-        id: 4,
-        code: 'HJC001',
-        name: 'HJC',
-        country: 'South Korea',
-        description: 'Thương hiệu mũ bảo hiểm giá cả hợp lý',
-        contactEmail: 'info@hjc.com',
-        contactPhone: '+82 2 1234 5678',
-        address: '123 Gangnam-gu, Seoul, South Korea',
-        createdAt: new Date('2024-01-04'),
-        updatedAt: new Date('2024-01-04'),
-      },
-      {
-        id: 5,
-        code: 'BEL001',
-        name: 'Bell',
-        country: 'USA',
-        description: 'Nhà sản xuất mũ bảo hiểm thể thao từ Mỹ',
-        contactEmail: 'info@bellhelmets.com',
-        contactPhone: '+1 555 123 4567',
-        address: '456 Main St, Los Angeles, CA, USA',
-        createdAt: new Date('2024-01-05'),
-        updatedAt: new Date('2024-01-05'),
-      },
-    ];
+  changePageSize(newSize: number) {
+    this.size = Number(newSize) || 10;
+    this.page = 0;
+    this.fetchProducts();
   }
 
-  // loadSampleData() { /* bỏ data giả, dùng BE */ }
+  prevPage() {
+    if (this.page > 0) {
+      this.page -= 1;
+      this.fetchProducts();
+    }
+  }
+
+  nextPage() {
+    if (this.page + 1 < this.totalPages) {
+      this.page += 1;
+      this.fetchProducts();
+    }
+  }
+
+  changeSort(field: string) {
+    if (this.sortField === field) {
+      this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDir = 'desc';
+    }
+    this.page = 0;
+    this.fetchProducts();
+  }
+
+  // legacy demo manufacturers removed
 
   filterProducts() {
     this.filteredProducts = this.helmetProducts.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        product.manufacturerName.toLowerCase().includes(this.searchTerm.toLowerCase());
+        product.code.toLowerCase().includes(this.searchTerm.toLowerCase());
       const matchesStatus = this.selectedStatus === 'all' || product.status === this.selectedStatus;
-      const matchesManufacturer =
-        this.selectedManufacturer === 'all' ||
-        product.manufacturerId.toString() === this.selectedManufacturer;
-      return matchesSearch && matchesStatus && matchesManufacturer;
+      return matchesSearch && matchesStatus;
     });
   }
 
@@ -229,17 +239,34 @@ export class HelmetsComponent implements OnInit {
     this.filterProducts();
   }
 
-  onManufacturerChange() {
-    this.filterProducts();
-  }
+  // removed manufacturer filter
 
   closeModal() {
     this.showModal = false;
     this.selectedProduct = null;
     this.isEditMode = false;
     this.isViewMode = false;
-    this.selectedFile = null;
-    this.imagePreview = null;
+  }
+
+  canSubmit(): boolean {
+    return (
+      !!this.newProduct.code?.trim() &&
+      !!this.newProduct.name?.trim() &&
+      !!this.newProduct.price &&
+      this.newProduct.price > 0 &&
+      Number.isInteger(Number(this.newProduct.loaiMuBaoHiemId)) &&
+      Number.isInteger(Number(this.newProduct.nhaSanXuatId)) &&
+      Number.isInteger(Number(this.newProduct.chatLieuVoId)) &&
+      Number.isInteger(Number(this.newProduct.trongLuongId)) &&
+      Number.isInteger(Number(this.newProduct.xuatXuId)) &&
+      Number.isInteger(Number(this.newProduct.kieuDangMuId)) &&
+      Number.isInteger(Number(this.newProduct.congNgheAnToanId))
+    );
+  }
+
+  onSelect(field: keyof HelmetProduct, value: any) {
+    const n = Number(value);
+    (this.newProduct as any)[field] = Number.isFinite(n) ? n : value;
   }
 
   saveProduct() {
@@ -252,18 +279,111 @@ export class HelmetsComponent implements OnInit {
       alert('Giá bán phải > 0');
       return;
     }
+    // Chuẩn hóa giá trị danh mục: gõ hoặc chọn đều được (bỏ dấu, so khớp gần đúng)
+    const stripAccents = (v: string) =>
+      (v || '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}+/gu, '')
+        .toLowerCase()
+        .trim();
+
+    const normalizeId = (raw: any, list: any[], nameKey: string): number | undefined => {
+      // Người dùng nhập số → coi như ID
+      const asNumber = Number(raw);
+      if (Number.isInteger(asNumber) && asNumber > 0) return asNumber;
+
+      const s = stripAccents(String(raw ?? ''));
+      if (!s) return undefined;
+
+      // So khớp chính xác (bỏ dấu)
+      let found = list.find((x: any) => stripAccents(String(x[nameKey] ?? '')) === s);
+      if (found) return Number(found.id);
+
+      // So khớp gần đúng (contains)
+      found = list.find((x: any) => stripAccents(String(x[nameKey] ?? '')).includes(s));
+      return found ? Number(found.id) : undefined;
+    };
+
+    this.newProduct.loaiMuBaoHiemId = normalizeId(
+      this.newProduct.loaiMuBaoHiemId,
+      this.loaiMuList,
+      'tenLoai'
+    );
+    this.newProduct.nhaSanXuatId = normalizeId(
+      this.newProduct.nhaSanXuatId,
+      this.nsxList,
+      'tenNhaSanXuat'
+    );
+    this.newProduct.chatLieuVoId = normalizeId(
+      this.newProduct.chatLieuVoId,
+      this.chatLieuList,
+      'tenChatLieu'
+    );
+    this.newProduct.trongLuongId = normalizeId(
+      this.newProduct.trongLuongId,
+      this.trongLuongList as any,
+      'giaTriTrongLuong'
+    );
+    this.newProduct.xuatXuId = normalizeId(this.newProduct.xuatXuId, this.xuatXuList, 'tenXuatXu');
+    this.newProduct.kieuDangMuId = normalizeId(
+      this.newProduct.kieuDangMuId,
+      this.kieuDangList,
+      'tenKieuDang'
+    );
+    this.newProduct.congNgheAnToanId = normalizeId(
+      this.newProduct.congNgheAnToanId,
+      this.congNgheList,
+      'tenCongNghe'
+    );
+
+    // Kiểm tra đủ danh mục sau chuẩn hóa để tránh 400 từ BE
+    const missing: string[] = [];
+    if (!this.newProduct.loaiMuBaoHiemId) missing.push('Loại mũ');
+    if (!this.newProduct.nhaSanXuatId) missing.push('Nhà sản xuất');
+    if (!this.newProduct.chatLieuVoId) missing.push('Chất liệu vỏ');
+    if (!this.newProduct.trongLuongId) missing.push('Trọng lượng');
+    if (!this.newProduct.xuatXuId) missing.push('Xuất xứ');
+    if (!this.newProduct.kieuDangMuId) missing.push('Kiểu dáng mũ');
+    if (!this.newProduct.congNgheAnToanId) missing.push('Công nghệ an toàn');
+    if (missing.length) {
+      alert('Vui lòng chọn: ' + missing.join(', '));
+      return;
+    }
 
     if (this.isEditMode && this.selectedProduct) {
-      // Chưa triển khai cập nhật lên BE trong yêu cầu này
-      alert('Tính năng cập nhật sẽ được bổ sung sau.');
+      const payloadUpdate = {
+        maSanPham: this.newProduct.code,
+        tenSanPham: this.newProduct.name,
+        moTa: this.newProduct.description || '',
+        giaBan: this.newProduct.price || 0,
+        trangThai: this.newProduct.status !== 'Ngừng bán',
+        loaiMuBaoHiemId: Number(this.newProduct.loaiMuBaoHiemId),
+        nhaSanXuatId: Number(this.newProduct.nhaSanXuatId),
+        chatLieuVoId: Number(this.newProduct.chatLieuVoId),
+        trongLuongId: Number(this.newProduct.trongLuongId),
+        xuatXuId: Number(this.newProduct.xuatXuId),
+        kieuDangMuId: Number(this.newProduct.kieuDangMuId),
+        congNgheAnToanId: Number(this.newProduct.congNgheAnToanId),
+      } as any;
+
+      this.productApi.update(this.selectedProduct.id, payloadUpdate).subscribe({
+        next: () => {
+          this.fetchProducts();
+          this.closeModal();
+        },
+        error: (err) => {
+          console.error(err);
+          const msg =
+            (err?.error && (err.error.message || err.error.error)) ||
+            'Cập nhật thất bại. Vui lòng kiểm tra dữ liệu.';
+          alert(msg);
+        },
+      });
       return;
     }
 
     // Chuyển các ô nhập ID (đang là text) sang số nếu hợp lệ
-    const toId = (v: any) => {
-      const n = Number(v);
-      return Number.isInteger(n) && n > 0 ? n : undefined;
-    };
+    const toId = (v: any) => Number(v);
 
     // Gọi API BE tạo mới Sản phẩm (BE chỉ nhận ID cho các liên kết)
     const payload = {
@@ -283,11 +403,22 @@ export class HelmetsComponent implements OnInit {
 
     this.productApi.create(payload).subscribe({
       next: () => {
-        this.fetchProducts(0);
+        this.fetchProducts();
         this.closeModal();
       },
       error: (err) => {
         console.error(err);
+        if (err?.status === 409) {
+          alert('Mã sản phẩm đã tồn tại. Vui lòng dùng mã khác.');
+          return;
+        }
+        if (err?.status === 400) {
+          const msg400 =
+            (err?.error && (err.error.message || err.error.error)) ||
+            'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại các danh mục và giá trị bắt buộc.';
+          alert(msg400);
+          return;
+        }
         const msg =
           (err?.error && (err.error.message || err.error.error)) ||
           'Thêm mới thất bại. Vui lòng kiểm tra dữ liệu (mã SP không trùng, giá > 0).';
@@ -303,11 +434,15 @@ export class HelmetsComponent implements OnInit {
 
   confirmDelete() {
     if (this.productToDelete) {
-      const index = this.helmetProducts.findIndex((p) => p.id === this.productToDelete!.id);
-      if (index !== -1) {
-        this.helmetProducts.splice(index, 1);
-        this.filterProducts();
-      }
+      this.productApi.delete(this.productToDelete.id).subscribe({
+        next: () => {
+          this.fetchProducts();
+        },
+        error: (err) => {
+          console.error(err);
+          alert('Xóa thất bại');
+        },
+      });
     }
     this.closeDeleteModal();
   }
@@ -321,53 +456,21 @@ export class HelmetsComponent implements OnInit {
     this.isViewMode = true;
     this.isEditMode = false;
     this.selectedProduct = product;
-    this.selectedFile = null;
-    this.imagePreview = product.image;
     this.newProduct = { ...product };
     this.showModal = true;
-  }
-
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-
-      // Tạo preview ảnh
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.imagePreview = e.target.result;
-        this.newProduct.image = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  removeImage() {
-    this.selectedFile = null;
-    this.imagePreview = null;
-    this.newProduct.image = '';
   }
 
   openAddModal() {
     this.isEditMode = false;
     this.isViewMode = false;
     this.selectedProduct = null;
-    this.selectedFile = null;
-    this.imagePreview = null;
     this.newProduct = {
       id: 0,
-      image: '',
       code: '',
       name: '',
-      manufacturerId: 0,
-      manufacturerName: '',
-      color: '',
-      size: '',
-      quantity: 0,
       price: 0,
       status: 'Đang bán',
       description: '',
-      specifications: '',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -378,8 +481,6 @@ export class HelmetsComponent implements OnInit {
     this.isEditMode = true;
     this.isViewMode = false;
     this.selectedProduct = product;
-    this.selectedFile = null;
-    this.imagePreview = product.image;
     this.newProduct = { ...product };
     this.showModal = true;
   }

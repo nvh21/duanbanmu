@@ -11,13 +11,20 @@ export interface SanPhamResponse {
   giaBan: number;
   trangThai: boolean;
   ngayTao: string;
-  loaiMuBaoHiem?: string | null;
-  nhaSanXuat?: string | null;
-  chatLieuVo?: string | null;
-  trongLuong?: string | null;
-  xuatXu?: string | null;
-  kieuDangMu?: string | null;
-  congNgheAnToan?: string | null;
+  loaiMuBaoHiemId?: number | null;
+  loaiMuBaoHiemTen?: string | null;
+  nhaSanXuatId?: number | null;
+  nhaSanXuatTen?: string | null;
+  chatLieuVoId?: number | null;
+  chatLieuVoTen?: string | null;
+  trongLuongId?: number | null;
+  trongLuongTen?: string | null;
+  xuatXuId?: number | null;
+  xuatXuTen?: string | null;
+  kieuDangMuId?: number | null;
+  kieuDangMuTen?: string | null;
+  congNgheAnToanId?: number | null;
+  congNgheAnToanTen?: string | null;
 }
 
 export interface PageResponse<T> {
@@ -26,6 +33,11 @@ export interface PageResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+}
+
+export interface LookupItem {
+  id: number;
+  name: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -62,6 +74,13 @@ export class ProductApiService {
       tenSanPham: string;
       giaBan: number;
       trangThai: boolean;
+      loaiMuBaoHiemId?: number;
+      nhaSanXuatId?: number;
+      chatLieuVoId?: number;
+      trongLuongId?: number;
+      xuatXuId?: number;
+      kieuDangMuId?: number;
+      congNgheAnToanId?: number;
     }
   ): Observable<SanPhamResponse> {
     return this.http.post<SanPhamResponse>(this.baseUrl, payload);
@@ -73,5 +92,37 @@ export class ProductApiService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+
+  // lookups
+  getLoaiMuBaoHiemAll(): Observable<{ id: number; tenLoai: string; trangThai: boolean }[]> {
+    return this.http.get<{ id: number; tenLoai: string; trangThai: boolean }[]>(
+      `${environment.apiBaseUrl}/loai-mu-bao-hiem/all`
+    );
+  }
+  getNhaSanXuatAll(): Observable<any> {
+    // reuse search endpoint first page large size
+    return this.http.get(`${environment.apiBaseUrl}/nha-san-xuat`, {
+      params: new HttpParams().set('page', '0').set('size', '1000'),
+    });
+  }
+  getChatLieuVoAll(): Observable<any> {
+    return this.http.get(`${environment.apiBaseUrl}/chat-lieu-vo`, {
+      params: new HttpParams().set('page', '0').set('size', '1000'),
+    });
+  }
+  getTrongLuongAll(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/trong-luong/all`);
+  }
+  getXuatXuAll(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/xuat-xu/all`);
+  }
+  getKieuDangMuAll(): Observable<any> {
+    return this.http.get(`${environment.apiBaseUrl}/kieu-dang-mu`, {
+      params: new HttpParams().set('page', '0').set('size', '1000'),
+    });
+  }
+  getCongNgheAnToanAll(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/cong-nghe-an-toan/all`);
   }
 }

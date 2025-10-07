@@ -73,6 +73,11 @@ export class SidebarComponent implements OnInit {
           active: false,
         },
         {
+          label: 'Xuất xứ',
+          route: '/products/origins',
+          active: false,
+        },
+        {
           label: 'Nhà sản xuất',
           route: '/products/manufacturers',
           active: false,

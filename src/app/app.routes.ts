@@ -21,6 +21,7 @@ import { ColorsComponent } from './components/colors/colors.component';
 import { HelmetStylesComponent } from './components/helmet-styles/helmet-styles.component';
 import { SizesComponent } from './components/sizes/sizes.component';
 import { MaterialsComponent } from './components/materials/materials.component';
+import { OriginsComponent } from './components/origins/origins.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -97,6 +98,11 @@ export const routes: Routes = [
   {
     path: 'products/materials',
     component: MaterialsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'products/origins',
+    component: OriginsComponent,
     canActivate: [AuthGuard],
   },
   {
