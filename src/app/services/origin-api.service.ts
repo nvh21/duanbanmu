@@ -68,3 +68,4 @@ export class OriginApiService {
     return this.http.get<OriginResponse[]>(`${this.baseUrl}/all`);
   }
 }
+
