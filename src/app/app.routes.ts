@@ -22,6 +22,7 @@ import { HelmetStylesComponent } from './components/helmet-styles/helmet-styles.
 import { SizesComponent } from './components/sizes/sizes.component';
 import { MaterialsComponent } from './components/materials/materials.component';
 import { OriginsComponent } from './components/origins/origins.component';
+import { TrongLuongComponent } from './components/trong-luong/trong-luong.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -103,6 +104,11 @@ export const routes: Routes = [
   {
     path: 'products/origins',
     component: OriginsComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'products/trong-luong',
+    component: TrongLuongComponent,
     canActivate: [AuthGuard],
   },
   {

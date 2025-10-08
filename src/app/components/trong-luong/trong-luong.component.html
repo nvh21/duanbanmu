@@ -1,6 +1,6 @@
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Xuất xứ</h2>
+    <h2>Trọng lượng</h2>
     <button class="btn btn-primary" (click)="openAddModal()">
       <i class="bi bi-plus-circle me-1"></i>Thêm mới
     </button>
@@ -10,7 +10,7 @@
     <div class="col-md-6">
       <input
         class="form-control"
-        placeholder="Tìm theo tên, mô tả"
+        placeholder="Tìm theo đơn vị, mô tả"
         [(ngModel)]="searchTerm"
         (input)="onSearchChange()"
       />
@@ -28,30 +28,32 @@
     <table class="table table-striped table-hover">
       <thead class="table-dark">
         <tr>
-          <th (click)="setSort('tenXuatXu')" style="cursor: pointer">Tên xuất xứ</th>
+          <th (click)="setSort('giaTriTrongLuong')" style="cursor: pointer">Giá trị</th>
+          <th (click)="setSort('donVi')" style="cursor: pointer">Đơn vị</th>
           <th (click)="setSort('moTa')" style="cursor: pointer">Mô tả</th>
           <th (click)="setSort('trangThai')" style="cursor: pointer">Trạng thái</th>
           <th>Thao tác</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let x of display; trackBy: trackById">
-          <td>{{ x.tenXuatXu }}</td>
-          <td class="text-truncate" style="max-width: 320px">{{ x.moTa || '-' }}</td>
+        <tr *ngFor="let t of display; trackBy: trackById">
+          <td>{{ t.giaTriTrongLuong | number : '1.2-2' }}</td>
+          <td>{{ t.donVi }}</td>
+          <td class="text-truncate" style="max-width: 320px">{{ t.moTa || '-' }}</td>
           <td>
-            <span class="badge" [class]="x.trangThai ? 'bg-success' : 'bg-secondary'">{{
-              x.trangThai ? 'Đang dùng' : 'Không dùng nữa'
+            <span class="badge" [class]="t.trangThai ? 'bg-success' : 'bg-secondary'">{{
+              t.trangThai ? 'Đang dùng' : 'Không dùng nữa'
             }}</span>
           </td>
           <td>
             <div class="btn-group">
-              <button class="btn btn-sm btn-outline-info" (click)="viewItem(x)" title="Xem">
+              <button class="btn btn-sm btn-outline-info" (click)="viewItem(t)" title="Xem">
                 <i class="bi bi-eye"></i>
               </button>
-              <button class="btn btn-sm btn-outline-warning" (click)="openEditModal(x)" title="Sửa">
+              <button class="btn btn-sm btn-outline-warning" (click)="openEditModal(t)" title="Sửa">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger" (click)="delete(x)" title="Xóa">
+              <button class="btn btn-sm btn-outline-danger" (click)="delete(t)" title="Xóa">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -99,14 +101,30 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            {{ isViewMode ? 'Xem' : isEditMode ? 'Sửa' : 'Thêm' }} xuất xứ
+            {{ isViewMode ? 'Xem' : isEditMode ? 'Sửa' : 'Thêm' }} trọng lượng
           </h5>
           <button type="button" class="btn-close" (click)="closeModal()"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label">Tên xuất xứ</label>
-            <input class="form-control" [(ngModel)]="form.tenXuatXu" [readonly]="isViewMode" />
+            <label class="form-label">Giá trị trọng lượng <span class="text-danger">*</span></label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              class="form-control"
+              [(ngModel)]="form.giaTriTrongLuong"
+              [readonly]="isViewMode"
+              placeholder="Nhập giá trị trọng lượng"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Đơn vị <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="form.donVi" [disabled]="isViewMode">
+              <option value="">Chọn đơn vị</option>
+              <option value="gram">Gram (g)</option>
+              <option value="kg">Kilogram (kg)</option>
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Mô tả</label>
@@ -115,6 +133,7 @@
               rows="3"
               [(ngModel)]="form.moTa"
               [readonly]="isViewMode"
+              placeholder="Nhập mô tả (tùy chọn)"
             ></textarea>
           </div>
           <div class="mb-3">
@@ -150,7 +169,8 @@
           <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
         </div>
         <div class="modal-body">
-          Bạn có chắc chắn muốn xóa <strong>{{ toDelete?.tenXuatXu }}</strong
+          Bạn có chắc chắn muốn xóa trọng lượng
+          <strong>{{ toDelete?.giaTriTrongLuong }} {{ toDelete?.donVi }}</strong
           >?
         </div>
         <div class="modal-footer">
@@ -163,3 +183,4 @@
 
   <div *ngIf="showModal || showDeleteModal" class="modal-backdrop fade show"></div>
 </div>
+

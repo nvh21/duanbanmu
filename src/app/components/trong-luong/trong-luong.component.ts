@@ -1,26 +1,30 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OriginApiService, OriginResponse, PageResponse } from '../../services/origin-api.service';
+import {
+  TrongLuongApiService,
+  TrongLuongResponse,
+  PageResponse,
+} from '../../services/trong-luong-api.service';
 
-interface OriginVM {
+interface TrongLuongVM {
   id: number;
-  tenXuatXu: string;
+  giaTriTrongLuong: number;
+  donVi: string;
   moTa?: string;
   trangThai: boolean;
 }
 
 @Component({
-  selector: 'app-origins',
+  selector: 'app-trong-luong',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './origins.component.html',
-  styleUrls: ['./origins.component.scss'],
+  templateUrl: './trong-luong.component.html',
+  styleUrls: ['./trong-luong.component.scss'],
 })
-export class OriginsComponent implements OnInit {
-  items: OriginVM[] = [];
-  filtered: OriginVM[] = [];
-  display: OriginVM[] = [];
+export class TrongLuongComponent implements OnInit {
+  items: TrongLuongVM[] = [];
+  display: TrongLuongVM[] = [];
   searchTerm: string = '';
   selectedStatus: string = 'all';
 
@@ -33,20 +37,26 @@ export class OriginsComponent implements OnInit {
   showModal = false;
   isEditMode = false;
   isViewMode = false;
-  selected: OriginVM | null = null;
+  selected: TrongLuongVM | null = null;
   showDeleteModal = false;
-  toDelete: OriginVM | null = null;
+  toDelete: TrongLuongVM | null = null;
 
-  form: OriginVM = { id: 0, tenXuatXu: '', moTa: '', trangThai: true };
+  form: TrongLuongVM = {
+    id: 0,
+    giaTriTrongLuong: 0,
+    donVi: '',
+    moTa: '',
+    trangThai: true,
+  };
 
-  constructor(private api: OriginApiService, private cdr: ChangeDetectorRef) {}
+  constructor(private api: TrongLuongApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.fetch();
   }
 
   fetch(page: number = 0) {
-    // Lấy tất cả xuất xứ (cả active và inactive) với pagination
+    // Lấy tất cả trọng lượng (cả active và inactive) với pagination
     this.api
       .search({
         keyword: this.searchTerm,
@@ -55,10 +65,11 @@ export class OriginsComponent implements OnInit {
         size: this.size,
         sort: this.sort,
       })
-      .subscribe((response: PageResponse<OriginResponse>) => {
+      .subscribe((response: PageResponse<TrongLuongResponse>) => {
         this.items = (response.content || []).map((x) => ({
           id: x.id,
-          tenXuatXu: x.tenXuatXu,
+          giaTriTrongLuong: x.giaTriTrongLuong,
+          donVi: x.donVi,
           moTa: x.moTa || '',
           trangThai: !!x.trangThai,
         }));
@@ -80,7 +91,7 @@ export class OriginsComponent implements OnInit {
     this.fetch(0);
   }
 
-  setSort(field: 'tenXuatXu' | 'moTa' | 'trangThai') {
+  setSort(field: 'giaTriTrongLuong' | 'donVi' | 'moTa' | 'trangThai') {
     const [f, d] = this.sort.split(',');
     const next = f === field && d === 'asc' ? 'desc' : 'asc';
     this.sort = `${field},${next}`;
@@ -110,23 +121,32 @@ export class OriginsComponent implements OnInit {
     this.isEditMode = false;
     this.isViewMode = false;
     this.selected = null;
-    this.form = { id: 0, tenXuatXu: '', moTa: '', trangThai: true };
+    this.form = {
+      id: 0,
+      giaTriTrongLuong: 0,
+      donVi: '',
+      moTa: '',
+      trangThai: true,
+    };
     this.showModal = true;
   }
-  openEditModal(x: OriginVM) {
+
+  openEditModal(t: TrongLuongVM) {
     this.isEditMode = true;
     this.isViewMode = false;
-    this.selected = x;
-    this.form = { ...x };
+    this.selected = t;
+    this.form = { ...t };
     this.showModal = true;
   }
-  viewItem(x: OriginVM) {
+
+  viewItem(t: TrongLuongVM) {
     this.isViewMode = true;
     this.isEditMode = false;
-    this.selected = x;
-    this.form = { ...x };
+    this.selected = t;
+    this.form = { ...t };
     this.showModal = true;
   }
+
   closeModal() {
     this.showModal = false;
     this.isEditMode = false;
@@ -135,15 +155,22 @@ export class OriginsComponent implements OnInit {
   }
 
   save() {
-    if (!this.form.tenXuatXu.trim()) {
-      alert('Vui lòng nhập tên xuất xứ');
+    if (!this.form.giaTriTrongLuong || this.form.giaTriTrongLuong <= 0) {
+      alert('Vui lòng nhập giá trị trọng lượng hợp lệ');
       return;
     }
+    if (!this.form.donVi.trim()) {
+      alert('Vui lòng chọn đơn vị');
+      return;
+    }
+
     const payload = {
-      tenXuatXu: this.form.tenXuatXu,
+      giaTriTrongLuong: this.form.giaTriTrongLuong,
+      donVi: this.form.donVi,
       moTa: this.form.moTa,
       trangThai: this.form.trangThai,
     };
+
     if (this.isEditMode && this.selected) {
       this.api.update(this.selected.id, payload).subscribe({
         next: () => {
@@ -155,10 +182,10 @@ export class OriginsComponent implements OnInit {
           const msg =
             (err?.error && (err.error.message || err.error.error)) ||
             (err?.status === 409
-              ? 'Tên xuất xứ đã tồn tại, vui lòng dùng tên khác.'
+              ? 'Trọng lượng với giá trị và đơn vị này đã tồn tại, vui lòng dùng giá trị khác.'
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại.'
-              : 'Cập nhật xuất xứ thất bại');
+              : 'Cập nhật trọng lượng thất bại');
           alert(msg);
         },
       });
@@ -173,20 +200,21 @@ export class OriginsComponent implements OnInit {
           const msg =
             (err?.error && (err.error.message || err.error.error)) ||
             (err?.status === 409
-              ? 'Tên xuất xứ đã tồn tại, vui lòng dùng tên khác.'
+              ? 'Trọng lượng với giá trị và đơn vị này đã tồn tại, vui lòng dùng giá trị khác.'
               : err?.status === 400
-              ? 'Dữ liệu không hợp lệ, vui lòng nhập tên xuất xứ.'
-              : 'Thêm xuất xứ thất bại');
+              ? 'Dữ liệu không hợp lệ, vui lòng nhập đầy đủ thông tin.'
+              : 'Thêm trọng lượng thất bại');
           alert(msg);
         },
       });
     }
   }
 
-  delete(x: OriginVM) {
-    this.toDelete = x;
+  delete(t: TrongLuongVM) {
+    this.toDelete = t;
     this.showDeleteModal = true;
   }
+
   confirmDelete() {
     if (this.toDelete) {
       this.api.delete(this.toDelete.id).subscribe({
@@ -196,19 +224,21 @@ export class OriginsComponent implements OnInit {
         error: (err) => {
           console.error(err);
           const msg =
-            (err?.error && (err.error.message || err.error.error)) || 'Xóa xuất xứ thất bại';
+            (err?.error && (err.error.message || err.error.error)) || 'Xóa trọng lượng thất bại';
           alert(msg);
         },
       });
     }
     this.closeDeleteModal();
   }
+
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.toDelete = null;
   }
 
-  trackById(i: number, x: OriginVM) {
-    return x.id;
+  trackById(i: number, t: TrongLuongVM) {
+    return t.id;
   }
 }
+
