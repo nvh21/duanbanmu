@@ -5,6 +5,7 @@ import { CounterSalesComponent } from './components/counter-sales/counter-sales.
 import { CustomerManagementComponent } from './components/customer-management/customer-management.component';
 import { ImportManagementComponent } from './components/import-management/import-management.component';
 import { PromotionManagementComponent } from './components/promotion-management/promotion-management.component';
+import { VoucherForm } from './components/voucher-form/voucher-form';
 import { AccountManagementComponent } from './components/account-management/account-management.component';
 import { StaffManagementComponent } from './components/staff-management/staff-management.component';
 import { OrderDetailsComponent } from './components/order-details/order-details.component';
@@ -16,6 +17,8 @@ import { ManufacturersComponent } from './components/manufacturers/manufacturers
 import { ProductDetailsComponent } from './components/product-details/product-details.component';
 import { InventoryComponent } from './components/inventory/inventory.component';
 import { LoginComponent } from './components/login/login';
+import { ApiTestComponent } from './components/api-test/api-test.component';
+import { PhieuGiamGiaTestComponent } from './components/phieu-giam-gia-test/phieu-giam-gia-test.component';
 import { AuthGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
@@ -66,6 +69,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'vouchers',
+    component: VoucherForm,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'products/helmets',
     component: HelmetsComponent,
     canActivate: [AuthGuard],
@@ -109,6 +117,16 @@ export const routes: Routes = [
     path: 'staff',
     component: StaffManagementComponent,
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'api-test',
+    component: ApiTestComponent,
+    // canActivate: [AuthGuard], // Tạm thời bỏ AuthGuard để test
+  },
+  {
+    path: 'phieu-giam-gia-test',
+    component: PhieuGiamGiaTestComponent,
+    // canActivate: [AuthGuard], // Tạm thời bỏ AuthGuard để test
   },
   { path: '**', redirectTo: '/dashboard' },
 ];

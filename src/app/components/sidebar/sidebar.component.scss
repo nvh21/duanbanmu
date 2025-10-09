@@ -98,6 +98,10 @@
   margin: 6px 6px;
 }
 
+.nav-item:not(:last-child) {
+  margin-bottom: 8px;
+}
+
 .nav-link {
   display: flex;
   align-items: center;
