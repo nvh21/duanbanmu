@@ -14,7 +14,6 @@ import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
 import { ManufacturersComponent } from './components/manufacturers/manufacturers.component';
 import { ProductDetailsComponent } from './components/product-details/product-details.component';
-// import { InventoryComponent } from './components/inventory/inventory.component';
 import { LoginComponent } from './components/login/login';
 import { AuthGuard } from './guards/auth-guard';
 import { ColorsComponent } from './components/colors/colors.component';
