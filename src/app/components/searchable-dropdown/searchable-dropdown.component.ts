@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   ViewChild,
   ElementRef,
+  HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -36,6 +37,7 @@ export class SearchableDropdownComponent implements OnInit, OnChanges {
   @Output() addButtonClick = new EventEmitter<void>();
 
   @ViewChild('searchInput') searchInput!: ElementRef;
+  @ViewChild('dropdownContainer') dropdownContainer!: ElementRef;
 
   filteredOptions: DropdownOption[] = [];
   searchTerm: string = '';
@@ -115,6 +117,17 @@ export class SearchableDropdownComponent implements OnInit, OnChanges {
         setTimeout(() => {
           this.searchInput?.nativeElement.focus();
         }, 0);
+      }
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event) {
+    if (this.isOpen && this.dropdownContainer) {
+      const clickedInside = this.dropdownContainer.nativeElement.contains(event.target);
+      if (!clickedInside) {
+        this.isOpen = false;
+        this.searchTerm = '';
       }
     }
   }

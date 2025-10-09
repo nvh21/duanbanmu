@@ -6,7 +6,7 @@
   aria-labelledby="quickAddModalLabel"
   aria-hidden="true"
 >
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="quickAddModalLabel">{{ modalTitle }}</h5>
@@ -77,4 +77,5 @@
   class="modal-backdrop fade"
   [class.show]="show"
   [style.display]="show ? 'block' : 'none'"
+  style="z-index: 1070"
 ></div>
