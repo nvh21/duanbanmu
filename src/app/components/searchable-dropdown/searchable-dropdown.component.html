@@ -1,0 +1,70 @@
+<div class="searchable-dropdown" [class.disabled]="disabled">
+  <div class="dropdown-container">
+    <div class="input-group">
+      <input
+        type="text"
+        class="form-control dropdown-input"
+        [placeholder]="placeholder"
+        [value]="selectedOptionName"
+        [disabled]="disabled"
+        readonly
+        (click)="toggleDropdown()"
+      />
+      <button
+        *ngIf="selectedValue"
+        class="btn btn-outline-secondary clear-button"
+        type="button"
+        (click)="clearSelection()"
+        [disabled]="disabled"
+        title="Xóa lựa chọn"
+      >
+        <i class="bi bi-x"></i>
+      </button>
+      <button
+        *ngIf="showAddButton"
+        class="btn btn-outline-success add-button"
+        type="button"
+        (click)="onAddButtonClick()"
+        [disabled]="disabled"
+        [title]="addButtonTitle"
+      >
+        <i class="bi bi-plus"></i>
+      </button>
+      <button
+        class="btn btn-outline-secondary dropdown-toggle"
+        type="button"
+        (click)="toggleDropdown()"
+        [disabled]="disabled"
+      >
+        <i class="bi bi-chevron-down" [class.rotated]="isOpen"></i>
+      </button>
+    </div>
+
+    <div class="dropdown-menu" [class.show]="isOpen" *ngIf="isOpen">
+      <div class="dropdown-header">
+        <input
+          type="text"
+          class="form-control search-input"
+          placeholder="Tìm kiếm..."
+          [(ngModel)]="searchTerm"
+          (input)="onSearchChange()"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+      <div class="dropdown-divider"></div>
+      <div class="dropdown-options">
+        <div
+          *ngFor="let option of filteredOptions"
+          class="dropdown-item"
+          (click)="onOptionSelect(option)"
+          [class.selected]="selectedValue === option.id"
+        >
+          {{ option.name }}
+        </div>
+        <div *ngIf="filteredOptions.length === 0" class="dropdown-item no-results">
+          Không tìm thấy kết quả
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

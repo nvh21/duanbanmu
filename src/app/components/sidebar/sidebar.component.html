@@ -33,10 +33,37 @@
         </a>
 
         <ul *ngIf="item.hasSubmenu && item.isExpanded" class="submenu">
-          <li *ngFor="let subItem of item.submenu" class="submenu-item">
-            <a [routerLink]="subItem.route" class="submenu-link" [class.active]="subItem.active">
+          <li
+            *ngFor="let subItem of item.submenu"
+            class="submenu-item"
+            [class.has-submenu]="subItem.hasSubmenu"
+          >
+            <a
+              [routerLink]="subItem.hasSubmenu ? null : subItem.route"
+              class="submenu-link"
+              [class.active]="subItem.active"
+              [class.has-submenu]="subItem.hasSubmenu"
+              (click)="subItem.hasSubmenu ? toggleSubmenu(subItem) : null"
+            >
               <span>{{ subItem.label }}</span>
+              <i
+                *ngIf="subItem.hasSubmenu"
+                class="bi bi-chevron-down"
+                [class.rotated]="subItem.isExpanded"
+              ></i>
             </a>
+
+            <ul *ngIf="subItem.hasSubmenu && subItem.isExpanded" class="nested-submenu">
+              <li *ngFor="let nestedItem of subItem.submenu" class="nested-submenu-item">
+                <a
+                  [routerLink]="nestedItem.route"
+                  class="nested-submenu-link"
+                  [class.active]="nestedItem.active"
+                >
+                  <span>{{ nestedItem.label }}</span>
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </li>

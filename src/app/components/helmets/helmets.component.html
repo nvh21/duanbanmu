@@ -280,31 +280,31 @@
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Loại mũ bảo hiểm</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.loaiMuBaoHiemId"
+                <app-searchable-dropdown
+                  [options]="loaiMuOptions"
+                  [selectedValue]="newProduct.loaiMuBaoHiemId"
+                  [placeholder]="'-- Chọn loại mũ bảo hiểm --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('loaiMuBaoHiemId', $event)"
-                  name="loaiMuBaoHiemId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of loaiMuList" [ngValue]="x.id">{{ x.tenLoai }}</option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm loại mũ bảo hiểm mới'"
+                  (selectionChange)="onSelect('loaiMuBaoHiemId', $event)"
+                  (addButtonClick)="openQuickAddModal('loaiMuBaoHiem')"
+                ></app-searchable-dropdown>
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Nhà sản xuất</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.nhaSanXuatId"
+                <app-searchable-dropdown
+                  [options]="nsxOptions"
+                  [selectedValue]="newProduct.nhaSanXuatId"
+                  [placeholder]="'-- Chọn nhà sản xuất --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('nhaSanXuatId', $event)"
-                  name="nhaSanXuatId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of nsxList" [ngValue]="x.id">{{ x.tenNhaSanXuat }}</option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm nhà sản xuất mới'"
+                  (selectionChange)="onSelect('nhaSanXuatId', $event)"
+                  (addButtonClick)="openQuickAddModal('nhaSanXuat')"
+                ></app-searchable-dropdown>
               </div>
             </div>
           </div>
@@ -313,35 +313,31 @@
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Chất liệu vỏ</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.chatLieuVoId"
+                <app-searchable-dropdown
+                  [options]="chatLieuOptions"
+                  [selectedValue]="newProduct.chatLieuVoId"
+                  [placeholder]="'-- Chọn chất liệu vỏ --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('chatLieuVoId', $event)"
-                  name="chatLieuVoId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of chatLieuList" [ngValue]="x.id">
-                    {{ x.tenChatLieu }}
-                  </option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm chất liệu vỏ mới'"
+                  (selectionChange)="onSelect('chatLieuVoId', $event)"
+                  (addButtonClick)="openQuickAddModal('chatLieuVo')"
+                ></app-searchable-dropdown>
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Trọng lượng</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.trongLuongId"
+                <app-searchable-dropdown
+                  [options]="trongLuongOptions"
+                  [selectedValue]="newProduct.trongLuongId"
+                  [placeholder]="'-- Chọn trọng lượng --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('trongLuongId', $event)"
-                  name="trongLuongId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of trongLuongList" [ngValue]="x.id">
-                    {{ x.giaTriTrongLuong }}
-                  </option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm trọng lượng mới'"
+                  (selectionChange)="onSelect('trongLuongId', $event)"
+                  (addButtonClick)="openQuickAddModal('trongLuong')"
+                ></app-searchable-dropdown>
               </div>
             </div>
           </div>
@@ -350,33 +346,31 @@
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Xuất xứ</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.xuatXuId"
+                <app-searchable-dropdown
+                  [options]="xuatXuOptions"
+                  [selectedValue]="newProduct.xuatXuId"
+                  [placeholder]="'-- Chọn xuất xứ --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('xuatXuId', $event)"
-                  name="xuatXuId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of xuatXuList" [ngValue]="x.id">{{ x.tenXuatXu }}</option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm xuất xứ mới'"
+                  (selectionChange)="onSelect('xuatXuId', $event)"
+                  (addButtonClick)="openQuickAddModal('xuatXu')"
+                ></app-searchable-dropdown>
               </div>
             </div>
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Kiểu dáng mũ</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.kieuDangMuId"
+                <app-searchable-dropdown
+                  [options]="kieuDangOptions"
+                  [selectedValue]="newProduct.kieuDangMuId"
+                  [placeholder]="'-- Chọn kiểu dáng mũ --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('kieuDangMuId', $event)"
-                  name="kieuDangMuId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of kieuDangList" [ngValue]="x.id">
-                    {{ x.tenKieuDang }}
-                  </option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm kiểu dáng mũ mới'"
+                  (selectionChange)="onSelect('kieuDangMuId', $event)"
+                  (addButtonClick)="openQuickAddModal('kieuDangMu')"
+                ></app-searchable-dropdown>
               </div>
             </div>
           </div>
@@ -385,18 +379,16 @@
             <div class="col-md-6">
               <div class="form-group mb-3">
                 <label>Công nghệ an toàn</label>
-                <select
-                  class="form-control"
-                  [(ngModel)]="newProduct.congNgheAnToanId"
+                <app-searchable-dropdown
+                  [options]="congNgheOptions"
+                  [selectedValue]="newProduct.congNgheAnToanId"
+                  [placeholder]="'-- Chọn công nghệ an toàn --'"
                   [disabled]="isViewMode"
-                  (ngModelChange)="onSelect('congNgheAnToanId', $event)"
-                  name="congNgheAnToanId"
-                >
-                  <option [ngValue]="null">-- Chọn --</option>
-                  <option *ngFor="let x of congNgheList" [ngValue]="x.id">
-                    {{ x.tenCongNghe }}
-                  </option>
-                </select>
+                  [showAddButton]="true"
+                  [addButtonTitle]="'Thêm công nghệ an toàn mới'"
+                  (selectionChange)="onSelect('congNgheAnToanId', $event)"
+                  (addButtonClick)="openQuickAddModal('congNgheAnToan')"
+                ></app-searchable-dropdown>
               </div>
             </div>
           </div>
@@ -459,3 +451,11 @@
 
 <!-- Overlay cho modal -->
 <div *ngIf="showModal || showDeleteModal" class="modal-backdrop fade show"></div>
+
+<!-- Quick Add Modal -->
+<app-quick-add-modal
+  [show]="showQuickAddModal"
+  [type]="quickAddModalType"
+  (close)="onQuickAddClose()"
+  (save)="onQuickAddSave($event)"
+></app-quick-add-modal>

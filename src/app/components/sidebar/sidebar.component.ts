@@ -45,7 +45,7 @@ export class SidebarComponent implements OnInit {
       route: '/products',
       active: false,
       hasSubmenu: true,
-      isExpanded: true,
+      isExpanded: false,
       submenu: [
         {
           label: 'Sản phẩm mũ bảo hiểm',
@@ -53,44 +53,58 @@ export class SidebarComponent implements OnInit {
           active: false,
         },
         {
-          label: 'Màu sắc',
-          route: '/products/colors',
-          active: false,
-        },
-        {
-          label: 'Kiểu dáng mũ',
-          route: '/products/helmet-styles',
-          active: false,
-        },
-        {
-          label: 'Kích thước',
-          route: '/products/sizes',
-          active: false,
-        },
-        {
-          label: 'Chất liệu vỏ',
-          route: '/products/materials',
-          active: false,
-        },
-        {
-          label: 'Xuất xứ',
-          route: '/products/origins',
-          active: false,
-        },
-        {
-          label: 'Trọng lượng',
-          route: '/products/trong-luong',
-          active: false,
-        },
-        {
-          label: 'Nhà sản xuất',
-          route: '/products/manufacturers',
-          active: false,
-        },
-        {
           label: 'Chi tiết sản phẩm',
           route: '/products/details',
           active: false,
+        },
+        {
+          label: 'Quản lý thuộc tính sản phẩm',
+          route: '/products/attributes',
+          active: false,
+          hasSubmenu: true,
+          isExpanded: false,
+          submenu: [
+            {
+              label: 'Màu sắc',
+              route: '/products/colors',
+              active: false,
+            },
+            {
+              label: 'Kích thước',
+              route: '/products/sizes',
+              active: false,
+            },
+            {
+              label: 'Chất liệu vỏ',
+              route: '/products/materials',
+              active: false,
+            },
+            {
+              label: 'Xuất xứ',
+              route: '/products/origins',
+              active: false,
+            },
+            {
+              label: 'Trọng lượng',
+              route: '/products/trong-luong',
+              active: false,
+            },
+            {
+              label: 'Loại mũ bảo hiểm',
+              route: '/products/loai-mu-bao-hiem',
+              active: false,
+            },
+            {
+              label: 'Nhà sản xuất',
+              route: '/products/manufacturers',
+              active: false,
+            },
+            {
+              label: 'Kiểu dáng mũ',
+              route: '/products/helmet-styles',
+              active: false,
+            },
+          ],
         },
       ],
     },
@@ -154,12 +168,19 @@ export class SidebarComponent implements OnInit {
       if (item.hasSubmenu && item.submenu) {
         item.submenu.forEach((subItem) => {
           subItem.active = currentUrl === subItem.route;
+
+          // Check nested submenu items
+          if (subItem.hasSubmenu && subItem.submenu) {
+            subItem.submenu.forEach((nestedItem) => {
+              nestedItem.active = currentUrl === nestedItem.route;
+            });
+          }
         });
 
-        // Expand parent if any submenu item is active
-        if (item.submenu.some((subItem) => subItem.active)) {
-          item.isExpanded = true;
-        }
+        // Don't auto-expand parent - let user manually toggle
+        // if (item.submenu.some((subItem) => subItem.active)) {
+        //   item.isExpanded = true;
+        // }
       }
     });
   }

@@ -97,7 +97,7 @@ export class ProductApiService {
   // lookups
   getLoaiMuBaoHiemAll(): Observable<{ id: number; tenLoai: string; trangThai: boolean }[]> {
     return this.http.get<{ id: number; tenLoai: string; trangThai: boolean }[]>(
-      `${environment.apiBaseUrl}/loai-mu-bao-hiem/all`
+      `${environment.apiBaseUrl}/loai-mu/all`
     );
   }
   getNhaSanXuatAll(): Observable<any> {

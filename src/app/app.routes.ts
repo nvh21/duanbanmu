@@ -23,6 +23,7 @@ import { SizesComponent } from './components/sizes/sizes.component';
 import { MaterialsComponent } from './components/materials/materials.component';
 import { OriginsComponent } from './components/origins/origins.component';
 import { TrongLuongComponent } from './components/trong-luong/trong-luong.component';
+import { LoaiMuBaoHiemComponent } from './components/loai-mu-bao-hiem/loai-mu-bao-hiem.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -109,6 +110,11 @@ export const routes: Routes = [
   {
     path: 'products/trong-luong',
     component: TrongLuongComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'products/loai-mu-bao-hiem',
+    component: LoaiMuBaoHiemComponent,
     canActivate: [AuthGuard],
   },
   {
