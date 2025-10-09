@@ -1,0 +1,185 @@
+<div class="voucher-form-page">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-top">
+        <button class="btn-back" (click)="goBack()">
+          <i class="bi bi-arrow-left"></i>
+          Quay lại
+        </button>
+        <h1 class="page-title">Form Voucher</h1>
+      </div>
+      <nav class="breadcrumb">
+        <span class="breadcrumb-item clickable" (click)="navigateToHome()">Trang chủ</span>
+        <span class="separator">/</span>
+        <span class="breadcrumb-item clickable" (click)="navigateToVouchers()">Voucher</span>
+        <span class="separator">/</span>
+        <span class="breadcrumb-item current">Form voucher</span>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Form Content -->
+  <div class="form-content">
+    <!-- Left Section: Voucher Form -->
+    <div class="form-section">
+      <div class="form-card">
+        <div class="form-header">
+          <h3>
+            <i class="bi bi-plus-circle"></i>
+            Thêm Voucher
+          </h3>
+        </div>
+        
+        <div class="form-body">
+          <div class="form-group">
+            <label>Mã Phiếu</label>
+            <div class="input-group">
+              <input type="text" [(ngModel)]="voucherCode" readonly class="form-control">
+              <i class="bi bi-search"></i>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Tên</label>
+            <input type="text" [(ngModel)]="voucherName" placeholder="Nhập tên phiếu" class="form-control">
+          </div>
+          
+          <div class="form-group">
+            <label>Loại</label>
+            <select [(ngModel)]="voucherType" class="form-control">
+              <option value="">Chọn loại</option>
+              <option value="Tiền mặt">Tiền mặt</option>
+              <option value="Phần trăm">Phần trăm</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Hóa đơn tối thiểu</label>
+            <div class="input-group">
+              <input type="number" [(ngModel)]="minOrder" placeholder="Nhập hóa đơn tối thiểu" class="form-control">
+              <span class="input-suffix">VND</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Số lượng</label>
+            <input type="number" [(ngModel)]="quantity" value="0" class="form-control">
+          </div>
+          
+          <div class="form-group">
+            <label>Ngày bắt đầu</label>
+            <div class="input-group">
+              <input type="text" [(ngModel)]="startDate" placeholder="mm/dd/yyyy" class="form-control">
+              <i class="bi bi-calendar"></i>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Ngày kết thúc</label>
+            <div class="input-group">
+              <input type="text" [(ngModel)]="endDate" placeholder="mm/dd/yyyy" class="form-control">
+              <i class="bi bi-calendar"></i>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Mô tả</label>
+            <textarea [(ngModel)]="description" class="form-control" rows="3" placeholder="Nhập mô tả voucher"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Section: Customer Selection -->
+    <div class="customer-section">
+      <div class="customer-card">
+        <div class="customer-header">
+          <h4>
+            <i class="bi bi-people"></i>
+            Chọn Khách Hàng
+          </h4>
+        </div>
+        
+        <div class="search-section">
+          <div class="search-input">
+            <i class="bi bi-search"></i>
+            <input type="text" [(ngModel)]="searchTerm" (input)="onSearch()" placeholder="Tìm theo mã hoặc tên...">
+          </div>
+          <button class="btn btn-secondary">Tất cả</button>
+        </div>
+        
+        <div class="customer-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã KH</th>
+                <th>Tên Khách Hàng</th>
+                <th>Giới...</th>
+                <th>Ngày sinh</th>
+                <th>Tổng số lần m...</th>
+                <th>Lần mua gần ...</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let customer of filteredCustomers">
+                <td>{{ customer.code }}</td>
+                <td>{{ customer.name }}</td>
+                <td>{{ customer.gender }}</td>
+                <td>{{ customer.birthDate }}</td>
+                <td>{{ customer.totalPurchases }}</td>
+                <td>{{ customer.lastPurchase }}</td>
+                <td>
+                  <button class="btn-select" (click)="selectCustomer(customer)">
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="selected-customers">
+          <h4>
+            <i class="bi bi-check-circle"></i>
+            Khách Hàng Đã Chọn
+          </h4>
+          <div class="selected-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã KH</th>
+                  <th>Tên Khách Hàng</th>
+                  <th>Giới tính</th>
+                  <th>Ngày sinh</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="selectedCustomers.length === 0">
+                  <td colspan="5" class="no-data">Chưa có khách hàng nào được chọn</td>
+                </tr>
+                <tr *ngFor="let customer of selectedCustomers">
+                  <td>{{ customer.code }}</td>
+                  <td>{{ customer.name }}</td>
+                  <td>{{ customer.gender }}</td>
+                  <td>{{ customer.birthDate }}</td>
+                  <td>
+                    <button class="btn-remove" (click)="removeCustomer(customer.id)">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="form-actions">
+            <button class="btn btn-primary" (click)="saveVoucher()">Cài đặt</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
