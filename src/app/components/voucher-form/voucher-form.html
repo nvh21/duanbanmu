@@ -1,0 +1,497 @@
+<div class="voucher-form">
+  <!-- List View -->
+  <div *ngIf="currentView === 'list'">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">
+        Quản Lý Phiếu Giảm Giá
+      </h1>
+      <nav class="breadcrumb">
+        <span class="breadcrumb-item">Trang chủ</span>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-item active">Phiếu giảm giá</span>
+      </nav>
+      
+      <!-- Loading and Error States -->
+      <div *ngIf="loading" class="alert alert-info">
+        <i class="bi bi-hourglass-split me-2"></i>
+        Đang tải dữ liệu...
+      </div>
+      
+      <div *ngIf="error" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        {{ error }}
+        <button class="btn btn-sm btn-outline-danger ms-2" (click)="refreshData()">
+          <i class="bi bi-arrow-clockwise"></i> Thử lại
+        </button>
+      </div>
+      
+      <!-- Debug Info -->
+      <div class="alert alert-info">
+        <strong>Debug Info:</strong>
+        <br>Vouchers count: {{ vouchers.length }}
+        <br>Filtered vouchers count: {{ filteredVouchers.length }}
+        <br>Loading: {{ loading }}
+        <br>Error: {{ error || 'None' }}
+      </div>
+    </div>
+
+    <!-- Search Filter Section -->
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h5 class="filter-title">
+          <i class="bi bi-funnel me-2"></i>
+          Bộ Lọc Tìm Kiếm
+        </h5>
+      </div>
+      <div class="filter-content">
+        <!-- First Row -->
+        <div class="filter-row">
+          <!-- Search Input -->
+          <div class="filter-group">
+            <label class="filter-label">Tìm kiếm phiếu</label>
+            <div class="search-input-group">
+              <i class="bi bi-search search-icon"></i>
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="Mã phiếu, tên phiếu..."
+                [(ngModel)]="searchTerm"
+                (input)="onSearchChange()">
+            </div>
+          </div>
+
+          <!-- Voucher Type -->
+          <div class="filter-group">
+            <label class="filter-label">Loại phiếu</label>
+            <select class="filter-select" [(ngModel)]="selectedVoucherType">
+              <option value="">Tất cả loại phiếu</option>
+              <option value="cash">Tiền mặt</option>
+              <option value="percentage">Phần trăm</option>
+            </select>
+          </div>
+
+          <!-- Status -->
+          <div class="filter-group">
+            <label class="filter-label">Trạng thái</label>
+            <select class="filter-select" [(ngModel)]="selectedStatus">
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Đang diễn ra</option>
+              <option value="inactive">Chưa bắt đầu</option>
+              <option value="expired">Đã kết thúc</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Second Row -->
+        <div class="filter-row">
+          <!-- Date Range -->
+          <div class="filter-group">
+            <label class="filter-label">Khoảng thời gian</label>
+            <div class="date-range-group">
+              <input 
+                type="text" 
+                class="date-input" 
+                placeholder="mm/dd/yyyy"
+                [(ngModel)]="startDateDisplay"
+                readonly>
+              <i class="bi bi-calendar date-icon"></i>
+              <span class="date-separator">đến</span>
+              <input 
+                type="text" 
+                class="date-input" 
+                placeholder="mm/dd/yyyy"
+                [(ngModel)]="endDateDisplay"
+                readonly>
+              <i class="bi bi-calendar date-icon"></i>
+            </div>
+          </div>
+
+          <!-- Value Range Slider -->
+          <div class="filter-group">
+            <label class="filter-label">Giá trị phiếu</label>
+            <div class="value-range-group">
+              <span class="range-min">{{ formatCurrency(minValue) }}</span>
+              <div class="slider-container">
+                <input 
+                  type="range" 
+                  class="value-slider" 
+                  min="0" 
+                  max="5000000" 
+                  step="100000"
+                  [(ngModel)]="maxValue"
+                  (input)="onValueRangeChange()">
+              </div>
+              <span class="range-max">{{ formatCurrency(maxValue) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="filter-actions">
+          <button class="btn-reset" (click)="resetFilters()">
+            Đặt lại bộ lọc
+          </button>
+          <button class="btn-excel" (click)="exportExcel()">
+            Xuất Excel
+          </button>
+          <button class="btn-add" (click)="openAddModal()">
+            Thêm Phiếu Giảm Giá
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voucher List Section -->
+    <div class="card list-card">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="card-title">
+            <i class="bi bi-table me-2"></i>
+            Danh Sách Voucher
+          </h5>
+          <span class="voucher-count">{{ filteredVouchers.length }} voucher</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover voucher-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Mã Voucher</th>
+                <th>Giá Trị</th>
+                <th>Số lượng</th>
+                <th>Loại Voucher</th>
+                <th>Trạng Thái</th>
+                <th>Ngày Bắt Đầu</th>
+                <th>Ngày Kết Thúc</th>
+                <th>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let voucher of filteredVouchers; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>
+                  <div class="voucher-code">
+                    <span class="code-text" (click)="viewVoucherDetail(voucher)">{{ voucher.code }}</span>
+                    <small class="code-date">{{ voucher.startDate | date:'dd/MM/yyyy' }}</small>
+                  </div>
+                </td>
+                <td>
+                  <div class="voucher-value">
+                    <span class="value-amount">{{ formatCurrency(voucher.value) }}</span>
+                    <small class="min-order">Đơn tối thiểu: {{ formatCurrency(voucher.minOrder) }}</small>
+                  </div>
+                </td>
+                <td>
+                  <span class="quantity-badge">{{ voucher.quantity }}</span>
+                </td>
+                <td>
+                  <span class="type-badge" [ngClass]="'type-' + voucher.type">
+                    {{ voucher.type === 'cash' ? 'Tiền mặt' : 'Phần trăm' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [ngClass]="'status-' + voucher.status">
+                    {{ getStatusText(voucher.status) }}
+                  </span>
+                </td>
+                <td>{{ voucher.startDate | date:'dd/MM/yyyy' }}</td>
+                <td>{{ voucher.endDate | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <div class="action-buttons">
+                    <div class="form-check form-switch">
+                      <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        [checked]="voucher.isActive"
+                        (change)="toggleVoucherStatus(voucher)">
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" (click)="editVoucher(voucher)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Voucher View -->
+  <div *ngIf="currentView === 'add'" class="add-voucher-view">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-nav">
+      <span class="breadcrumb-item">Trang chủ</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-item">Phiếu giảm giá</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-item active">Form phiếu giảm giá</span>
+    </div>
+
+    <div class="add-voucher-container">
+      <div class="row">
+        <!-- Left Panel - Voucher Form -->
+        <div class="col-md-6">
+          <div class="voucher-form-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">
+                <i class="bi bi-plus-circle me-2"></i>
+                Thêm Phiếu Giảm Giá
+              </h3>
+            </div>
+            
+            <div class="form-container">
+              <div class="form-group">
+                <label class="form-label">Mã Phiếu</label>
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="voucherForm.code"
+                    name="code"
+                    placeholder="Nhập mã phiếu"
+                    (input)="onCodeChange()"
+                    [class.is-invalid]="codeError">
+                  <button 
+                    class="btn btn-outline-secondary" 
+                    type="button" 
+                    (click)="generateVoucherCode()"
+                    title="Tạo mã tự động">
+                    <i class="bi bi-arrow-clockwise"></i>
+                  </button>
+                </div>
+                <div *ngIf="codeError" class="invalid-feedback d-block">
+                  {{ codeError }}
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Tên</label>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  [(ngModel)]="voucherForm.name"
+                  name="name"
+                  placeholder="Nhập tên phiếu">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Loại</label>
+                <select class="form-select" [(ngModel)]="voucherForm.type" name="type">
+                  <option value="">Chọn loại</option>
+                  <option value="cash">Tiền mặt</option>
+                  <option value="percentage">Phần trăm</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Hóa đơn tối thiểu</label>
+                <div class="input-group">
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    [(ngModel)]="voucherForm.minOrder"
+                    name="minOrder"
+                    placeholder="Nhập hóa đơn tối thiểu">
+                  <span class="input-group-text">VND</span>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Số lượng</label>
+                <input 
+                  type="number" 
+                  class="form-control" 
+                  [(ngModel)]="voucherForm.quantity"
+                  name="quantity"
+                  min="0">
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Ngày bắt đầu</label>
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="voucherForm.startDate"
+                    name="startDate"
+                    placeholder="mm/dd/yyyy">
+                  <span class="input-group-text">
+                    <i class="bi bi-calendar"></i>
+                  </span>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Ngày kết thúc</label>
+                <div class="input-group">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    [(ngModel)]="voucherForm.endDate"
+                    name="endDate"
+                    placeholder="mm/dd/yyyy">
+                  <span class="input-group-text">
+                    <i class="bi bi-calendar"></i>
+                  </span>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Mô tả</label>
+                <textarea 
+                  class="form-control" 
+                  [(ngModel)]="voucherForm.description"
+                  name="description"
+                  rows="3"
+                  placeholder="Nhập mô tả"></textarea>
+              </div>
+              
+              <div class="form-group">
+                <div class="form-check">
+                  <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    [(ngModel)]="voucherForm.isPrivate"
+                    name="isPrivate"
+                    id="isPrivate">
+                  <label class="form-check-label" for="isPrivate">
+                    Riêng tư
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Action Buttons inside left panel -->
+              <div class="form-actions">
+                <button class="btn btn-add" (click)="saveVoucher()">
+                  Thêm
+                </button>
+                <button class="btn btn-back" (click)="goBackToList()">
+                  Quay Về
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Right Panel - Customer Selection -->
+        <div class="col-md-6">
+          <div class="customer-selection-panel">
+            <div class="panel-header">
+              <h3 class="panel-title">
+                <i class="bi bi-people me-2"></i>
+                Chọn Khách Hàng
+              </h3>
+            </div>
+            
+            <div class="panel-content">
+              <!-- Search Filter -->
+              <div class="search-section">
+                <div class="search-container">
+                  <div class="input-group">
+                    <span class="input-group-text">
+                      <i class="bi bi-search"></i>
+                    </span>
+                    <input 
+                      type="text" 
+                      class="form-control" 
+                      placeholder="Tìm theo mã hoặc tên..."
+                      [(ngModel)]="searchCustomer"
+                      (input)="onCustomerSearch()">
+                  </div>
+                  <button class="btn btn-outline-secondary" (click)="showAllCustomers()">
+                    Tất cả
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Customer List -->
+              <div class="customer-list-section">
+                <div class="table-container">
+                  <table class="customer-table">
+                    <thead>
+                      <tr>
+                        <th>Mã KH</th>
+                        <th>Tên Khách Hàng</th>
+                        <th>Giới tính</th>
+                        <th>Ngày sinh</th>
+                        <th>Tổng số lần m...</th>
+                        <th>Lần mua gần ...</th>
+                        <th>Chọn</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let customer of filteredCustomers">
+                        <td>{{ customer.code }}</td>
+                        <td>{{ customer.name }}</td>
+                        <td>{{ customer.gender }}</td>
+                        <td>{{ customer.birthDate | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ customer.totalPurchases }}</td>
+                        <td>{{ customer.lastPurchase | date:'dd/MM/yyyy' }}</td>
+                        <td>
+                          <button 
+                            class="btn btn-sm btn-outline-primary"
+                            (click)="selectCustomer(customer)"
+                            [disabled]="isCustomerSelected(customer)">
+                            {{ isCustomerSelected(customer) ? 'Đã chọn' : 'Chọn' }}
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <!-- Selected Customers -->
+              <div class="selected-customers-section">
+                <h4 class="selected-title">
+                  <i class="bi bi-check-circle me-2"></i>
+                  Khách Hàng Đã Chọn
+                </h4>
+                
+                <div *ngIf="selectedCustomers.length === 0" class="no-selection">
+                  Chưa có khách hàng nào được chọn
+                </div>
+                
+                <div *ngIf="selectedCustomers.length > 0" class="selected-list">
+                  <div class="table-container">
+                    <table class="selected-table">
+                      <thead>
+                        <tr>
+                          <th>Mã KH</th>
+                          <th>Tên Khách Hàng</th>
+                          <th>Giới tính</th>
+                          <th>Ngày sinh</th>
+                          <th>Hành động</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let customer of selectedCustomers">
+                          <td>{{ customer.code }}</td>
+                          <td>{{ customer.name }}</td>
+                          <td>{{ customer.gender }}</td>
+                          <td>{{ customer.birthDate | date:'dd/MM/yyyy' }}</td>
+                          <td>
+                            <button 
+                              class="btn btn-sm btn-outline-danger"
+                              (click)="removeCustomer(customer)">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

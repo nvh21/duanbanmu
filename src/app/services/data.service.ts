@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { HoaDonService, HoaDonDTO } from './hoa-don.service';
+import { MasterDataService } from './master-data.service';
 
 export interface Promotion {
   id: string;
@@ -64,6 +66,11 @@ export class DataService {
   public products$ = this.productsSubject.asObservable();
   public customers$ = this.customersSubject.asObservable();
   public invoices$ = this.invoicesSubject.asObservable();
+
+  constructor(
+    private hoaDonService: HoaDonService,
+    private masterDataService: MasterDataService
+  ) {}
 
   // Promotions
   getPromotions(): Observable<Promotion[]> {
@@ -137,14 +144,24 @@ export class DataService {
     this.customersSubject.next(current.filter((c) => c.id !== id));
   }
 
-  // Invoices
+  // Invoices - Kết nối với API thực tế
   getInvoices(): Observable<Invoice[]> {
     return this.invoices$;
+  }
+
+  // Lấy hóa đơn từ API
+  getInvoicesFromAPI(): Observable<HoaDonDTO[]> {
+    return this.hoaDonService.getAllHoaDon();
   }
 
   addInvoice(invoice: Invoice): void {
     const current = this.invoicesSubject.value;
     this.invoicesSubject.next([...current, invoice]);
+  }
+
+  // Thêm hóa đơn mới qua API
+  addInvoiceToAPI(hoaDonDTO: HoaDonDTO): Observable<HoaDonDTO> {
+    return this.hoaDonService.createHoaDon(hoaDonDTO);
   }
 
   updateInvoice(id: string, invoice: Invoice): void {
@@ -156,9 +173,29 @@ export class DataService {
     }
   }
 
+  // Cập nhật hóa đơn qua API
+  updateInvoiceInAPI(id: number, hoaDonDTO: HoaDonDTO): Observable<HoaDonDTO> {
+    return this.hoaDonService.updateHoaDon(id, hoaDonDTO);
+  }
+
   deleteInvoice(id: string): void {
     const current = this.invoicesSubject.value;
     this.invoicesSubject.next(current.filter((i) => i.id !== id));
+  }
+
+  // Xóa hóa đơn qua API
+  deleteInvoiceFromAPI(id: number): Observable<void> {
+    return this.hoaDonService.deleteHoaDon(id);
+  }
+
+  // Test kết nối API
+  testAPIConnection(): Observable<string> {
+    return this.hoaDonService.testApi();
+  }
+
+  // Tạo dữ liệu mẫu
+  createSampleData(): Observable<string> {
+    return this.hoaDonService.createSampleData();
   }
 
   private getInitialPromotions(): Promotion[] {
