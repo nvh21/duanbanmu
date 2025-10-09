@@ -1,4 +1,8 @@
 /* Reusing existing modal styles from loai-mu-bao-hiem.component.scss */
+.modal {
+  z-index: 1080;
+}
+
 .modal-content {
   border-radius: 8px;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
