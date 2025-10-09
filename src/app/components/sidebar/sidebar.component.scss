@@ -184,6 +184,56 @@
   background-color: #e5e7eb;
 }
 
+.submenu-link.has-submenu {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.submenu-link.has-submenu i {
+  font-size: 12px;
+  opacity: 0.9;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.submenu-link.has-submenu i.rotated {
+  transform: rotate(180deg);
+}
+
+/* Nested Submenu */
+.nested-submenu {
+  list-style: none;
+  padding: 4px 0 4px 20px;
+  margin: 0;
+  animation: slideDown 0.25s ease-out;
+}
+
+.nested-submenu-item {
+  margin: 2px 0;
+}
+
+.nested-submenu-link {
+  display: block;
+  padding: 6px 10px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 13px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  border-radius: 6px;
+}
+
+.nested-submenu-link:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.nested-submenu-link.active {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 500;
+}
+
 .nav-item.has-submenu .nav-link {
   position: relative;
 }

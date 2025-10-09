@@ -7,6 +7,15 @@ import {
   SanPhamResponse,
   PageResponse,
 } from '../../services/product-api.service';
+import { QuickAddModalComponent } from '../quick-add-modal/quick-add-modal.component';
+import {
+  SearchableDropdownComponent,
+  DropdownOption,
+} from '../searchable-dropdown/searchable-dropdown.component';
+import {
+  LoaiMuBaoHiemApiService,
+  LoaiMuBaoHiemRequest,
+} from '../../services/loai-mu-bao-hiem-api.service';
 
 interface HelmetProduct {
   id: number;
@@ -39,7 +48,13 @@ interface HelmetProduct {
 @Component({
   selector: 'app-helmets',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterModule,
+    QuickAddModalComponent,
+    SearchableDropdownComponent,
+  ],
   templateUrl: './helmets.component.html',
   styleUrls: ['./helmets.component.scss', './table-styles.scss'],
 })
@@ -53,6 +68,15 @@ export class HelmetsComponent implements OnInit {
   xuatXuList: { id: number; tenXuatXu: string }[] = [];
   kieuDangList: { id: number; tenKieuDang: string }[] = [];
   congNgheList: { id: number; tenCongNghe: string }[] = [];
+
+  // Converted data for searchable dropdowns
+  loaiMuOptions: DropdownOption[] = [];
+  nsxOptions: DropdownOption[] = [];
+  chatLieuOptions: DropdownOption[] = [];
+  trongLuongOptions: DropdownOption[] = [];
+  xuatXuOptions: DropdownOption[] = [];
+  kieuDangOptions: DropdownOption[] = [];
+  congNgheOptions: DropdownOption[] = [];
   searchTerm: string = '';
   selectedStatus: string = 'all';
   showModal: boolean = false;
@@ -79,30 +103,57 @@ export class HelmetsComponent implements OnInit {
     updatedAt: new Date(),
   };
 
-  constructor(private productApi: ProductApiService, private cdr: ChangeDetectorRef) {}
+  // Quick Add Modal state
+  showQuickAddModal: boolean = false;
+  quickAddModalType: string = '';
+
+  constructor(
+    private productApi: ProductApiService,
+    private cdr: ChangeDetectorRef,
+    private loaiMuBaoHiemApi: LoaiMuBaoHiemApiService
+  ) {}
 
   ngOnInit() {
     this.loadLookups();
     this.fetchProducts();
+
+    // Test API connection
+    this.testApiConnection();
+  }
+
+  testApiConnection() {
+    console.log('Testing API connection...');
+    this.productApi.getLoaiMuBaoHiemAll().subscribe({
+      next: (data) => {
+        console.log('API Test Success - Helmet types:', data?.length || 0, 'items');
+      },
+      error: (error) => {
+        console.error('API Test Failed:', error);
+      },
+    });
   }
 
   loadLookups() {
-    this.productApi.getLoaiMuBaoHiemAll().subscribe((data) => {
-      this.loaiMuList = (data || []).map((x) => ({ id: x.id, tenLoai: x.tenLoai }));
-      this.cdr.detectChanges();
-    });
-    this.productApi.getNhaSanXuatAll().subscribe((res: any) => {
-      this.nsxList = (res.content || []).map((x: any) => ({
-        id: x.id,
-        tenNhaSanXuat: x.tenNhaSanXuat || x.ten,
-      }));
-      this.cdr.detectChanges();
+    this.loadHelmetTypes();
+    this.productApi.getNhaSanXuatAll().subscribe({
+      next: (res: any) => {
+        this.nsxList = (res.content || []).map((x: any) => ({
+          id: x.id,
+          tenNhaSanXuat: x.tenNhaSanXuat || x.ten,
+        }));
+        this.nsxOptions = this.nsxList.map((x) => ({ id: x.id, name: x.tenNhaSanXuat }));
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading manufacturers:', error);
+      },
     });
     this.productApi.getChatLieuVoAll().subscribe((res: any) => {
       this.chatLieuList = (res.content || []).map((x: any) => ({
         id: x.id,
         tenChatLieu: x.tenChatLieu,
       }));
+      this.chatLieuOptions = this.chatLieuList.map((x) => ({ id: x.id, name: x.tenChatLieu }));
       this.cdr.detectChanges();
     });
     this.productApi.getTrongLuongAll().subscribe((data: any[]) => {
@@ -110,10 +161,15 @@ export class HelmetsComponent implements OnInit {
         id: x.id,
         giaTriTrongLuong: x.giaTriTrongLuong,
       }));
+      this.trongLuongOptions = this.trongLuongList.map((x) => ({
+        id: x.id,
+        name: `${x.giaTriTrongLuong}g`,
+      }));
       this.cdr.detectChanges();
     });
     this.productApi.getXuatXuAll().subscribe((data: any[]) => {
       this.xuatXuList = (data || []).map((x: any) => ({ id: x.id, tenXuatXu: x.tenXuatXu }));
+      this.xuatXuOptions = this.xuatXuList.map((x) => ({ id: x.id, name: x.tenXuatXu }));
       this.cdr.detectChanges();
     });
     this.productApi.getKieuDangMuAll().subscribe((res: any) => {
@@ -121,10 +177,12 @@ export class HelmetsComponent implements OnInit {
         id: x.id,
         tenKieuDang: x.tenKieuDang,
       }));
+      this.kieuDangOptions = this.kieuDangList.map((x) => ({ id: x.id, name: x.tenKieuDang }));
       this.cdr.detectChanges();
     });
     this.productApi.getCongNgheAnToanAll().subscribe((data: any[]) => {
       this.congNgheList = (data || []).map((x: any) => ({ id: x.id, tenCongNghe: x.tenCongNghe }));
+      this.congNgheOptions = this.congNgheList.map((x) => ({ id: x.id, name: x.tenCongNghe }));
       this.cdr.detectChanges();
     });
   }
@@ -474,7 +532,34 @@ export class HelmetsComponent implements OnInit {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    // Force reload helmet types if empty
+    if (this.loaiMuList.length === 0) {
+      console.log('Reloading helmet types for modal...');
+      this.loadHelmetTypes();
+    }
+
     this.showModal = true;
+  }
+
+  loadHelmetTypes() {
+    console.log('Loading helmet types...');
+    this.productApi.getLoaiMuBaoHiemAll().subscribe({
+      next: (data) => {
+        console.log('Helmet types loaded:', data);
+        this.loaiMuList = (data || []).map((x) => ({ id: x.id, tenLoai: x.tenLoai }));
+        this.loaiMuOptions = this.loaiMuList.map((x) => ({ id: x.id, name: x.tenLoai }));
+        console.log('LoaiMuList updated:', this.loaiMuList);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading helmet types:', error);
+        alert(
+          'Lỗi khi tải danh sách loại mũ bảo hiểm: ' +
+            (error.message || 'Không thể kết nối đến server')
+        );
+      },
+    });
   }
 
   openEditModal(product: HelmetProduct) {
@@ -494,5 +579,65 @@ export class HelmetsComponent implements OnInit {
 
   trackByProductId(index: number, product: HelmetProduct): number {
     return product.id;
+  }
+
+  // Method để mở modal thêm nhanh
+  openQuickAddModal(type: string) {
+    console.log('Opening quick add modal for:', type);
+    this.quickAddModalType = type;
+    this.showQuickAddModal = true;
+  }
+
+  // Method để xử lý save từ quick add modal
+  onQuickAddSave(event: { type: string; data: any }) {
+    console.log('Quick add save event:', event);
+
+    if (event.type === 'loaiMuBaoHiem') {
+      const request: LoaiMuBaoHiemRequest = {
+        tenLoai: event.data.tenLoai,
+        moTa: event.data.moTa,
+        trangThai: event.data.trangThai,
+      };
+
+      this.loaiMuBaoHiemApi.create(request).subscribe({
+        next: (response) => {
+          console.log('LoaiMuBaoHiem created:', response);
+          alert('Thêm mới Loại mũ bảo hiểm thành công!');
+          this.loadHelmetTypes(); // Refresh dropdown
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating LoaiMuBaoHiem:', error);
+          alert(
+            'Lỗi khi thêm mới Loại mũ bảo hiểm: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
+    } else {
+      // Tạm thời hiển thị alert cho các loại khác
+      const typeNames: { [key: string]: string } = {
+        nhaSanXuat: 'Nhà sản xuất',
+        chatLieuVo: 'Chất liệu vỏ',
+        trongLuong: 'Trọng lượng',
+        xuatXu: 'Xuất xứ',
+        kieuDangMu: 'Kiểu dáng mũ',
+        congNgheAnToan: 'Công nghệ an toàn',
+      };
+
+      const typeName = typeNames[event.type] || event.type;
+      alert(
+        `Tính năng thêm mới "${typeName}" sẽ được implement sau. Hiện tại bạn có thể thêm mới từ menu "Quản lý sản phẩm" tương ứng.`
+      );
+    }
+
+    this.onQuickAddClose(); // Close modal
+  }
+
+  // Method để đóng quick add modal
+  onQuickAddClose() {
+    this.showQuickAddModal = false;
+    this.quickAddModalType = '';
+    this.cdr.detectChanges();
   }
 }
