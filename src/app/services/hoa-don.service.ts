@@ -1,122 +1,83 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { HoaDonDTO, HoaDonPaginatedResponse, HoaDonFilter, HoaDonAdvancedFilter } from '../interfaces/hoa-don.interface';
 
 @Injectable({
   providedIn: 'root'
 })
 export class HoaDonService {
-  private apiUrl = `${environment.apiUrl}/hoa-don`;
+  constructor(private apiService: ApiService) {}
 
-  constructor(private http: HttpClient) { }
-
+  // Lấy tất cả hóa đơn
   getAllHoaDon(): Observable<HoaDonDTO[]> {
-    return this.http.get<HoaDonDTO[]>(this.apiUrl);
+    return this.apiService.get<HoaDonDTO[]>('/api/hoa-don');
   }
 
-  getHoaDonPaginated(filter: HoaDonFilter): Observable<HoaDonPaginatedResponse> {
-    let params = new HttpParams();
-    if (filter.page !== undefined) params = params.append('page', filter.page.toString());
-    if (filter.size !== undefined) params = params.append('size', filter.size.toString());
-    if (filter.sortBy) params = params.append('sortBy', filter.sortBy);
-    if (filter.sortDir) params = params.append('sortDir', filter.sortDir);
-    if (filter.search) params = params.append('search', filter.search);
-    if (filter.trangThai) params = params.append('trangThai', filter.trangThai);
-
-    return this.http.get<HoaDonPaginatedResponse>(`${this.apiUrl}/paginated`, { params });
-  }
-
+  // Lấy hóa đơn theo ID
   getHoaDonById(id: number): Observable<HoaDonDTO> {
-    return this.http.get<HoaDonDTO>(`${this.apiUrl}/${id}`);
+    return this.apiService.get<HoaDonDTO>(`/api/hoa-don/${id}`);
   }
 
-  createHoaDon(hoaDon: Partial<HoaDonDTO>): Observable<HoaDonDTO> {
-    return this.http.post<HoaDonDTO>(this.apiUrl, hoaDon);
+  // Lấy hóa đơn theo mã hóa đơn
+  getHoaDonByMa(maHoaDon: string): Observable<HoaDonDTO> {
+    return this.apiService.get<HoaDonDTO>(`/api/hoa-don/ma/${maHoaDon}`);
   }
 
-  updateHoaDon(id: number, hoaDon: Partial<HoaDonDTO>): Observable<HoaDonDTO> {
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/${id}`, hoaDon);
+  // Lấy hóa đơn theo trạng thái
+  getHoaDonByTrangThai(trangThai: string): Observable<HoaDonDTO[]> {
+    return this.apiService.get<HoaDonDTO[]>(`/api/hoa-don/trang-thai/${trangThai}`);
   }
 
+  // Lấy hóa đơn theo khách hàng
+  getHoaDonByKhachHang(khachHangId: number): Observable<HoaDonDTO[]> {
+    return this.apiService.get<HoaDonDTO[]>(`/api/hoa-don/khach-hang/${khachHangId}`);
+  }
+
+  // Lấy hóa đơn theo nhân viên
+  getHoaDonByNhanVien(nhanVienId: number): Observable<HoaDonDTO[]> {
+    return this.apiService.get<HoaDonDTO[]>(`/api/hoa-don/nhan-vien/${nhanVienId}`);
+  }
+
+  // Lấy hóa đơn theo khoảng thời gian
+  getHoaDonByDateRange(startDate: string, endDate: string): Observable<HoaDonDTO[]> {
+    return this.apiService.get<HoaDonDTO[]>(`/api/hoa-don/date-range?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  // Tạo hóa đơn mới
+  createHoaDon(hoaDonDTO: HoaDonDTO): Observable<HoaDonDTO> {
+    return this.apiService.post<HoaDonDTO>('/api/hoa-don', hoaDonDTO);
+  }
+
+  // Cập nhật hóa đơn
+  updateHoaDon(id: number, hoaDonDTO: HoaDonDTO): Observable<HoaDonDTO> {
+    return this.apiService.put<HoaDonDTO>(`/api/hoa-don/${id}`, hoaDonDTO);
+  }
+
+  // Xóa hóa đơn
   deleteHoaDon(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+    return this.apiService.delete<void>(`/api/hoa-don/${id}`);
   }
 
+  // Cập nhật trạng thái hóa đơn
   updateTrangThaiHoaDon(id: number, trangThai: string): Observable<HoaDonDTO> {
-    let params = new HttpParams();
-    params = params.append('trangThai', trangThai);
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/${id}/trang-thai`, null, { params });
+    return this.apiService.put<HoaDonDTO>(`/api/hoa-don/${id}/trang-thai?trangThai=${trangThai}`, {});
   }
 
-  getHoaDonDashboard(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/dashboard`);
+  // Tạo dữ liệu mẫu
+  createSampleData(): Observable<string> {
+    return this.apiService.post<string>('/api/hoa-don/create-sample-data', {});
   }
 
-  exportExcel(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/export/excel`);
+  // Tạo khách hàng và nhân viên mẫu
+  createSampleCustomers(): Observable<string> {
+    return this.apiService.post<string>('/api/hoa-don/create-sample-customers', {});
   }
 
-  // Additional API methods for complete CRUD operations
-  getAllHoaDonSimple(): Observable<HoaDonDTO[]> {
-    return this.http.get<HoaDonDTO[]>(`${this.apiUrl}/all`);
+  // Test API
+  testApi(): Observable<string> {
+    return this.apiService.get<string>('/api/hoa-don/test');
   }
-
-  createHoaDonNew(hoaDon: Partial<HoaDonDTO>): Observable<HoaDonDTO> {
-    return this.http.post<HoaDonDTO>(`${this.apiUrl}/create`, hoaDon);
-  }
-
-  updateHoaDonNew(id: number, hoaDon: Partial<HoaDonDTO>): Observable<HoaDonDTO> {
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/update/${id}`, hoaDon);
-  }
-
-  deleteHoaDonNew(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/delete/${id}`);
-  }
-
-  updateTrangThaiHoaDonNew(id: number, trangThai: string): Observable<HoaDonDTO> {
-    let params = new HttpParams();
-    params = params.append('trangThai', trangThai);
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/update-status/${id}`, null, { params });
-  }
-
-  // Advanced search method
-  getHoaDonAdvancedSearch(filter: HoaDonAdvancedFilter): Observable<HoaDonPaginatedResponse> {
-    let params = new HttpParams();
-    if (filter.page !== undefined) params = params.append('page', filter.page.toString());
-    if (filter.size !== undefined) params = params.append('size', filter.size.toString());
-    if (filter.sortBy) params = params.append('sortBy', filter.sortBy);
-    if (filter.sortDir) params = params.append('sortDir', filter.sortDir);
-    if (filter.searchTerm) params = params.append('searchTerm', filter.searchTerm);
-    if (filter.trangThai) params = params.append('trangThai', filter.trangThai);
-    if (filter.startDate) params = params.append('startDate', filter.startDate);
-    if (filter.endDate) params = params.append('endDate', filter.endDate);
-    if (filter.minAmount !== undefined) params = params.append('minAmount', filter.minAmount.toString());
-    if (filter.maxAmount !== undefined) params = params.append('maxAmount', filter.maxAmount.toString());
-
-    return this.http.get<HoaDonPaginatedResponse>(`${this.apiUrl}/advanced-search`, { params });
-  }
-
-  // Search suggestions
-  getSearchSuggestions(query: string): Observable<string[]> {
-    let params = new HttpParams();
-    params = params.append('query', query);
-    return this.http.get<string[]>(`${this.apiUrl}/search-suggestions`, { params });
-  }
-
-  // SanPham API methods
-  getAllSanPham(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/san-pham/all`);
-  }
-
-  getActiveSanPham(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/san-pham/active`);
-  }
-
-  getAvailableSanPham(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/san-pham/available`);
-  }
+}
 
   createSanPham(sanPham: any): Observable<any> {
     return this.http.post<any>(`${environment.apiUrl}/san-pham/create`, sanPham);
