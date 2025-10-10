@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+import { HoaDonDTO } from '../interfaces/hoa-don.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -76,10 +78,5 @@ export class HoaDonService {
   // Test API
   testApi(): Observable<string> {
     return this.apiService.get<string>('/api/hoa-don/test');
-  }
-}
-
-  createSanPham(sanPham: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiUrl}/san-pham/create`, sanPham);
   }
 }
