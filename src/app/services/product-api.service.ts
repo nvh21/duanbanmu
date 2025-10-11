@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface SanPhamResponse {
@@ -107,18 +108,12 @@ export class ProductApiService {
   getNhaSanXuatAll(): Observable<any> {
     // reuse search endpoint first page large size, only active items
     return this.http.get(`${environment.apiBaseUrl}/nha-san-xuat`, {
-      params: new HttpParams()
-        .set('page', '0')
-        .set('size', '1000')
-        .set('trangThai', 'true'),
+      params: new HttpParams().set('page', '0').set('size', '1000').set('trangThai', 'true'),
     });
   }
   getChatLieuVoAll(): Observable<any> {
     return this.http.get(`${environment.apiBaseUrl}/chat-lieu-vo`, {
-      params: new HttpParams()
-        .set('page', '0')
-        .set('size', '1000')
-        .set('trangThai', 'true'),
+      params: new HttpParams().set('page', '0').set('size', '1000').set('trangThai', 'true'),
     });
   }
   getTrongLuongAll(): Observable<any[]> {
@@ -129,13 +124,15 @@ export class ProductApiService {
   }
   getKieuDangMuAll(): Observable<any> {
     return this.http.get(`${environment.apiBaseUrl}/kieu-dang-mu`, {
-      params: new HttpParams()
-        .set('page', '0')
-        .set('size', '1000')
-        .set('trangThai', 'true'),
+      params: new HttpParams().set('page', '0').set('size', '1000').set('trangThai', 'true'),
     });
   }
   getCongNgheAnToanAll(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiBaseUrl}/cong-nghe-an-toan/all`);
+    // reuse search endpoint first page large size, only active items
+    return this.http
+      .get(`${environment.apiBaseUrl}/cong-nghe-an-toan`, {
+        params: new HttpParams().set('page', '0').set('size', '1000').set('trangThai', 'true'),
+      })
+      .pipe(map((response: any) => response.content));
   }
 }

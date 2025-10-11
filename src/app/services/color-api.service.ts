@@ -62,7 +62,7 @@ export class ColorApiService {
 
   getAllActive(): Observable<ColorResponse[]> {
     return this.search({ trangThai: true, page: 0, size: 1000 }).pipe(
-      map(response => response.content)
+      map((response) => response.content)
     );
   }
 }

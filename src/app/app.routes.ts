@@ -14,7 +14,6 @@ import { PaymentsComponent } from './components/payments/payments.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
 import { ManufacturersComponent } from './components/manufacturers/manufacturers.component';
-import { ProductDetailsComponent } from './components/product-details/product-details.component';
 // import { InventoryComponent } from './components/inventory/inventory.component';
 import { LoginComponent } from './components/login/login';
 import { ApiTestComponent } from './components/api-test/api-test.component';
@@ -27,6 +26,7 @@ import { MaterialsComponent } from './components/materials/materials.component';
 import { OriginsComponent } from './components/origins/origins.component';
 import { TrongLuongComponent } from './components/trong-luong/trong-luong.component';
 import { LoaiMuBaoHiemComponent } from './components/loai-mu-bao-hiem/loai-mu-bao-hiem.component';
+import { CongNgheAnToanComponent } from './components/cong-nghe-an-toan/cong-nghe-an-toan.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -126,8 +126,8 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'products/details',
-    component: ProductDetailsComponent,
+    path: 'products/cong-nghe-an-toan',
+    component: CongNgheAnToanComponent,
     canActivate: [AuthGuard],
   },
   // { path: 'products/inventory', component: InventoryComponent, canActivate: [AuthGuard] },
