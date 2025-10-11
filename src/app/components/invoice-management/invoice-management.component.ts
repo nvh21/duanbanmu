@@ -19,6 +19,8 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   paginatedInvoices: HoaDonDTO[] = [];
 
 
+
+
   // Math object for template
   Math = Math;
 
