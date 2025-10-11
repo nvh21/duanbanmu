@@ -18,6 +18,7 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   filteredInvoices: HoaDonDTO[] = [];
   paginatedInvoices: HoaDonDTO[] = [];
 
+
   // Math object for template
   Math = Math;
 
@@ -41,7 +42,6 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   showEditModal: boolean = false;
   showViewModal: boolean = false;
   showDeleteModal: boolean = false;
-  showProductModal: boolean = false;
 
   // Form data
   newInvoice: Partial<HoaDonDTO> = {
@@ -68,7 +68,16 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   loadingDetail: boolean = false;
   isEditMode: boolean = false;
   editingInvoiceDetail: any = null;
-  
+
+  // Product selection properties
+  showProductModal: boolean = false;
+  availableProducts: any[] = [];
+  selectedProducts: any[] = [];
+  discountPercentage: number = 0;
+
+  // Customer data cache
+  customerCache: { [key: number]: string } = {};
+
   // Search debounce
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -94,9 +103,7 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   paymentMethodOptions = [
     { value: 'all', label: 'Tất cả' },
     { value: 'cash', label: 'Tiền mặt' },
-    { value: 'card', label: 'Thẻ' },
-    { value: 'transfer', label: 'Chuyển khoản' },
-    { value: 'other', label: 'Khác' },
+    { value: 'transfer', label: 'Chuyển khoản' }
   ];
 
   constructor(
@@ -134,17 +141,31 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
       sortBy: this.sortColumn,
       sortDir: this.sortDirection,
       search: this.searchTerm || undefined,
-      trangThai: this.selectedStatus !== 'all' ? this.selectedStatus : undefined,
-      paymentStatus: this.selectedPaymentStatus !== 'all' ? this.selectedPaymentStatus : undefined,
-      paymentMethod: this.selectedPaymentMethod !== 'all' ? this.selectedPaymentMethod : undefined
+      trangThai: this.selectedStatus !== 'all' ? this.selectedStatus : undefined
     };
 
     this.hoaDonService.getHoaDonPaginated(filter).subscribe({
       next: (response: any) => {
         console.log('API Response:', response);
-        this.paginatedInvoices = response.hoaDonList || response.content || [];
-        this.totalItems = response.totalItems || response.totalElements || 0;
+        // Handle different response structures
+        if (response.content) {
+          this.paginatedInvoices = response.content;
+          this.totalItems = response.totalElements || 0;
+        } else if (response.hoaDonList) {
+          this.paginatedInvoices = response.hoaDonList;
+          this.totalItems = response.totalItems || 0;
+        } else if (Array.isArray(response)) {
+          this.paginatedInvoices = response;
+          this.totalItems = response.length;
+        } else {
+          this.paginatedInvoices = [];
+          this.totalItems = 0;
+        }
         this.filteredInvoices = this.paginatedInvoices;
+
+        // Load customer names for invoices that have khachHangId but no tenKhachHang
+        this.loadCustomerNames();
+
         this.cdr.detectChanges();
       },
       error: (error) => {
@@ -178,10 +199,34 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
         soLuongSanPham: 1,
         viTriBanHang: 'Tại quầy',
         danhSachSanPham: []
+      },
+      {
+        id: 2,
+        maHoaDon: 'INV-2024-002',
+        khachHangId: 2,
+        tenKhachHang: 'Lê Thị Bình',
+        soDienThoaiKhachHang: '0987654321',
+        emailKhachHang: 'binh.le@email.com',
+        nhanVienId: 1,
+        tenNhanVien: 'Nguyễn Văn A',
+        tongTien: 2500000,
+        tienGiamGia: 0,
+        thanhTien: 2500000,
+        phuongThucThanhToan: 'transfer',
+        trangThai: 'CHO_XAC_NHAN',
+        ghiChu: 'Thanh toán chuyển khoản',
+        ngayTao: '2024-01-15T14:00:00',
+        ngayThanhToan: undefined,
+        soLuongSanPham: 2,
+        viTriBanHang: 'Online',
+        danhSachSanPham: []
+
+
       }
     ];
+
     this.filteredInvoices = this.paginatedInvoices;
-    this.totalItems = 1;
+    this.totalItems = 2;
     this.cdr.detectChanges();
   }
 
@@ -376,13 +421,11 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   getPaymentMethodLabel(method: string): string {
     const methodLabels: { [key: string]: string } = {
       cash: 'Tiền mặt',
-      card: 'Thẻ',
       transfer: 'Chuyển khoản',
-      other: 'Khác',
-      'Tại quầy': 'Tại quầy',
-      'Online': 'Online',
+      'Tại quầy': 'Tiền mặt',
+      'Online': 'Chuyển khoản',
     };
-    return methodLabels[method] || method;
+    return methodLabels[method] || 'Tiền mặt'; // Default to cash
   }
 
   formatCurrency(amount: number): string {
@@ -397,29 +440,61 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   }
 
   // CRUD Operations
-  saveInvoice(): void {
-    if (this.newInvoice.maHoaDon && this.newInvoice.tenKhachHang) {
-      this.hoaDonService.createHoaDon(this.newInvoice).subscribe({
-        next: (result) => {
-          console.log('Invoice created:', result);
-          this.closeModals();
-          this.loadHoaDon();
-          // Show success message
-          alert('Tạo hóa đơn thành công!');
-        },
-        error: (error) => {
-          console.error('Error creating invoice:', error);
-          alert('Lỗi khi tạo hóa đơn: ' + error.message);
-        }
-      });
-    } else {
-      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+  async saveInvoice(): Promise<void> {
+    try {
+      let customerCreated = false;
+
+      // Tự động tạo khách hàng nếu chưa có
+      if (this.newInvoice.tenKhachHang && !this.newInvoice.khachHangId) {
+        console.log('Tạo khách hàng mới:', this.newInvoice.tenKhachHang);
+        this.newInvoice.khachHangId = await this.createCustomerIfNotExists(this.newInvoice.tenKhachHang);
+        customerCreated = true;
+      }
+
+      if (this.newInvoice.maHoaDon && this.newInvoice.tenKhachHang) {
+        // Prepare invoice data for backend
+        const invoiceData = {
+          ...this.newInvoice,
+          ngayTao: new Date().toISOString(),
+          danhSachSanPham: this.selectedProducts.map(product => ({
+            sanPhamId: product.id,
+            tenSanPham: product.tenSanPham,
+            soLuong: product.soLuong,
+            donGia: product.giaBan,
+            thanhTien: product.giaBan * product.soLuong
+          }))
+        };
+
+        this.hoaDonService.createHoaDon(invoiceData).subscribe({
+          next: (result) => {
+            console.log('Invoice created:', result);
+            this.closeModals();
+            this.loadHoaDon();
+
+            // Show success message with customer creation info
+            let message = 'Tạo hóa đơn thành công!';
+            if (customerCreated) {
+              message += `\nĐã tự động tạo khách hàng mới: ${this.newInvoice.tenKhachHang}`;
+            }
+            alert(message);
+          },
+          error: (error) => {
+            console.error('Error creating invoice:', error);
+            alert('Lỗi khi tạo hóa đơn: ' + (error.error?.message || error.message));
+          }
+        });
+      } else {
+        alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý hóa đơn:', error);
+      alert('Lỗi: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }
 
   updateInvoice(): void {
     if (this.editingInvoice && this.editingInvoice.id) {
-      this.hoaDonService.updateHoaDonNew(this.editingInvoice.id, this.editingInvoice).subscribe({
+      this.hoaDonService.updateHoaDon(this.editingInvoice.id, this.editingInvoice).subscribe({
         next: (result) => {
           console.log('Invoice updated:', result);
           this.closeModals();
@@ -428,7 +503,7 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error updating invoice:', error);
-          alert('Lỗi khi cập nhật hóa đơn: ' + error.message);
+          alert('Lỗi khi cập nhật hóa đơn: ' + (error.error?.message || error.message));
         }
       });
     }
@@ -437,16 +512,16 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   deleteInvoice(): void {
     if (this.selectedInvoice && this.selectedInvoice.id) {
       if (confirm('Bạn có chắc chắn muốn xóa hóa đơn này?')) {
-    this.hoaDonService.deleteHoaDonNew(this.selectedInvoice.id).subscribe({
-      next: () => {
+        this.hoaDonService.deleteHoaDon(this.selectedInvoice.id).subscribe({
+          next: () => {
             console.log('Invoice deleted');
-        this.closeModals();
-        this.loadHoaDon();
+            this.closeModals();
+            this.loadHoaDon();
             alert('Xóa hóa đơn thành công!');
-      },
-      error: (error) => {
-        console.error('Error deleting invoice:', error);
-            alert('Lỗi khi xóa hóa đơn: ' + error.message);
+          },
+          error: (error) => {
+            console.error('Error deleting invoice:', error);
+            alert('Lỗi khi xóa hóa đơn: ' + (error.error?.message || error.message));
           }
         });
       }
@@ -479,5 +554,319 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
       viTriBanHang: 'Tại quầy',
       danhSachSanPham: []
     };
+    this.selectedProducts = [];
+    this.discountPercentage = 0;
+  }
+
+  // Product selection methods
+  openProductModal(): void {
+    this.showProductModal = true;
+    this.selectedProductIds.clear(); // Reset selection when opening modal
+    this.loadProducts();
+  }
+
+  closeProductModal(): void {
+    this.showProductModal = false;
+  }
+
+  loadProducts(): void {
+    this.hoaDonService.getProducts().subscribe({
+      next: (products) => {
+        this.availableProducts = products;
+        console.log('Products loaded:', products);
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+        alert('Lỗi khi tải danh sách sản phẩm: ' + (error.error?.message || error.message));
+        // Fallback sample products
+        this.availableProducts = [
+          {
+            id: 1,
+            tenSanPham: 'Mũ bảo hiểm AGV K1',
+            giaBan: 1500000,
+            donGia: 1500000,
+            soLuongTon: 10,
+            moTa: 'Mũ bảo hiểm cao cấp',
+            trangThai: true
+          },
+          {
+            id: 2,
+            tenSanPham: 'Mũ bảo hiểm Shoei X-14',
+            giaBan: 2500000,
+            donGia: 2500000,
+            soLuongTon: 5,
+            moTa: 'Mũ bảo hiểm thể thao',
+            trangThai: true
+          }
+        ];
+      }
+    });
+  }
+
+  updateProductQuantity(product: any, quantity: number): void {
+    const selectedProduct = this.selectedProducts.find(p => p.id === product.id);
+    if (selectedProduct) {
+      selectedProduct.soLuong = quantity;
+      // Không cần tính thanhTien ở đây vì calculateTotal() sẽ tính lại
+      this.calculateTotal();
+    }
+  }
+
+  removeProduct(product: any): void {
+    const index = this.selectedProducts.findIndex(p => p.id === product.id);
+    if (index > -1) {
+      this.selectedProducts.splice(index, 1);
+      this.calculateTotal();
+    }
+  }
+
+  calculateTotal(): void {
+    // Tính tổng tiền từ các sản phẩm đã chọn
+    // Công thức: Σ(đơn giá × số lượng) cho tất cả sản phẩm
+    this.newInvoice.tongTien = this.selectedProducts.reduce((total, product) => {
+      const productTotal = product.giaBan * product.soLuong;
+      console.log(`Sản phẩm ${product.tenSanPham}: ${product.giaBan} × ${product.soLuong} = ${productTotal}`);
+      return total + productTotal;
+    }, 0);
+
+    // Tính tiền giảm giá
+    this.newInvoice.tienGiamGia = (this.newInvoice.tongTien || 0) * (this.discountPercentage / 100);
+
+    // Tính thành tiền
+    this.newInvoice.thanhTien = (this.newInvoice.tongTien || 0) - (this.newInvoice.tienGiamGia || 0);
+
+    console.log('=== TÍNH TỔNG TIỀN ===');
+    console.log('Tổng tiền:', this.newInvoice.tongTien);
+    console.log('Tiền giảm giá:', this.newInvoice.tienGiamGia);
+    console.log('Thành tiền:', this.newInvoice.thanhTien);
+    console.log('Số sản phẩm:', this.selectedProducts.length);
+    console.log('========================');
+  }
+
+  // Method để hiển thị chi tiết tính toán
+  getCalculationDetails(): string {
+    if (this.selectedProducts.length === 0) {
+      return 'Chưa có sản phẩm nào được chọn';
+    }
+
+    let details = 'Chi tiết tính toán:\n';
+    let total = 0;
+
+    this.selectedProducts.forEach((product, index) => {
+      const productTotal = product.giaBan * product.soLuong;
+      total += productTotal;
+      details += `${index + 1}. ${product.tenSanPham}: ${this.formatCurrency(product.giaBan)} × ${product.soLuong} = ${this.formatCurrency(productTotal)}\n`;
+    });
+
+    details += `\nTổng cộng: ${this.formatCurrency(total)}`;
+
+    if (this.discountPercentage > 0) {
+      const discountAmount = total * (this.discountPercentage / 100);
+      details += `\nGiảm giá ${this.discountPercentage}%: -${this.formatCurrency(discountAmount)}`;
+      details += `\nThành tiền: ${this.formatCurrency(total - discountAmount)}`;
+    }
+
+    return details;
+  }
+
+  // Tự động tạo khách hàng mới nếu chưa có
+  async createCustomerIfNotExists(customerName: string): Promise<number> {
+    if (!customerName || customerName.trim() === '') {
+      throw new Error('Tên khách hàng không được để trống');
+    }
+
+    try {
+      // Tìm khách hàng theo tên (tìm chính xác)
+      const existingCustomers = await this.hoaDonService.searchCustomerByName(customerName.trim()).toPromise();
+      if (existingCustomers && existingCustomers.length > 0) {
+        // Tìm khách hàng có tên chính xác
+        const exactMatch = existingCustomers.find(customer =>
+          customer.tenKhachHang.toLowerCase() === customerName.trim().toLowerCase()
+        );
+        if (exactMatch) {
+          console.log('Tìm thấy khách hàng:', exactMatch);
+          return exactMatch.id;
+        }
+      }
+
+      // Tạo khách hàng mới
+      const newCustomer = {
+        tenKhachHang: customerName.trim(),
+        email: `${customerName.toLowerCase().replace(/\s+/g, '')}@example.com`,
+        soDienThoai: 'Chưa có',
+        gioiTinh: null, // Không xác định
+        ngaySinh: null,
+        diemTichLuy: 0,
+        trangThai: true,
+        ngayTao: new Date().toISOString().split('T')[0] // Format YYYY-MM-DD
+      };
+
+      console.log('Tạo khách hàng mới:', newCustomer);
+      const createdCustomer = await this.hoaDonService.createCustomer(newCustomer).toPromise();
+      console.log('Đã tạo khách hàng mới:', createdCustomer);
+
+      // Reload danh sách khách hàng để hiển thị khách hàng mới
+      this.loadCustomerNames();
+
+      return createdCustomer.id;
+    } catch (error) {
+      console.error('Lỗi khi tạo khách hàng:', error);
+      // Fallback: tạo ID tạm thời
+      return Math.floor(Math.random() * 1000) + 1;
+    }
+  }
+
+  confirmProductSelection(): void {
+    this.newInvoice.danhSachSanPham = [...this.selectedProducts];
+    this.closeProductModal();
+  }
+
+  // Load customer names for all invoices
+  loadCustomerNames(): void {
+    const invoicesToUpdate = this.paginatedInvoices.filter(invoice =>
+      invoice.khachHangId && !invoice.tenKhachHang
+    );
+
+    invoicesToUpdate.forEach(invoice => {
+      if (invoice.khachHangId) {
+        this.hoaDonService.getCustomerById(invoice.khachHangId).subscribe({
+          next: (customer) => {
+            invoice.tenKhachHang = customer.tenKhachHang || 'Khách hàng không xác định';
+            invoice.soDienThoaiKhachHang = customer.soDienThoai || invoice.soDienThoaiKhachHang;
+            invoice.emailKhachHang = customer.email || invoice.emailKhachHang;
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            console.error('Error loading customer:', error);
+            invoice.tenKhachHang = 'Khách hàng không xác định';
+            this.cdr.detectChanges();
+          }
+        });
+      }
+    });
+  }
+
+  // Customer methods
+  getCustomerName(customerId: number): string {
+    if (this.customerCache[customerId]) {
+      return this.customerCache[customerId];
+    }
+
+    // Load customer name if not cached
+    if (customerId) {
+      this.hoaDonService.getCustomerById(customerId).subscribe({
+        next: (customer) => {
+          this.customerCache[customerId] = customer.tenKhachHang || 'Khách hàng không xác định';
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading customer:', error);
+          this.customerCache[customerId] = 'Khách hàng không xác định';
+          this.cdr.detectChanges();
+        }
+      });
+    }
+
+    return 'Đang tải...';
+  }
+
+  // Enhanced product modal methods
+  addProductToInvoice(product: any): void {
+    const existingProduct = this.selectedProducts.find(p => p.id === product.id);
+    if (existingProduct) {
+      existingProduct.soLuong += 1;
+    } else {
+      this.selectedProducts.push({
+        ...product,
+        soLuong: 1
+      });
+    }
+    this.calculateTotal();
+  }
+
+  removeProductFromInvoice(product: any): void {
+    const index = this.selectedProducts.findIndex(p => p.id === product.id);
+    if (index > -1) {
+      this.selectedProducts.splice(index, 1);
+      this.calculateTotal();
+    }
+  }
+
+  isProductInInvoice(product: any): boolean {
+    return this.selectedProducts.some(p => p.id === product.id);
+  }
+
+  getProductQuantityInInvoice(product: any): number {
+    const selectedProduct = this.selectedProducts.find(p => p.id === product.id);
+    return selectedProduct ? selectedProduct.soLuong : 0;
+  }
+
+  // Product selection methods
+  selectedProductIds: Set<number> = new Set();
+
+  isProductSelected(product: any): boolean {
+    return this.selectedProductIds.has(product.id);
+  }
+
+  toggleProductSelection(product: any, event: any): void {
+    if (event.target.checked) {
+      this.selectedProductIds.add(product.id);
+    } else {
+      this.selectedProductIds.delete(product.id);
+    }
+  }
+
+  isAllProductsSelected(): boolean {
+    const availableProducts = this.availableProducts.filter(p => p.trangThai && p.soLuongTon > 0);
+    return availableProducts.length > 0 && availableProducts.every(p => this.selectedProductIds.has(p.id));
+  }
+
+  isSomeProductsSelected(): boolean {
+    const availableProducts = this.availableProducts.filter(p => p.trangThai && p.soLuongTon > 0);
+    const selectedCount = availableProducts.filter(p => this.selectedProductIds.has(p.id)).length;
+    return selectedCount > 0 && selectedCount < availableProducts.length;
+  }
+
+  toggleSelectAll(event: any): void {
+    const availableProducts = this.availableProducts.filter(p => p.trangThai && p.soLuongTon > 0);
+
+    if (event.target.checked) {
+      availableProducts.forEach(product => {
+        this.selectedProductIds.add(product.id);
+      });
+    } else {
+      availableProducts.forEach(product => {
+        this.selectedProductIds.delete(product.id);
+      });
+    }
+  }
+
+  getSelectedProducts(): any[] {
+    return this.availableProducts.filter(p => this.selectedProductIds.has(p.id));
+  }
+
+  addSelectedProducts(): void {
+    const selectedProducts = this.getSelectedProducts();
+    selectedProducts.forEach(product => {
+      const existingProduct = this.selectedProducts.find(p => p.id === product.id);
+      if (existingProduct) {
+        existingProduct.soLuong += 1;
+      } else {
+        this.selectedProducts.push({
+          ...product,
+          soLuong: 1
+        });
+      }
+    });
+    this.selectedProductIds.clear();
+    this.calculateTotal();
+  }
+
+  removeSelectedProducts(): void {
+    const selectedProducts = this.getSelectedProducts();
+    selectedProducts.forEach(product => {
+      this.removeProductFromInvoice(product);
+    });
+    this.selectedProductIds.clear();
   }
 }

@@ -8,15 +8,16 @@ import { HoaDonDTO, HoaDonPaginatedResponse, HoaDonFilter, HoaDonAdvancedFilter 
   providedIn: 'root'
 })
 export class HoaDonService {
-  private apiUrl = `${environment.apiUrl}/hoa-don`;
+  private apiUrl = `${environment.apiBaseUrl}/api/hoa-don`;
 
   constructor(private http: HttpClient) { }
+
 
   getAllHoaDon(): Observable<HoaDonDTO[]> {
     return this.http.get<HoaDonDTO[]>(this.apiUrl);
   }
 
-  getHoaDonPaginated(filter: HoaDonFilter): Observable<HoaDonPaginatedResponse> {
+  getHoaDonPaginated(filter: HoaDonFilter): Observable<any> {
     let params = new HttpParams();
     if (filter.page !== undefined) params = params.append('page', filter.page.toString());
     if (filter.size !== undefined) params = params.append('size', filter.size.toString());
@@ -24,10 +25,8 @@ export class HoaDonService {
     if (filter.sortDir) params = params.append('sortDir', filter.sortDir);
     if (filter.search) params = params.append('search', filter.search);
     if (filter.trangThai) params = params.append('trangThai', filter.trangThai);
-    if (filter.paymentStatus) params = params.append('paymentStatus', filter.paymentStatus);
-    if (filter.paymentMethod) params = params.append('paymentMethod', filter.paymentMethod);
 
-    return this.http.get<HoaDonPaginatedResponse>(`${this.apiUrl}/paginated`, { params });
+    return this.http.get<any>(`${this.apiUrl}/paginated`, { params });
   }
 
   getHoaDonById(id: number): Observable<HoaDonDTO> {
@@ -49,7 +48,7 @@ export class HoaDonService {
   updateTrangThaiHoaDon(id: number, trangThai: string): Observable<HoaDonDTO> {
     let params = new HttpParams();
     params = params.append('trangThai', trangThai);
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/${id}/trang-thai`, null, { params });
+    return this.http.patch<HoaDonDTO>(`${this.apiUrl}/${id}/trang-thai`, null, { params });
   }
 
   getHoaDonDashboard(): Observable<any> {
@@ -62,25 +61,25 @@ export class HoaDonService {
 
   // Additional API methods for complete CRUD operations
   getAllHoaDonSimple(): Observable<HoaDonDTO[]> {
-    return this.http.get<HoaDonDTO[]>(`${this.apiUrl}/all`);
+    return this.http.get<HoaDonDTO[]>(this.apiUrl);
   }
 
   createHoaDonNew(hoaDon: Partial<HoaDonDTO>): Observable<HoaDonDTO> {
-    return this.http.post<HoaDonDTO>(`${this.apiUrl}/create`, hoaDon);
+    return this.http.post<HoaDonDTO>(this.apiUrl, hoaDon);
   }
 
   updateHoaDonNew(id: number, hoaDon: Partial<HoaDonDTO>): Observable<HoaDonDTO> {
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/update/${id}`, hoaDon);
+    return this.http.put<HoaDonDTO>(`${this.apiUrl}/${id}`, hoaDon);
   }
 
   deleteHoaDonNew(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/delete/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
   updateTrangThaiHoaDonNew(id: number, trangThai: string): Observable<HoaDonDTO> {
     let params = new HttpParams();
     params = params.append('trangThai', trangThai);
-    return this.http.put<HoaDonDTO>(`${this.apiUrl}/update-status/${id}`, null, { params });
+    return this.http.patch<HoaDonDTO>(`${this.apiUrl}/${id}/trang-thai`, null, { params });
   }
 
   // Advanced search method
@@ -109,19 +108,23 @@ export class HoaDonService {
 
   // SanPham API methods
   getAllSanPham(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/san-pham/all`);
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/san-pham/all`);
   }
 
   getActiveSanPham(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/san-pham/active`);
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/san-pham/active`);
   }
 
   getAvailableSanPham(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/san-pham/available`);
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/san-pham/available`);
   }
 
   createSanPham(sanPham: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiUrl}/san-pham/create`, sanPham);
+    return this.http.post<any>(`${environment.apiBaseUrl}/api/san-pham/create`, sanPham);
+  }
+
+  getProducts(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/san-pham/all`);
   }
 
   // Methods for DataService compatibility
@@ -136,5 +139,32 @@ export class HoaDonService {
   // Get detailed invoice information
   getHoaDonDetail(id: number): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/${id}/detail`);
+  }
+
+
+
+  // Customer API methods
+  getAllCustomers(): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/khach-hang/all`);
+  }
+
+  getCustomerById(id: number): Observable<any> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/api/khach-hang/${id}`);
+  }
+
+  getCustomerByEmail(email: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/api/khach-hang/email/${email}`);
+  }
+
+  getCustomerByPhone(phone: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/khach-hang/phone/${phone}`);
+  }
+
+  createCustomer(customer: any): Observable<any> {
+    return this.http.post<any>(`${environment.apiBaseUrl}/api/khach-hang/create`, customer);
+  }
+
+  searchCustomerByName(name: string): Observable<any[]> {
+    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/khach-hang/search?name=${encodeURIComponent(name)}`);
   }
 }
