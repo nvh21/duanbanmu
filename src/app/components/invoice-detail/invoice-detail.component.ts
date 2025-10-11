@@ -23,7 +23,7 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
   isEditMode: boolean = false;
   editingInvoice: HoaDonDTO | null = null;
 
-  // Auto-refreshhh
+  // Auto-refreshhhh
   private destroy$ = new Subject<void>();
   private refreshInterval = interval(5000); // 5 seconds
 

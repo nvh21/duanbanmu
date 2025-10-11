@@ -21,7 +21,7 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
 
 
 
-  // Math object for template
+  // Math object for templatee
   Math = Math;
 
   // Pagination
