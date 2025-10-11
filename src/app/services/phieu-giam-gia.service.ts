@@ -1,122 +1,166 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiService } from './api.service';
-
-const API_BASE_URL = 'http://localhost:8080';
-
-export interface PhieuGiamGiaRequest {
-  maPhieu: string;
-  tenPhieu: string;
-  moTa?: string;
-  ngayBatDau: string;
-  ngayKetThuc: string;
-  giaTriGiam: number;
-  giaTriToiThieu: number;
-  soLuong: number;
-  loaiGiamGia: 'PHAN_TRAM' | 'TIEN_MAT';
-  trangThai?: boolean;
-}
-
-export interface PhieuGiamGiaResponse {
-  id: number;
-  maPhieu: string;
-  tenPhieu: string;
-  moTa?: string;
-  ngayBatDau: string;
-  ngayKetThuc: string;
-  giaTriGiam: number;
-  giaTriToiThieu: number;
-  soLuong: number;
-  loaiGiamGia: 'PHAN_TRAM' | 'TIEN_MAT';
-  trangThai: boolean;
-  trangThaiText: string;
-  loaiGiamGiaText: string;
-}
-
-export interface PhieuGiamGiaSearchParams {
-  keyword?: string;
-  trangThai?: boolean;
-  loaiGiamGia?: 'PHAN_TRAM' | 'TIEN_MAT';
-  page?: number;
-  size?: number;
-  sort?: string;
-}
+import { PhieuGiamGia, PhieuGiamGiaRequest, PhieuGiamGiaResponse, ApiResponse, KhachHangResponse } from '../interfaces/phieu-giam-gia.interface';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PhieuGiamGiaService {
-  constructor(private apiService: ApiService) {}
+  private readonly API_BASE_URL = 'http://localhost:8080/api';
+
+  constructor(private http: HttpClient) { }
+
+  private getHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    });
+  }
 
   // Tạo phiếu giảm giá mới
-  createPhieuGiamGia(request: PhieuGiamGiaRequest): Observable<PhieuGiamGiaResponse> {
-    return this.apiService.post<PhieuGiamGiaResponse>(`${API_BASE_URL}/api/phieu-giam-gia`, request);
+  createPhieuGiamGia(request: PhieuGiamGiaRequest): Observable<ApiResponse<PhieuGiamGiaResponse>> {
+    return this.http.post<ApiResponse<PhieuGiamGiaResponse>>(
+      `${this.API_BASE_URL}/phieu-giam-gia`,
+      request,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  // Lấy danh sách phiếu giảm giá
+  getAllPhieuGiamGia(page: number = 0, size: number = 10, sortBy: string = 'id', sortOrder: string = 'asc'): Observable<any> {
+    const params = new URLSearchParams();
+    params.set('page', page.toString());
+    params.set('size', size.toString());
+    params.set('sortBy', sortBy);
+    params.set('sortOrder', sortOrder);
+    
+    return this.http.get<any>(`${this.API_BASE_URL}/phieu-giam-gia?${params.toString()}`, { headers: this.getHeaders() });
   }
 
   // Cập nhật phiếu giảm giá
-  updatePhieuGiamGia(id: number, request: PhieuGiamGiaRequest): Observable<PhieuGiamGiaResponse> {
-    return this.apiService.put<PhieuGiamGiaResponse>(`${API_BASE_URL}/api/phieu-giam-gia/${id}`, request);
+  updatePhieuGiamGia(id: number, request: PhieuGiamGiaRequest): Observable<ApiResponse<PhieuGiamGiaResponse>> {
+    return this.http.put<ApiResponse<PhieuGiamGiaResponse>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/${id}`,
+      request,
+      { headers: this.getHeaders() }
+    );
   }
 
   // Xóa phiếu giảm giá
-  deletePhieuGiamGia(id: number): Observable<void> {
-    return this.apiService.delete<void>(`${API_BASE_URL}/api/phieu-giam-gia/${id}`);
+  deletePhieuGiamGia(id: number): Observable<ApiResponse<string>> {
+    return this.http.delete<ApiResponse<string>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/${id}`,
+      { headers: this.getHeaders() }
+    );
   }
 
   // Lấy phiếu giảm giá theo ID
-  getPhieuGiamGiaById(id: number): Observable<PhieuGiamGiaResponse> {
-    return this.apiService.get<PhieuGiamGiaResponse>(`${API_BASE_URL}/api/phieu-giam-gia/${id}`);
+  getPhieuGiamGiaById(id: number): Observable<ApiResponse<PhieuGiamGiaResponse>> {
+    return this.http.get<ApiResponse<PhieuGiamGiaResponse>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/${id}`,
+      { headers: this.getHeaders() }
+    );
   }
 
   // Lấy phiếu giảm giá theo mã phiếu
-  getPhieuGiamGiaByMaPhieu(maPhieu: string): Observable<PhieuGiamGiaResponse> {
-    return this.apiService.get<PhieuGiamGiaResponse>(`${API_BASE_URL}/api/phieu-giam-gia/ma/${maPhieu}`);
+  getPhieuGiamGiaByMaPhieu(maPhieu: string): Observable<ApiResponse<PhieuGiamGiaResponse>> {
+    return this.http.get<ApiResponse<PhieuGiamGiaResponse>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/ma-phieu/${maPhieu}`,
+      { headers: this.getHeaders() }
+    );
   }
 
-  // Tìm kiếm phiếu giảm giá với phân trang
-  searchPhieuGiamGia(params: PhieuGiamGiaSearchParams): Observable<any> {
-    const queryParams = new URLSearchParams();
-    
-    if (params.keyword) queryParams.append('keyword', params.keyword);
-    if (params.trangThai !== undefined) queryParams.append('trangThai', params.trangThai.toString());
-    if (params.loaiGiamGia) queryParams.append('loaiGiamGia', params.loaiGiamGia);
-    if (params.page !== undefined) queryParams.append('page', params.page.toString());
-    if (params.size !== undefined) queryParams.append('size', params.size.toString());
-    if (params.sort) queryParams.append('sort', params.sort);
-
-    const queryString = queryParams.toString();
-    const url = queryString ? `${API_BASE_URL}/api/phieu-giam-gia?${queryString}` : `${API_BASE_URL}/api/phieu-giam-gia`;
-    
-    return this.apiService.get<any>(url);
+  // Lấy phiếu giảm giá đang hoạt động
+  getActivePhieuGiamGia(): Observable<ApiResponse<PhieuGiamGiaResponse[]>> {
+    return this.http.get<ApiResponse<PhieuGiamGiaResponse[]>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/active`,
+      { headers: this.getHeaders() }
+    );
   }
 
-  // Lấy tất cả phiếu giảm giá đang hoạt động
-  getAllActivePhieuGiamGia(): Observable<PhieuGiamGiaResponse[]> {
-    return this.apiService.get<PhieuGiamGiaResponse[]>(`${API_BASE_URL}/api/phieu-giam-gia/active`);
+  // Tìm kiếm phiếu giảm giá
+  searchPhieuGiamGia(keyword: string): Observable<ApiResponse<PhieuGiamGiaResponse[]>> {
+    return this.http.get<ApiResponse<PhieuGiamGiaResponse[]>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/search?keyword=${keyword}`,
+      { headers: this.getHeaders() }
+    );
   }
 
-  // Lấy phiếu giảm giá đã hết hạn
-  getExpiredPhieuGiamGia(): Observable<PhieuGiamGiaResponse[]> {
-    return this.apiService.get<PhieuGiamGiaResponse[]>(`${API_BASE_URL}/api/phieu-giam-gia/expired`);
+  // Mock data cho khách hàng (tạm thời)
+  getAllCustomers(): Observable<KhachHangResponse> {
+    const mockCustomers = [
+      {
+        id: 1,
+        maKhachHang: 'KH00001',
+        tenKhachHang: 'Nguyễn Văn A',
+        gioiTinh: true,
+        ngaySinh: '15/3/1990',
+        tongSoLanMua: 25,
+        lanMuaGanNhat: '15/9/2024'
+      },
+      {
+        id: 2,
+        maKhachHang: 'KH00002',
+        tenKhachHang: 'Đinh Thế Mạnh',
+        gioiTinh: true,
+        ngaySinh: '12/9/1998',
+        tongSoLanMua: 19,
+        lanMuaGanNhat: '28/8/2025'
+      },
+      {
+        id: 3,
+        maKhachHang: 'KH00003',
+        tenKhachHang: 'Trịnh Châu Anh',
+        gioiTinh: false,
+        ngaySinh: '17/4/1986',
+        tongSoLanMua: 2,
+        lanMuaGanNhat: '9/3/2025'
+      },
+      {
+        id: 4,
+        maKhachHang: 'KH00004',
+        tenKhachHang: 'Lê Thị B',
+        gioiTinh: false,
+        ngaySinh: '22/7/1995',
+        tongSoLanMua: 8,
+        lanMuaGanNhat: '12/10/2024'
+      },
+      {
+        id: 5,
+        maKhachHang: 'KH00005',
+        tenKhachHang: 'Trần Văn C',
+        gioiTinh: true,
+        ngaySinh: '5/11/1988',
+        tongSoLanMua: 15,
+        lanMuaGanNhat: '3/9/2024'
+      }
+    ];
+
+    return new Observable(observer => {
+      observer.next({
+        success: true,
+        message: 'Lấy danh sách khách hàng thành công',
+        data: mockCustomers
+      });
+      observer.complete();
+    });
   }
 
-  // Lấy phiếu giảm giá sắp diễn ra
-  getUpcomingPhieuGiamGia(): Observable<PhieuGiamGiaResponse[]> {
-    return this.apiService.get<PhieuGiamGiaResponse[]>(`${API_BASE_URL}/api/phieu-giam-gia/upcoming`);
+  // Utility methods
+  generatePhieuCode(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `PGG_${timestamp}_${random}`;
   }
 
-  // Toggle trạng thái phiếu giảm giá
-  togglePhieuGiamGiaStatus(id: number): Observable<PhieuGiamGiaResponse> {
-    return this.apiService.put<PhieuGiamGiaResponse>(`${API_BASE_URL}/api/phieu-giam-gia/${id}/toggle-status`, {});
+  formatDateForAPI(date: string | Date): string {
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
   }
 
-  // Tạo dữ liệu mẫu
-  createSampleData(): Observable<string> {
-    return this.apiService.post<string>(`${API_BASE_URL}/api/phieu-giam-gia/create-sample-data`, {});
-  }
-
-  // Test API
-  testApi(): Observable<string> {
-    return this.apiService.get<string>(`${API_BASE_URL}/api/phieu-giam-gia/test`);
+  formatDateForDisplay(date: string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('vi-VN');
   }
 }

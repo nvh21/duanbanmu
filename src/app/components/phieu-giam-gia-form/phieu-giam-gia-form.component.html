@@ -1,0 +1,304 @@
+<div class="phieu-giam-gia-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="breadcrumb">
+      <span>Trang chủ</span>
+      <span class="separator">/</span>
+      <span>Phiếu giảm giá</span>
+      <span class="separator">/</span>
+      <span class="current">Form phiếu giảm giá</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Left Section: Thêm Phiếu Giảm Giá -->
+    <div class="left-section">
+      <div class="section-header">
+        <h3>Thêm Phiếu Giảm Giá</h3>
+      </div>
+      
+      <div class="form-container">
+        <!-- Mã Phiếu -->
+        <div class="form-group">
+          <label for="phieuCode">Mã Phiếu</label>
+          <div class="code-input-container">
+            <input 
+              type="text" 
+              id="phieuCode"
+              [(ngModel)]="phieuCode" 
+              class="form-control"
+              placeholder="Nhập mã phiếu hoặc chọn từ gợi ý"
+              (focus)="onCodeInputFocus()"
+              (blur)="onCodeInputBlur()">
+            <button 
+              type="button" 
+              class="btn-suggestions"
+              (click)="toggleSuggestions()"
+              title="Xem gợi ý mã phiếu">
+              <i class="bi bi-lightbulb"></i>
+            </button>
+            <button 
+              type="button" 
+              class="btn-refresh"
+              (click)="generateNewSuggestions()"
+              title="Tạo mã mới">
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+          
+          <!-- Suggestions Dropdown -->
+          <div class="suggestions-dropdown" *ngIf="showSuggestions">
+            <div class="suggestions-header">
+              <span>Gợi ý mã phiếu:</span>
+              <button 
+                type="button" 
+                class="btn-close-suggestions"
+                (click)="showSuggestions = false">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            <div class="suggestions-list">
+              <div 
+                *ngFor="let code of suggestedCodes" 
+                class="suggestion-item"
+                (click)="selectSuggestedCode(code)">
+                <span class="suggestion-code">{{ code }}</span>
+                <i class="bi bi-check-circle suggestion-icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tên -->
+        <div class="form-group">
+          <label for="phieuName">Tên</label>
+          <input 
+            type="text" 
+            id="phieuName"
+            [(ngModel)]="phieuName" 
+            class="form-control"
+            placeholder="Nhập tên phiếu giảm giá">
+        </div>
+
+        <!-- Loại -->
+        <div class="form-group">
+          <label for="phieuType">Loại</label>
+          <select 
+            id="phieuType"
+            [(ngModel)]="phieuType" 
+            class="form-control">
+            <option [value]="true">Tiền mặt</option>
+            <option [value]="false">Phần trăm</option>
+          </select>
+        </div>
+
+        <!-- Số tiền giảm tối đa -->
+        <div class="form-group">
+          <label for="maxDiscount">Số tiền giảm tối đa</label>
+          <div class="input-group">
+            <input 
+              type="number" 
+              id="maxDiscount"
+              [(ngModel)]="maxDiscount" 
+              class="form-control"
+              placeholder="Nhập số tiền giảm tối đa">
+            <span class="input-group-text">{{ phieuType ? 'VND' : '%' }}</span>
+          </div>
+        </div>
+
+        <!-- Số tiền giảm tối thiểu -->
+        <div class="form-group">
+          <label for="minDiscount">Số tiền giảm tối thiểu</label>
+          <div class="input-group">
+            <input 
+              type="number" 
+              id="minDiscount"
+              [(ngModel)]="minDiscount" 
+              class="form-control"
+              placeholder="Nhập số tiền giảm tối thiểu"
+              min="0">
+            <span class="input-group-text">{{ phieuType ? 'VND' : '%' }}</span>
+          </div>
+        </div>
+
+        <!-- Hóa đơn tối thiểu -->
+        <div class="form-group">
+          <label for="minInvoice">Hóa đơn tối thiểu</label>
+          <div class="input-group">
+            <input 
+              type="number" 
+              id="minInvoice"
+              [(ngModel)]="minInvoice" 
+              class="form-control"
+              placeholder="Nhập hóa đơn tối thiểu">
+            <span class="input-group-text">VND</span>
+          </div>
+        </div>
+
+        <!-- Số lượng -->
+        <div class="form-group">
+          <label for="quantity">Số lượng</label>
+          <input 
+            type="number" 
+            id="quantity"
+            [(ngModel)]="quantity" 
+            class="form-control"
+            placeholder="Nhập số lượng">
+        </div>
+
+        <!-- Trạng thái -->
+        <div class="form-group">
+          <label for="trangThai">Trạng thái</label>
+          <select 
+            id="trangThai"
+            [(ngModel)]="trangThai" 
+            class="form-control">
+            <option [ngValue]="true">Hoạt động</option>
+            <option [ngValue]="false">Không hoạt động</option>
+          </select>
+        </div>
+
+        <!-- Ngày bắt đầu -->
+        <div class="form-group">
+          <label for="startDate">Ngày bắt đầu</label>
+          <input 
+            type="date" 
+            id="startDate"
+            [(ngModel)]="startDate" 
+            class="form-control">
+        </div>
+
+        <!-- Ngày kết thúc -->
+        <div class="form-group">
+          <label for="endDate">Ngày kết thúc</label>
+          <input 
+            type="date" 
+            id="endDate"
+            [(ngModel)]="endDate" 
+            class="form-control">
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Section: Chọn Khách Hàng -->
+    <div class="right-section">
+      <div class="section-header">
+        <h3>Chọn Khách Hàng</h3>
+      </div>
+
+      <!-- Search -->
+      <div class="search-container">
+        <div class="search-box">
+          <i class="search-icon">🔍</i>
+          <input 
+            type="text" 
+            [(ngModel)]="searchTerm"
+            (input)="filterCustomers()"
+            class="search-input"
+            placeholder="Tìm theo mã hoặc tên...">
+        </div>
+        <button class="btn-all">Tất cả</button>
+      </div>
+
+      <!-- Customer List -->
+      <div class="customer-list-container">
+        <div class="table-container">
+          <table class="customer-table">
+            <thead>
+              <tr>
+                <th>Mã KH</th>
+                <th>Tên Khách Hàng</th>
+                <th>Giới tính</th>
+                <th>Ngày sinh</th>
+                <th>Tổng số lần mua</th>
+                <th>Lần mua gần nhất</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let customer of filteredCustomers" class="customer-row">
+                <td>{{ customer.maKhachHang }}</td>
+                <td>{{ customer.tenKhachHang }}</td>
+                <td>{{ getGenderText(customer.gioiTinh) }}</td>
+                <td>{{ customer.ngaySinh }}</td>
+                <td>{{ customer.tongSoLanMua }}</td>
+                <td>{{ customer.lanMuaGanNhat }}</td>
+                <td>
+                  <button 
+                    class="btn-select"
+                    (click)="selectCustomer(customer)"
+                    [disabled]="isCustomerSelected(customer)">
+                    {{ isCustomerSelected(customer) ? 'Đã chọn' : 'Chọn' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Selected Customers -->
+      <div class="selected-customers-container">
+        <h4>Khách Hàng Đã Chọn</h4>
+        <div class="selected-table-container">
+          <table class="selected-table">
+            <thead>
+              <tr>
+                <th>Mã KH</th>
+                <th>Tên Khách Hàng</th>
+                <th>Giới tính</th>
+                <th>Ngày sinh</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let customer of selectedCustomers" class="selected-row">
+                <td>{{ customer.maKhachHang }}</td>
+                <td>{{ customer.tenKhachHang }}</td>
+                <td>{{ getGenderText(customer.gioiTinh) }}</td>
+                <td>{{ customer.ngaySinh }}</td>
+                <td>
+                  <button 
+                    class="btn-remove"
+                    (click)="removeCustomer(customer)">
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="selectedCustomers.length === 0">
+                <td colspan="5" class="no-selection">
+                  Chưa có khách hàng nào được chọn
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button 
+      class="btn-save"
+      (click)="savePhieuGiamGia()"
+      [disabled]="isSaving">
+      {{ isSaving ? 'Đang lưu...' : 'Lưu Phiếu Giảm Giá' }}
+    </button>
+    <button 
+      class="btn-cancel"
+      (click)="goBack()">
+      Hủy
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+  
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+</div>
