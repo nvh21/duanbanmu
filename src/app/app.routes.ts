@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { InvoiceManagementComponent } from './components/invoice-management/invoice-management.component';
+import { InvoiceDetailComponent } from './components/invoice-detail/invoice-detail.component';
 import { CounterSalesComponent } from './components/counter-sales/counter-sales.component';
 import { CustomerManagementComponent } from './components/customer-management/customer-management.component';
 import { ImportManagementComponent } from './components/import-management/import-management.component';
@@ -14,7 +15,11 @@ import { PaymentsComponent } from './components/payments/payments.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
 import { ManufacturersComponent } from './components/manufacturers/manufacturers.component';
+<<<<<<< HEAD
 // import { InventoryComponent } from './components/inventory/inventory.component';
+=======
+import { ProductDetailsComponent } from './components/product-details/product-details.component';
+>>>>>>> 683035fa44004c36df4f8f5f3a6aa06c50da1b06
 import { LoginComponent } from './components/login/login';
 import { ApiTestComponent } from './components/api-test/api-test.component';
 import { PhieuGiamGiaTestComponent } from './components/phieu-giam-gia-test/phieu-giam-gia-test.component';
@@ -43,6 +48,11 @@ export const routes: Routes = [
   {
     path: 'invoices',
     component: InvoiceManagementComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'invoices/:id',
+    component: InvoiceDetailComponent,
     canActivate: [AuthGuard],
   },
   {

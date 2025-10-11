@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { HoaDonService, HoaDonDTO } from './hoa-don.service';
+import { HoaDonService } from './hoa-don.service';
+import { HoaDonDTO } from '../interfaces/hoa-don.interface';
 import { MasterDataService } from './master-data.service';
 
 export interface Promotion {
