@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { InvoiceManagementComponent } from './components/invoice-management/invoice-management.component';
+import { InvoiceDetailComponent } from './components/invoice-detail/invoice-detail.component';
 import { CounterSalesComponent } from './components/counter-sales/counter-sales.component';
 import { CustomerManagementComponent } from './components/customer-management/customer-management.component';
 import { ImportManagementComponent } from './components/import-management/import-management.component';
@@ -42,6 +43,11 @@ export const routes: Routes = [
   {
     path: 'invoices',
     component: InvoiceManagementComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'invoices/:id',
+    component: InvoiceDetailComponent,
     canActivate: [AuthGuard],
   },
   {

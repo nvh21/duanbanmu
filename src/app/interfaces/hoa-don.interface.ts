@@ -17,6 +17,11 @@ export interface HoaDonDTO {
   soLuongSanPham?: number;
   viTriBanHang?: string; // "Tại quầy" hoặc "Online"
   danhSachSanPham?: SanPhamTrongHoaDon[]; // Danh sách sản phẩm trong hóa đơn
+  // Thêm các thuộc tính còn thiếu
+  soDienThoai?: string;
+  email?: string;
+  diaChiGiaoHang?: string;
+  phuongThucThanhToan?: string;
 }
 
 export interface SanPhamTrongHoaDon {
@@ -47,6 +52,9 @@ export interface HoaDonFilter {
   sortDir?: 'asc' | 'desc';
   search?: string;
   trangThai?: string;
+  loai?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
 }
 
 export interface HoaDonAdvancedFilter extends HoaDonFilter {
