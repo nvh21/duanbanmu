@@ -142,8 +142,8 @@ export class SidebarComponent implements OnInit {
     },
     {
       icon: 'bi-ticket-perforated',
-      label: 'Quản lý voucher',
-      route: '/vouchers',
+      label: 'Phiếu Giảm Giá',
+      route: '/phieu-giam-gia',
       active: false,
       hasSubmenu: false,
       submenu: [],

@@ -5,7 +5,8 @@ import { CounterSalesComponent } from './components/counter-sales/counter-sales.
 import { CustomerManagementComponent } from './components/customer-management/customer-management.component';
 import { ImportManagementComponent } from './components/import-management/import-management.component';
 import { PromotionManagementComponent } from './components/promotion-management/promotion-management.component';
-import { VoucherForm } from './components/voucher-form/voucher-form';
+import { PhieuGiamGiaFormComponent } from './components/phieu-giam-gia-form/phieu-giam-gia-form.component';
+import { PhieuGiamGiaListComponent } from './components/phieu-giam-gia-list/phieu-giam-gia-list.component';
 import { AccountManagementComponent } from './components/account-management/account-management.component';
 import { StaffManagementComponent } from './components/staff-management/staff-management.component';
 import { OrderDetailsComponent } from './components/order-details/order-details.component';
@@ -18,7 +19,6 @@ import { ProductDetailsComponent } from './components/product-details/product-de
 // import { InventoryComponent } from './components/inventory/inventory.component';
 import { LoginComponent } from './components/login/login';
 import { ApiTestComponent } from './components/api-test/api-test.component';
-import { PhieuGiamGiaTestComponent } from './components/phieu-giam-gia-test/phieu-giam-gia-test.component';
 import { AuthGuard } from './guards/auth-guard';
 import { ColorsComponent } from './components/colors/colors.component';
 import { HelmetStylesComponent } from './components/helmet-styles/helmet-styles.component';
@@ -76,8 +76,13 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'vouchers',
-    component: VoucherForm,
+    path: 'phieu-giam-gia',
+    component: PhieuGiamGiaListComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'phieu-giam-gia-form',
+    component: PhieuGiamGiaFormComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -159,11 +164,6 @@ export const routes: Routes = [
   {
     path: 'api-test',
     component: ApiTestComponent,
-    // canActivate: [AuthGuard], // Tạm thời bỏ AuthGuard để test
-  },
-  {
-    path: 'phieu-giam-gia-test',
-    component: PhieuGiamGiaTestComponent,
     // canActivate: [AuthGuard], // Tạm thời bỏ AuthGuard để test
   },
   { path: '**', redirectTo: '/dashboard' },
