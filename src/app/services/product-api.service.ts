@@ -25,6 +25,9 @@ export interface SanPhamResponse {
   kieuDangMuTen?: string | null;
   congNgheAnToanId?: number | null;
   congNgheAnToanTen?: string | null;
+  mauSacId?: number | null;
+  mauSacTen?: string | null;
+  mauSacMa?: string | null;
 }
 
 export interface PageResponse<T> {

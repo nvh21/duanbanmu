@@ -16,6 +16,7 @@ import {
   LoaiMuBaoHiemApiService,
   LoaiMuBaoHiemRequest,
 } from '../../services/loai-mu-bao-hiem-api.service';
+import { ColorApiService } from '../../services/color-api.service';
 
 interface HelmetProduct {
   id: number;
@@ -28,6 +29,8 @@ interface HelmetProduct {
   xuatXu?: string | null;
   kieuDangMu?: string | null;
   congNgheAnToan?: string | null;
+  mauSac?: string | null;
+  mauSacMa?: string | null;
   // ID liên kết để tạo mới
   loaiMuBaoHiemId?: number | null;
   nhaSanXuatId?: number | null;
@@ -36,6 +39,7 @@ interface HelmetProduct {
   xuatXuId?: number | null;
   kieuDangMuId?: number | null;
   congNgheAnToanId?: number | null;
+  mauSacId?: number | null;
   price: number;
   status: string;
   description: string;
@@ -68,6 +72,7 @@ export class HelmetsComponent implements OnInit {
   xuatXuList: { id: number; tenXuatXu: string }[] = [];
   kieuDangList: { id: number; tenKieuDang: string }[] = [];
   congNgheList: { id: number; tenCongNghe: string }[] = [];
+  mauSacList: { id: number; tenMau: string; maMau: string }[] = [];
 
   // Converted data for searchable dropdowns
   loaiMuOptions: DropdownOption[] = [];
@@ -77,6 +82,7 @@ export class HelmetsComponent implements OnInit {
   xuatXuOptions: DropdownOption[] = [];
   kieuDangOptions: DropdownOption[] = [];
   congNgheOptions: DropdownOption[] = [];
+  mauSacOptions: DropdownOption[] = [];
   searchTerm: string = '';
   selectedStatus: string = 'all';
   showModal: boolean = false;
@@ -110,7 +116,8 @@ export class HelmetsComponent implements OnInit {
   constructor(
     private productApi: ProductApiService,
     private cdr: ChangeDetectorRef,
-    private loaiMuBaoHiemApi: LoaiMuBaoHiemApiService
+    private loaiMuBaoHiemApi: LoaiMuBaoHiemApiService,
+    private colorApi: ColorApiService
   ) {}
 
   ngOnInit() {
@@ -135,6 +142,7 @@ export class HelmetsComponent implements OnInit {
 
   loadLookups() {
     this.loadHelmetTypes();
+    this.loadColors();
     this.productApi.getNhaSanXuatAll().subscribe({
       next: (res: any) => {
         this.nsxList = (res.content || []).map((x: any) => ({
@@ -217,6 +225,7 @@ export class HelmetsComponent implements OnInit {
             xuatXuId: (p as any).xuatXuId ?? p.xuatXuId ?? null,
             kieuDangMuId: (p as any).kieuDangMuId ?? p.kieuDangMuId ?? null,
             congNgheAnToanId: (p as any).congNgheAnToanId ?? p.congNgheAnToanId ?? null,
+            mauSacId: (p as any).mauSacId ?? p.mauSacId ?? null,
             loaiMuBaoHiem: p.loaiMuBaoHiemTen ?? null,
             nhaSanXuat: p.nhaSanXuatTen ?? null,
             chatLieuVo: p.chatLieuVoTen ?? null,
@@ -224,6 +233,8 @@ export class HelmetsComponent implements OnInit {
             xuatXu: p.xuatXuTen ?? null,
             kieuDangMu: p.kieuDangMuTen ?? null,
             congNgheAnToan: p.congNgheAnToanTen ?? null,
+            mauSac: p.mauSacTen ?? null,
+            mauSacMa: p.mauSacMa ?? null,
             price: Number(p.giaBan ?? 0),
             status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
             description: p.moTa ?? '',
@@ -307,8 +318,7 @@ export class HelmetsComponent implements OnInit {
   }
 
   canSubmit(): boolean {
-    return (
-      !!this.newProduct.code?.trim() &&
+    const basicValidation = (
       !!this.newProduct.name?.trim() &&
       !!this.newProduct.price &&
       this.newProduct.price > 0 &&
@@ -318,8 +328,16 @@ export class HelmetsComponent implements OnInit {
       Number.isInteger(Number(this.newProduct.trongLuongId)) &&
       Number.isInteger(Number(this.newProduct.xuatXuId)) &&
       Number.isInteger(Number(this.newProduct.kieuDangMuId)) &&
-      Number.isInteger(Number(this.newProduct.congNgheAnToanId))
+      Number.isInteger(Number(this.newProduct.congNgheAnToanId)) &&
+      Number.isInteger(Number(this.newProduct.mauSacId))
     );
+
+    // Chỉ yêu cầu mã sản phẩm khi thêm mới, không yêu cầu khi chỉnh sửa
+    if (this.isEditMode) {
+      return basicValidation;
+    } else {
+      return basicValidation && !!this.newProduct.code?.trim();
+    }
   }
 
   onSelect(field: keyof HelmetProduct, value: any) {
@@ -329,8 +347,12 @@ export class HelmetsComponent implements OnInit {
 
   saveProduct() {
     // Validation tối thiểu cho thêm mới vào DB (khớp BE)
-    if (!this.newProduct.name.trim() || !this.newProduct.code.trim()) {
-      alert('Vui lòng nhập mã và tên sản phẩm');
+    if (!this.newProduct.name.trim()) {
+      alert('Vui lòng nhập tên sản phẩm');
+      return;
+    }
+    if (!this.isEditMode && !this.newProduct.code.trim()) {
+      alert('Vui lòng nhập mã sản phẩm');
       return;
     }
     if (!this.newProduct.price || this.newProduct.price <= 0) {
@@ -393,6 +415,11 @@ export class HelmetsComponent implements OnInit {
       this.congNgheList,
       'tenCongNghe'
     );
+    this.newProduct.mauSacId = normalizeId(
+      this.newProduct.mauSacId,
+      this.mauSacList,
+      'tenMau'
+    );
 
     // Kiểm tra đủ danh mục sau chuẩn hóa để tránh 400 từ BE
     const missing: string[] = [];
@@ -403,6 +430,7 @@ export class HelmetsComponent implements OnInit {
     if (!this.newProduct.xuatXuId) missing.push('Xuất xứ');
     if (!this.newProduct.kieuDangMuId) missing.push('Kiểu dáng mũ');
     if (!this.newProduct.congNgheAnToanId) missing.push('Công nghệ an toàn');
+    if (!this.newProduct.mauSacId) missing.push('Màu sắc');
     if (missing.length) {
       alert('Vui lòng chọn: ' + missing.join(', '));
       return;
@@ -422,6 +450,7 @@ export class HelmetsComponent implements OnInit {
         xuatXuId: Number(this.newProduct.xuatXuId),
         kieuDangMuId: Number(this.newProduct.kieuDangMuId),
         congNgheAnToanId: Number(this.newProduct.congNgheAnToanId),
+        mauSacId: Number(this.newProduct.mauSacId),
       } as any;
 
       this.productApi.update(this.selectedProduct.id, payloadUpdate).subscribe({
@@ -457,6 +486,7 @@ export class HelmetsComponent implements OnInit {
       xuatXuId: toId(this.newProduct.xuatXuId),
       kieuDangMuId: toId(this.newProduct.kieuDangMuId),
       congNgheAnToanId: toId(this.newProduct.congNgheAnToanId),
+      mauSacId: toId(this.newProduct.mauSacId),
     } as any;
 
     this.productApi.create(payload).subscribe({
@@ -562,6 +592,33 @@ export class HelmetsComponent implements OnInit {
     });
   }
 
+  loadColors() {
+    console.log('Loading colors...');
+    this.colorApi.search({ page: 0, size: 1000 }).subscribe({
+      next: (data) => {
+        console.log('Colors loaded:', data);
+        this.mauSacList = (data.content || []).map((x) => ({ 
+          id: x.id, 
+          tenMau: x.tenMau,
+          maMau: x.maMau || ''
+        }));
+        this.mauSacOptions = this.mauSacList.map((x) => ({ 
+          id: x.id, 
+          name: `${x.tenMau}${x.maMau ? ' (' + x.maMau + ')' : ''}`
+        }));
+        console.log('MauSacList updated:', this.mauSacList);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error loading colors:', error);
+        alert(
+          'Lỗi khi tải danh sách màu sắc: ' +
+            (error.message || 'Không thể kết nối đến server')
+        );
+      },
+    });
+  }
+
   openEditModal(product: HelmetProduct) {
     this.isEditMode = true;
     this.isViewMode = false;
@@ -614,6 +671,26 @@ export class HelmetsComponent implements OnInit {
           );
         },
       });
+    } else if (event.type === 'mauSac') {
+      this.colorApi.create({
+        tenMau: event.data.tenMau,
+        maMau: event.data.maMau,
+        trangThai: event.data.trangThai,
+      }).subscribe({
+        next: (response) => {
+          console.log('MauSac created:', response);
+          alert('Thêm mới Màu sắc thành công!');
+          this.loadColors(); // Refresh dropdown
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating MauSac:', error);
+          alert(
+            'Lỗi khi thêm mới Màu sắc: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
     } else {
       // Tạm thời hiển thị alert cho các loại khác
       const typeNames: { [key: string]: string } = {
@@ -623,6 +700,7 @@ export class HelmetsComponent implements OnInit {
         xuatXu: 'Xuất xứ',
         kieuDangMu: 'Kiểu dáng mũ',
         congNgheAnToan: 'Công nghệ an toàn',
+        mauSac: 'Màu sắc',
       };
 
       const typeName = typeNames[event.type] || event.type;

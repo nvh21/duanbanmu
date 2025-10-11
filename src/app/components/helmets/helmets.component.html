@@ -73,6 +73,7 @@
               <th>Xuất xứ</th>
               <th>Kiểu dáng</th>
               <th>Công nghệ an toàn</th>
+              <th>Màu sắc</th>
               <th (click)="changeSort('giaBan')" style="cursor: pointer">
                 Giá bán
                 <i
@@ -112,6 +113,17 @@
               <td>{{ product.xuatXu || '-' }}</td>
               <td>{{ product.kieuDangMu || '-' }}</td>
               <td>{{ product.congNgheAnToan || '-' }}</td>
+              <td>
+                <span *ngIf="product.mauSac" class="d-flex align-items-center">
+                  <span *ngIf="product.mauSacMa" 
+                        class="color-preview me-2" 
+                        [style.background-color]="product.mauSacMa"
+                        [title]="product.mauSac">
+                  </span>
+                  {{ product.mauSac }}
+                </span>
+                <span *ngIf="!product.mauSac">-</span>
+              </td>
               <td>{{ formatPrice(product.price) }}</td>
               <td>
                 <span
@@ -235,7 +247,7 @@
                   [(ngModel)]="newProduct.code"
                   name="code"
                   placeholder="Nhập mã sản phẩm"
-                  [readonly]="isViewMode"
+                  [readonly]="isViewMode || isEditMode"
                 />
               </div>
             </div>
@@ -411,6 +423,21 @@
                 [addButtonTitle]="'Thêm công nghệ an toàn mới'"
                 (selectionChange)="onSelect('congNgheAnToanId', $event)"
                 (addButtonClick)="openQuickAddModal('congNgheAnToan')"
+              ></app-searchable-dropdown>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-palette me-1 text-primary"></i>Màu sắc
+              </label>
+              <app-searchable-dropdown
+                [options]="mauSacOptions"
+                [selectedValue]="newProduct.mauSacId"
+                [placeholder]="'-- Chọn màu sắc --'"
+                [disabled]="isViewMode"
+                [showAddButton]="true"
+                [addButtonTitle]="'Thêm màu sắc mới'"
+                (selectionChange)="onSelect('mauSacId', $event)"
+                (addButtonClick)="openQuickAddModal('mauSac')"
               ></app-searchable-dropdown>
             </div>
           </div>

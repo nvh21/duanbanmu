@@ -172,6 +172,24 @@ export class QuickAddModalComponent implements OnInit, OnChanges {
         ];
         this.form.trangThai = true;
         break;
+      case 'mauSac':
+        this.modalTitle = 'Thêm mới Màu sắc';
+        this.fields = [
+          { name: 'tenMau', label: 'Tên màu sắc', type: 'text', required: true },
+          { name: 'maMau', label: 'Mã màu (hex)', type: 'text' },
+          { name: 'moTa', label: 'Mô tả', type: 'textarea' },
+          {
+            name: 'trangThai',
+            label: 'Trạng thái',
+            type: 'select',
+            options: [
+              { value: true, label: 'Đang dùng' },
+              { value: false, label: 'Không dùng nữa' },
+            ],
+          },
+        ];
+        this.form.trangThai = true;
+        break;
       default:
         this.modalTitle = 'Thêm mới';
         break;
