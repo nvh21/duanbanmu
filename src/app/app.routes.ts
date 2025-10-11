@@ -6,6 +6,7 @@ import { CounterSalesComponent } from './components/counter-sales/counter-sales.
 import { CustomerManagementComponent } from './components/customer-management/customer-management.component';
 import { ImportManagementComponent } from './components/import-management/import-management.component';
 import { PromotionManagementComponent } from './components/promotion-management/promotion-management.component';
+import { PromotionFormComponent } from './components/promotion-form/promotion-form.component';
 import { PhieuGiamGiaFormComponent } from './components/phieu-giam-gia-form/phieu-giam-gia-form.component';
 import { PhieuGiamGiaListComponent } from './components/phieu-giam-gia-list/phieu-giam-gia-list.component';
 import { AccountManagementComponent } from './components/account-management/account-management.component';
@@ -16,11 +17,7 @@ import { PaymentsComponent } from './components/payments/payments.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
 import { ManufacturersComponent } from './components/manufacturers/manufacturers.component';
-<<<<<<< HEAD
-// import { InventoryComponent } from './components/inventory/inventory.component';
-=======
-import { ProductDetailsComponent } from './components/product-details/product-details.component';
->>>>>>> 683035fa44004c36df4f8f5f3a6aa06c50da1b06
+// import { ProductDetailsComponent } from './components/product-details/product-details.component';
 import { LoginComponent } from './components/login/login';
 import { ApiTestComponent } from './components/api-test/api-test.component';
 import { AuthGuard } from './guards/auth-guard';
@@ -84,6 +81,11 @@ export const routes: Routes = [
     path: 'promotions',
     component: PromotionManagementComponent,
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'promotions/new',
+    component: PromotionFormComponent,
+    // canActivate: [AuthGuard], // Tạm thời bỏ để test
   },
   {
     path: 'phieu-giam-gia',

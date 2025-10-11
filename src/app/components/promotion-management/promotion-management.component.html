@@ -6,7 +6,7 @@
         <i class="bi bi-gift"></i>
         <h1>Quản lý chương trình khuyến mãi</h1>
       </div>
-      <p class="page-subtitle">Quản lý chương trình khuyến mãi</p>
+      
     </div>
     <div class="header-actions">
       <button class="btn btn-outline-secondary" (click)="onExportExcel()">
@@ -24,24 +24,156 @@
     </div>
   </div>
 
-  <!-- Search and Filter Section -->
+  <!-- Search Filter Section -->
   <div class="search-filter-section">
-    <div class="search-bar">
-      <i class="bi bi-search"></i>
-      <input
-        type="text"
-        class="form-control"
-        placeholder="Tìm kiếm chương trình khuyến mãi..."
-        [(ngModel)]="searchTerm"
-        (keyup)="onSearch()"
-      />
-    </div>
-    <button class="btn btn-outline-primary" (click)="onFilter()">
+    <div class="filter-header">
       <i class="bi bi-funnel"></i>
-      Lọc theo trạng thái
-    </button>
+      <h3>Bộ Lọc Tìm Kiếm</h3>
+    </div>
+    
+    <div class="filter-content">
+      <!-- Row 1: Search Input and Dropdowns -->
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Tìm kiếm đợt giảm giá</label>
+          <div class="search-input-group">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Mã đợt, tên đợt..."
+              [(ngModel)]="filterCriteria.searchTerm"
+              (keyup)="onSearch()"
+              [disabled]="loading"
+            />
+          </div>
+        </div>
+        
+        <div class="filter-group">
+          <label>Loại giảm giá</label>
+          <select class="form-control" [(ngModel)]="filterCriteria.discountType" (change)="onFilter()">
+            <option value="">Tất cả loại giảm giá</option>
+            <option value="PHAN_TRAM">Phần trăm (%)</option>
+            <option value="SO_TIEN">Số tiền (VND)</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label>Trạng thái</label>
+          <select class="form-control" [(ngModel)]="filterCriteria.status" (change)="onFilter()">
+            <option value="">Trạng thái đang/sắp diễn ra</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="UPCOMING">Sắp diễn ra</option>
+            <option value="ENDED">Đã kết thúc</option>
+            <option value="INACTIVE">Tạm dừng</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Row 2: Date Range -->
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Khoảng thời gian</label>
+          <div class="date-range-group">
+            <input
+              type="date"
+              class="form-control"
+              [(ngModel)]="filterCriteria.startDate"
+              (change)="onFilter()"
+              [disabled]="loading"
+            />
+            <span class="date-separator">đến</span>
+            <input
+              type="date"
+              class="form-control"
+              [(ngModel)]="filterCriteria.endDate"
+              (change)="onFilter()"
+              [disabled]="loading"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <!-- Row 3: Sliders -->
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>Giá trị giảm (%)</label>
+          <div class="slider-group">
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" [style.width.%]="filterCriteria.discountPercentageMax"></div>
+                <input
+                  type="range"
+                  class="slider-input"
+                  min="0"
+                  max="100"
+                  [(ngModel)]="filterCriteria.discountPercentageMax"
+                  (input)="onFilter()"
+                  [disabled]="loading"
+                />
+              </div>
+              <div class="slider-labels">
+                <span>0%</span>
+                <span>{{ filterCriteria.discountPercentageMax }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-group">
+          <label>Số tiền giảm tối đa (VND)</label>
+          <div class="slider-group">
+            <div class="slider-container">
+              <div class="slider-track">
+                <div class="slider-fill" [style.width.%]="(filterCriteria.maxDiscountAmount / 50000000) * 100"></div>
+                <input
+                  type="range"
+                  class="slider-input"
+                  min="0"
+                  max="50000000"
+                  step="100000"
+                  [(ngModel)]="filterCriteria.maxDiscountAmount"
+                  (input)="onFilter()"
+                  [disabled]="loading"
+                />
+              </div>
+              <div class="slider-labels">
+                <span>0 ₫</span>
+                <span>{{ formatCurrency(filterCriteria.maxDiscountAmount) }} ₫</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="filter-actions">
+        <button class="btn btn-secondary" (click)="resetFilter()" [disabled]="loading">
+          <i class="bi bi-arrow-clockwise"></i>
+          Đặt lại bộ lọc
+        </button>
+        <button class="btn btn-success" (click)="onExportExcel()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i>
+          Xuất Excel
+        </button>
+        <button class="btn btn-primary" (click)="onAddPromotion()" [disabled]="loading">
+          <i class="bi bi-plus"></i>
+          Thêm Đợt Giảm Giá
+        </button>
+      </div>
+    </div>
   </div>
 
+  <!-- Error Message -->
+  <div *ngIf="error" class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle"></i>
+    {{ error }}
+  </div>
+
+ 
+<div>
+  
+</div>
   <!-- Table Section -->
   <div class="table-section">
     <div class="table-header">
@@ -64,7 +196,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let promotion of promotions">
+          <tr *ngFor="let promotion of promotions; let i = index">
             <td>
               <strong>{{ promotion.code }}</strong>
             </td>
@@ -83,13 +215,14 @@
             </td>
             <td>
               <div class="action-buttons">
-                <button class="btn btn-sm btn-outline-info" (click)="onView(promotion)" title="Xem">
+                <button class="btn btn-sm btn-outline-info" (click)="onView(promotion)" title="Xem chi tiết">
                   <i class="bi bi-eye"></i>
                 </button>
                 <button
                   class="btn btn-sm btn-outline-warning"
                   (click)="onEdit(promotion)"
-                  title="Sửa"
+                  title="Chỉnh sửa"
+                  [disabled]="loading"
                 >
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -97,10 +230,17 @@
                   class="btn btn-sm btn-outline-danger"
                   (click)="onDelete(promotion)"
                   title="Xóa"
+                  [disabled]="loading"
                 >
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
+            </td>
+          </tr>
+          <tr *ngIf="promotions.length === 0 && !loading">
+            <td colspan="9" class="text-center">
+              <i class="bi bi-inbox"></i>
+              Không có dữ liệu
             </td>
           </tr>
         </tbody>

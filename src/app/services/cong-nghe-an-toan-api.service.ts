@@ -21,7 +21,7 @@ export interface PageResponse<T> {
 
 @Injectable({ providedIn: 'root' })
 export class CongNgheAnToanApiService {
-  private baseUrl = environment.apiBaseUrl + '/cong-nghe-an-toan';
+  private baseUrl = environment.apiBaseUrl + '/api/cong-nghe-an-toan';
   constructor(private http: HttpClient) {}
 
   search(params: {

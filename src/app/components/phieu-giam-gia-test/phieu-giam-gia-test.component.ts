@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PhieuGiamGiaService, PhieuGiamGiaRequest } from '../../services/phieu-giam-gia.service';
+import { PhieuGiamGiaService } from '../../services/phieu-giam-gia.service';
+import { PhieuGiamGiaRequest } from '../../interfaces/phieu-giam-gia.interface';
 
 @Component({
   selector: 'app-phieu-giam-gia-test',
@@ -172,7 +173,7 @@ export class PhieuGiamGiaTestComponent implements OnInit {
     this.errorMessage = '';
     
     this.phieuGiamGiaService.testApi().subscribe({
-      next: (response: string) => {
+      next: (response: any) => {
         console.log('API Test Response:', response);
         this.connectionStatus = 'success';
       },
@@ -189,10 +190,10 @@ export class PhieuGiamGiaTestComponent implements OnInit {
     this.sampleDataMessage = '';
     
     this.phieuGiamGiaService.createSampleData().subscribe({
-      next: (response: string) => {
+      next: (response: any) => {
         console.log('Sample Data Response:', response);
         this.sampleDataStatus = 'success';
-        this.sampleDataMessage = response;
+        this.sampleDataMessage = response.message || 'Sample data created successfully';
       },
       error: (error: any) => {
         console.error('Sample Data Error:', error);
@@ -206,7 +207,7 @@ export class PhieuGiamGiaTestComponent implements OnInit {
     this.dataStatus = 'loading';
     this.dataMessage = '';
     
-    this.phieuGiamGiaService.searchPhieuGiamGia({}).subscribe({
+    this.phieuGiamGiaService.searchPhieuGiamGia('').subscribe({
       next: (response: any) => {
         console.log('Data Response:', response);
         this.dataStatus = 'success';
@@ -231,14 +232,15 @@ export class PhieuGiamGiaTestComponent implements OnInit {
     
     const request: PhieuGiamGiaRequest = {
       maPhieu: `PGG_TEST_${Date.now()}`,
-      tenPhieu: 'Test Voucher',
-      moTa: 'Test voucher created from frontend',
-      ngayBatDau: startDate.toISOString(),
-      ngayKetThuc: endDate.toISOString(),
+      tenPhieuGiamGia: 'Test Voucher',
+      loaiPhieuGiamGia: false, // false = phần trăm
       giaTriGiam: 10,
       giaTriToiThieu: 100000,
-      soLuong: 50,
-      loaiGiamGia: 'PHAN_TRAM',
+      soTienToiDa: 50000,
+      hoaDonToiThieu: 100000,
+      soLuongDung: 50,
+      ngayBatDau: startDate.toISOString().split('T')[0],
+      ngayKetThuc: endDate.toISOString().split('T')[0],
       trangThai: true
     };
     

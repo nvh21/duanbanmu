@@ -127,6 +127,12 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  cancelEdit(): void {
+    this.isEditMode = false;
+    this.editingInvoice = null;
+    this.startAutoRefresh(); // Resume auto-refresh
+  }
+
   async saveChanges(): Promise<void> {
     if (this.editingInvoice && this.invoiceId) {
       // Validation
@@ -155,7 +161,22 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
           this.editingInvoice.khachHangId = customerId;
         }
 
-        this.hoaDonService.updateHoaDon(this.invoiceId, this.editingInvoice).subscribe({
+        // Chuẩn hóa dữ liệu trước khi gửi
+        const invoiceData = {
+          ...this.editingInvoice,
+          tongTien: this.editingInvoice.tongTien ? Number(this.editingInvoice.tongTien) : 0,
+          tienGiamGia: this.editingInvoice.tienGiamGia ? Number(this.editingInvoice.tienGiamGia) : 0,
+          thanhTien: this.editingInvoice.thanhTien ? Number(this.editingInvoice.thanhTien) : 0,
+          nhanVienId: this.editingInvoice.nhanVienId ? Number(this.editingInvoice.nhanVienId) : undefined,
+          khachHangId: this.editingInvoice.khachHangId ? Number(this.editingInvoice.khachHangId) : undefined,
+          // Chuẩn hóa định dạng ngày tháng
+          ngayThanhToan: this.editingInvoice.ngayThanhToan ? this.formatDateTimeForAPI(this.editingInvoice.ngayThanhToan) : undefined,
+          ngayTao: this.editingInvoice.ngayTao ? this.formatDateTimeForAPI(this.editingInvoice.ngayTao) : undefined
+        };
+
+        console.log('Sending invoice data:', invoiceData);
+
+        this.hoaDonService.updateHoaDon(this.invoiceId, invoiceData).subscribe({
           next: (updatedInvoice) => {
             this.invoice = updatedInvoice;
             this.isEditMode = false;
@@ -291,6 +312,13 @@ export class InvoiceDetailComponent implements OnInit, OnDestroy {
 
   formatDate(date: string): string {
     return new Intl.DateTimeFormat('vi-VN').format(new Date(date));
+  }
+
+  formatDateTimeForAPI(dateTime: string): string | undefined {
+    if (!dateTime) return undefined;
+    // Chuyển đổi từ datetime-local format sang ISO string
+    const date = new Date(dateTime);
+    return date.toISOString();
   }
 
   printInvoice(): void {

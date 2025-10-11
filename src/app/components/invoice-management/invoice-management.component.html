@@ -8,10 +8,6 @@
             <i class="bi bi-plus-circle"></i>
             Tạo hóa đơn mới
           </button>
-          <!-- Debug info -->
-          <div class="mt-2 text-muted small">
-            Debug: showAddModal = {{ showAddModal }}
-          </div>
         </div>
       </div>
 
@@ -22,67 +18,149 @@
           <div class="col-md-3">
             <div class="form-group">
               <label>Tìm kiếm:</label>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Tìm theo số hóa đơn, tên khách hàng, SĐT..."
-                [(ngModel)]="searchTerm"
-                (input)="onSearchInput($event)"
-              />
+              <div class="position-relative">
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Tìm theo số hóa đơn, tên khách hàng, SĐT..."
+                  [(ngModel)]="searchTerm"
+                  (input)="onSearchInput($event)"
+                  (keydown.enter)="filterInvoices()"
+                />
+                <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-secondary p-0 border-0 bg-transparent"
+                    (click)="clearSearch()"
+                    *ngIf="searchTerm && !loadingInvoices"
+                    title="Xóa tìm kiếm"
+                  >
+                    <i class="bi bi-x-circle text-muted"></i>
+                  </button>
+                  <i class="bi bi-search text-muted" *ngIf="!searchTerm && !loadingInvoices"></i>
+                  <span class="spinner-border spinner-border-sm text-primary" *ngIf="loadingInvoices" role="status"></span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-md-2">
             <div class="form-group">
               <label>Trạng thái:</label>
-              <select class="form-control" [(ngModel)]="selectedStatus" (change)="onStatusChange()">
-                <option *ngFor="let option of statusOptions" [value]="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <div class="position-relative">
+                <select class="form-control" [(ngModel)]="selectedStatus" (change)="onStatusChange()" [class.border-primary]="selectedStatus !== 'all'">
+                  <option *ngFor="let option of statusOptions" [value]="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <div class="position-absolute top-50 end-0 translate-middle-y me-2" *ngIf="selectedStatus !== 'all'">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-secondary p-0 border-0 bg-transparent"
+                    (click)="clearStatusFilter()"
+                    title="Xóa lọc trạng thái"
+                  >
+                    <i class="bi bi-x-circle text-muted"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-md-2">
             <div class="form-group">
               <label>Thanh toán:</label>
-              <select
-                class="form-control"
-                [(ngModel)]="selectedPaymentStatus"
-                (change)="onPaymentStatusChange()"
-              >
-                <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <div class="position-relative">
+                <select
+                  class="form-control"
+                  [(ngModel)]="selectedPaymentStatus"
+                  (change)="onPaymentStatusChange()"
+                  [class.border-primary]="selectedPaymentStatus !== 'all'"
+                >
+                  <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <div class="position-absolute top-50 end-0 translate-middle-y me-2" *ngIf="selectedPaymentStatus !== 'all'">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-secondary p-0 border-0 bg-transparent"
+                    (click)="clearPaymentStatusFilter()"
+                    title="Xóa lọc thanh toán"
+                  >
+                    <i class="bi bi-x-circle text-muted"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-md-2">
             <div class="form-group">
               <label>Phương thức:</label>
-              <select
-                class="form-control"
-                [(ngModel)]="selectedPaymentMethod"
-                (change)="onPaymentMethodChange()"
-              >
-                <option *ngFor="let option of paymentMethodOptions" [value]="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <div class="position-relative">
+                <select
+                  class="form-control"
+                  [(ngModel)]="selectedPaymentMethod"
+                  (change)="onPaymentMethodChange()"
+                  [class.border-primary]="selectedPaymentMethod !== 'all'"
+                >
+                  <option *ngFor="let option of paymentMethodOptions" [value]="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <div class="position-absolute top-50 end-0 translate-middle-y me-2" *ngIf="selectedPaymentMethod !== 'all'">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-outline-secondary p-0 border-0 bg-transparent"
+                    (click)="clearPaymentMethodFilter()"
+                    title="Xóa lọc phương thức"
+                  >
+                    <i class="bi bi-x-circle text-muted"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-md-3">
             <div class="form-group">
               <label>&nbsp;</label>
-              <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" (click)="filterInvoices()">
-                  <i class="bi bi-search"></i>
+              <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-outline-secondary" (click)="filterInvoices()" [disabled]="loadingInvoices">
+                  <span *ngIf="loadingInvoices" class="spinner-border spinner-border-sm me-1" role="status"></span>
+                  <i *ngIf="!loadingInvoices" class="bi bi-search"></i>
                   Lọc
                 </button>
-                <button class="btn btn-outline-secondary" (click)="resetFilters()">
+                <button class="btn btn-outline-secondary" (click)="resetFilters()" [disabled]="loadingInvoices">
                   <i class="bi bi-arrow-clockwise"></i>
                   Reset
                 </button>
+                <span class="badge bg-primary" *ngIf="getActiveFilterCount() > 0">
+                  {{ getActiveFilterCount() }} bộ lọc
+                </span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Results Info -->
+      <div class="row mb-3" *ngIf="searchTerm || selectedStatus !== 'all' || selectedPaymentStatus !== 'all' || selectedPaymentMethod !== 'all'">
+        <div class="col-12">
+          <div class="alert alert-info d-flex align-items-center py-2">
+            <i class="bi bi-info-circle me-2"></i>
+            <span>
+              <strong>{{ totalItems }}</strong> hóa đơn được tìm thấy
+              <span *ngIf="searchTerm" class="ms-2">
+                với từ khóa: <strong>"{{ searchTerm }}"</strong>
+              </span>
+              <span *ngIf="selectedStatus !== 'all'" class="ms-2">
+                | Trạng thái: <strong>{{ getStatusLabel(selectedStatus) }}</strong>
+              </span>
+              <span *ngIf="selectedPaymentStatus !== 'all'" class="ms-2">
+                | Thanh toán: <strong>{{ getPaymentStatusLabel(selectedPaymentStatus) }}</strong>
+              </span>
+              <span *ngIf="selectedPaymentMethod !== 'all'" class="ms-2">
+                | Phương thức: <strong>{{ getPaymentMethodLabel(selectedPaymentMethod) }}</strong>
+              </span>
+            </span>
           </div>
         </div>
       </div>
@@ -408,6 +486,7 @@
                         <td>
                           <input type="number" class="form-control form-control-sm"
                                  [(ngModel)]="product.soLuong"
+                                 (input)="onQuantityInputChange(product, $event)"
                                  (ngModelChange)="updateProductQuantity(product, $event)"
                                  min="1"
                                  max="{{ product.soLuongTon }}"
@@ -473,7 +552,7 @@
                   <span class="input-group-text">₫</span>
                   <input type="text" class="form-control" [value]="formatCurrency(newInvoice.tongTien || 0)" readonly>
                 </div>
-                <small class="text-muted">Tự động tính từ sản phẩm đã chọn (đơn giá × số lượng)</small>
+                
               </div>
             </div>
             <div class="col-md-4">
@@ -788,6 +867,16 @@
                   </span>
                 </td>
               </tr>
+              
+              <!-- Empty state -->
+              <tr *ngIf="!loadingProducts && availableProducts.length === 0">
+                <td colspan="10" class="text-center py-4">
+                  <div class="text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    <p class="mb-0">Không có sản phẩm nào</p>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -795,25 +884,22 @@
       <div class="modal-footer">
         <div class="me-auto">
           <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-success btn-sm" (click)="addSelectedProducts()" [disabled]="getSelectedProducts().length === 0">
-              <i class="fas fa-plus"></i> Thêm đã chọn ({{ getSelectedProducts().length }})
-            </button>
-            <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeSelectedProducts()" [disabled]="getSelectedProducts().length === 0">
-              <i class="fas fa-minus"></i> Xóa đã chọn
-            </button>
+            
           </div>
         </div>
         <div class="me-auto">
           <span class="text-muted">
-            Đã chọn: <strong>{{ selectedProducts.length }}</strong> sản phẩm
+            Đã chọn: <strong>{{ getSelectedProducts().length }}</strong> sản phẩm
             <span *ngIf="selectedProducts.length > 0">
               - Tổng tiền: <strong>{{ formatCurrency(newInvoice.tongTien || 0) }}</strong>
             </span>
           </span>
         </div>
-        <button type="button" class="btn btn-secondary" (click)="closeProductModal()">Hủy</button>
-        <button type="button" class="btn btn-primary" (click)="confirmProductSelection()">
-          Xác nhận ({{ selectedProducts.length }})
+        <button type="button" class="btn btn-secondary" (click)="closeProductModal()">
+          <i class="fas fa-times"></i> Hủy
+        </button>
+        <button type="button" class="btn btn-primary" (click)="confirmProductSelection()" [disabled]="getSelectedProducts().length === 0">
+          <i class="fas fa-check"></i> Xác nhận ({{ getSelectedProducts().length }})
         </button>
       </div>
     </div>

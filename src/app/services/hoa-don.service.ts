@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { HoaDonDTO, HoaDonPaginatedResponse, HoaDonFilter, HoaDonAdvancedFilter } from '../interfaces/hoa-don.interface';
 
@@ -14,8 +15,44 @@ export class HoaDonService {
 
 
 //kkhja
-  getAllHoaDon(): Observable<HoaDonDTO[]> {
-    return this.http.get<HoaDonDTO[]>(this.apiUrl);
+  getAllHoaDon(filterParams?: any): Observable<HoaDonDTO[]> {
+    let params = new HttpParams();
+    
+    if (filterParams) {
+      // Add pagination parameters
+      if (filterParams.page !== undefined) {
+        params = params.append('page', filterParams.page.toString());
+      }
+      if (filterParams.size !== undefined) {
+        params = params.append('size', filterParams.size.toString());
+      }
+      
+      // Add search parameters
+      if (filterParams.keyword) {
+        params = params.append('keyword', filterParams.keyword);
+      }
+      
+      // Add filter parameters
+      if (filterParams.trangThai) {
+        params = params.append('trangThai', filterParams.trangThai);
+      }
+      if (filterParams.trangThaiThanhToan) {
+        params = params.append('trangThaiThanhToan', filterParams.trangThaiThanhToan);
+      }
+      if (filterParams.phuongThucThanhToan) {
+        params = params.append('phuongThucThanhToan', filterParams.phuongThucThanhToan);
+      }
+      
+      // Add sorting parameters
+      if (filterParams.sortBy) {
+        params = params.append('sortBy', filterParams.sortBy);
+      }
+      if (filterParams.sortDirection) {
+        params = params.append('sortDirection', filterParams.sortDirection);
+      }
+    }
+    
+    return this.http.get<HoaDonDTO[]>(this.apiUrl, { params });
   }
 
   getHoaDonPaginated(filter: HoaDonFilter): Observable<any> {
@@ -125,7 +162,9 @@ export class HoaDonService {
   }
 
   getProducts(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiBaseUrl}/api/san-pham/all`);
+    return this.http.get<any>(`${environment.apiBaseUrl}/san-pham`).pipe(
+      map(response => response.content || [])
+    );
   }
 
   // Methods for DataService compatibility

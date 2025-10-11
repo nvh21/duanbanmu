@@ -163,4 +163,22 @@ export class PhieuGiamGiaService {
     const d = new Date(date);
     return d.toLocaleDateString('vi-VN');
   }
+
+  // Additional methods for compatibility
+  testApi(): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia/test`);
+  }
+
+  createSampleData(): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia/sample`, {});
+  }
+
+  togglePhieuGiamGiaStatus(id: number): Observable<ApiResponse<any>> {
+    return this.http.put<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia/${id}/toggle`, {});
+  }
+
+  getAllActivePhieuGiamGia(): Observable<ApiResponse<PhieuGiamGiaResponse[]>> {
+    return this.getActivePhieuGiamGia();
+  }
+
 }

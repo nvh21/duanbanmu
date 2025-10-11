@@ -2,19 +2,15 @@
   <!-- Header -->
   <div class="detail-header">
     <div class="header-left">
-      <button class="btn btn-secondary" (click)="goBack()">
-        <i class="fas fa-arrow-left"></i> Quay lại
-      </button>
-      <h2>Chi tiết hóa đơn #{{ invoice?.maHoaDon }}</h2>
+      <h2><i class="fas fa-receipt"></i> Chi tiết hóa đơn #{{ invoice?.maHoaDon }}</h2>
     </div>
     <div class="header-right">
       <button class="btn btn-outline-primary" (click)="printInvoice()">
         <i class="fas fa-print"></i> In hóa đơn
       </button>
       <button class="btn btn-primary" (click)="toggleEditMode()">
-        <i class="fas fa-edit"></i> {{ isEditMode ? 'Hủy' : 'Cập nhậtt' }}
+        <i class="fas fa-edit"></i> {{ isEditMode ? 'Hủy' : 'Cập nhật' }}
       </button>
-
     </div>
   </div>
 
@@ -38,7 +34,108 @@
   <!-- Invoice Content -->
   <div *ngIf="invoice && !loading" class="invoice-content">
 
+    <!-- Print Invoice Layout -->
+    <div class="print-invoice">
+      <!-- Store Header -->
+      <div class="invoice-header">
+        <div class="store-name">CỬA HÀNG TDK Store</div>
+        <div class="store-info">Địa chỉ: Cổng Ong, Tòa nhà FPT Polytechnic, 13 phố Phan Tây Nhạc, phường Xuân Phương, TP Hà Nội | ĐT: 0909 123 456</div>
+        <div class="invoice-title">HÓA ĐƠN BÁN HÀNG</div>
+      </div>
+
+      <!-- Invoice Information -->
+      <div class="invoice-info">
+        <div class="info-row">
+          <span class="label">Mã hóa đơn:</span>
+          <span class="value">{{ invoice.maHoaDon }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Ngày tạo:</span>
+          <span class="value">{{ formatDate(invoice.ngayTao) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Nhân viên:</span>
+          <span class="value">{{ invoice.tenNhanVien || 'Chưa xác định' }}</span>
+        </div>
+      </div>
+
+      <!-- Customer Information -->
+      <div class="customer-info">
+        <div class="info-row">
+          <span class="label">Khách hàng:</span>
+          <span class="value">{{ customer?.tenKhachHang || invoice.tenKhachHang || 'Khách lẻ' }}</span>
+        </div>
+        <div class="info-row" *ngIf="customer?.soDienThoai || invoice.soDienThoaiKhachHang">
+          <span class="label">SĐT:</span>
+          <span class="value">{{ customer?.soDienThoai || invoice.soDienThoaiKhachHang }}</span>
+        </div>
+        <div class="info-row" *ngIf="customer?.email || invoice.emailKhachHang">
+          <span class="label">Email:</span>
+          <span class="value">{{ customer?.email || invoice.emailKhachHang }}</span>
+        </div>
+      </div>
+
+      <!-- Product Table -->
+      <table class="product-table" *ngIf="invoice.danhSachSanPham && invoice.danhSachSanPham.length > 0">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>TÊN SẢN PHẨM</th>
+            <th>SL</th>
+            <th>ĐƠN GIÁ</th>
+            <th>THÀNH TIỀN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let product of invoice.danhSachSanPham; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td class="product-name">{{ product.tenSanPham }}</td>
+            <td>{{ product.soLuong }}</td>
+            <td>{{ formatCurrency(product.donGia) }}</td>
+            <td>{{ formatCurrency(product.thanhTien) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Invoice Summary -->
+      <div class="invoice-summary">
+        <div class="summary-row">
+          <span>TỔNG CỘNG:</span>
+          <span>{{ formatCurrency(invoice.tongTien) }} VND</span>
+        </div>
+        <div class="summary-row" *ngIf="invoice.tienGiamGia && invoice.tienGiamGia > 0">
+          <span>Giảm giá:</span>
+          <span>{{ formatCurrency(invoice.tienGiamGia) }} VND</span>
+        </div>
+        <div class="summary-row total-row">
+          <span>THANH TOÁN:</span>
+          <span>{{ formatCurrency(invoice.thanhTien || invoice.tongTien) }} VND</span>
+        </div>
+      </div>
+
+      <!-- Payment Information -->
+      <div class="payment-info">
+        <div class="info-row">
+          <span class="label">Hình thức thanh toán:</span>
+          <span class="value">{{ invoice.viTriBanHang || 'Tiền mặt' }}</span>
+        </div>
+        <div class="info-row" *ngIf="invoice.ghiChu">
+          <span class="label">Ghi chú:</span>
+          <span class="value">{{ invoice.ghiChu }}</span>
+        </div>
+      </div>
+
+      <!-- Thank You -->
+      <div class="thank-you">
+        Cảm ơn quý khách đã mua hàng!
+      </div>
+    </div>
+
     <!-- Status Progress Bar -->
+
+
+
+    
     <div class="status-section">
       <h3>Trạng thái đơn hàng</h3>
       <div class="progress-container">
@@ -121,9 +218,14 @@
           </div>
         </div>
 
-        <!-- Payment History -->
+
+      </div>
+
+      <!-- Middle Column -->
+      <div class="middle-column">
+        <!-- Payment Information -->
         <div class="info-card">
-          <h4><i class="fas fa-credit-card"></i> Lịch sử thanh toán</h4>
+          <h4><i class="fas fa-credit-card"></i> Thông tin thanh toán</h4>
           <div class="info-table">
             <div class="info-row">
               <span class="label">Trạng thái thanh toán:</span>
@@ -142,34 +244,6 @@
             <div class="info-row">
               <span class="label">Tổng tiền:</span>
               <span class="value amount">{{ formatCurrency(invoice.tongTien) }}</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Right Column -->
-      <div class="right-column">
-
-        <!-- Invoice History -->
-        <div class="info-card">
-          <h4><i class="fas fa-history"></i> Lịch sử hóa đơn</h4>
-          <div class="info-table">
-            <div class="info-row">
-              <span class="label">Ngày tạo:</span>
-              <span class="value">{{ formatDate(invoice.ngayTao) }}</span>
-            </div>
-            <div class="info-row" *ngIf="invoice.ngayThanhToan">
-              <span class="label">Ngày thanh toán:</span>
-              <span class="value">{{ formatDate(invoice.ngayThanhToan) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Nhân viên xử lý:</span>
-              <span class="value">{{ invoice.tenNhanVien || 'Chưa xác định' }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Số lượng sản phẩm:</span>
-              <span class="value">{{ invoice.soLuongSanPham || 0 }}</span>
             </div>
           </div>
         </div>
@@ -195,6 +269,33 @@
               <span class="value" [ngClass]="getStatusClass(invoice.trangThai)">
                 {{ getStatusLabel(invoice.trangThai) }}
               </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-column">
+
+        <!-- Invoice History -->
+        <div class="info-card">
+          <h4><i class="fas fa-history"></i> Lịch sử hóa đơn</h4>
+          <div class="info-table">
+            <div class="info-row">
+              <span class="label">Ngày tạo:</span>
+              <span class="value">{{ formatDate(invoice.ngayTao) }}</span>
+            </div>
+            <div class="info-row" *ngIf="invoice.ngayThanhToan">
+              <span class="label">Ngày thanh toán:</span>
+              <span class="value">{{ formatDate(invoice.ngayThanhToan) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Nhân viên xử lý:</span>
+              <span class="value">{{ invoice.tenNhanVien || 'Chưa xác định' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Số lượng sản phẩm:</span>
+              <span class="value">{{ invoice.soLuongSanPham || 0 }}</span>
             </div>
           </div>
         </div>

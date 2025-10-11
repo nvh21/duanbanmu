@@ -44,6 +44,9 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   showEditModal: boolean = false;
   showViewModal: boolean = false;
   showDeleteModal: boolean = false;
+  showProductModal: boolean = false;
+  loadingProducts: boolean = false;
+  loadingInvoices: boolean = false;
 
   // Form data
   newInvoice: Partial<HoaDonDTO> = {
@@ -72,7 +75,6 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   editingInvoiceDetail: any = null;
 
   // Product selection properties
-  showProductModal: boolean = false;
   availableProducts: any[] = [];
   selectedProducts: any[] = [];
   discountPercentage: number = 0;
@@ -126,7 +128,7 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
 
   private setupAutoSearch(): void {
     this.searchSubject.pipe(
-      debounceTime(300),
+      debounceTime(200), // Giảm từ 300ms xuống 200ms để phản hồi nhanh hơn
       distinctUntilChanged(),
       takeUntil(this.destroy$)
     ).subscribe(searchTerm => {
@@ -137,16 +139,43 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   }
 
   loadHoaDon(): void {
-    const filter: HoaDonFilter = {
-      page: this.currentPage - 1,
-      size: this.itemsPerPage,
-      sortBy: this.sortColumn,
-      sortDir: this.sortDirection,
-      search: this.searchTerm || undefined,
-      trangThai: this.selectedStatus !== 'all' ? this.selectedStatus : undefined
+    this.loadingInvoices = true;
+    
+    // Build filter parameters
+    const filterParams: any = {
+      page: this.currentPage - 1, // Backend uses 0-based pagination
+      size: this.itemsPerPage
     };
 
-    this.hoaDonService.getHoaDonPaginated(filter).subscribe({
+    // Add search term if provided
+    if (this.searchTerm && this.searchTerm.trim()) {
+      filterParams.keyword = this.searchTerm.trim();
+    }
+
+    // Add status filter if not 'all'
+    if (this.selectedStatus && this.selectedStatus !== 'all') {
+      filterParams.trangThai = this.selectedStatus;
+    }
+
+    // Add payment status filter if not 'all'
+    if (this.selectedPaymentStatus && this.selectedPaymentStatus !== 'all') {
+      filterParams.trangThaiThanhToan = this.selectedPaymentStatus;
+    }
+
+    // Add payment method filter if not 'all'
+    if (this.selectedPaymentMethod && this.selectedPaymentMethod !== 'all') {
+      filterParams.phuongThucThanhToan = this.selectedPaymentMethod;
+    }
+
+    // Add sorting if specified
+    if (this.sortColumn) {
+      filterParams.sortBy = this.sortColumn;
+      filterParams.sortDirection = this.sortDirection;
+    }
+
+    console.log('Filter params:', filterParams);
+
+    this.hoaDonService.getAllHoaDon(filterParams).subscribe({
       next: (response: any) => {
         console.log('API Response:', response);
         // Handle different response structures
@@ -168,10 +197,12 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
         // Load customer names for invoices that have khachHangId but no tenKhachHang
         this.loadCustomerNames();
 
+        this.loadingInvoices = false;
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Error loading invoices:', error);
+        this.loadingInvoices = false;
         // Fallback to sample data if API fails
         this.loadSampleData();
       }
@@ -237,6 +268,39 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
     const value = event.target.value;
     this.searchSubject.next(value);
   }
+
+  clearSearch(): void {
+    this.searchTerm = '';
+    this.searchSubject.next('');
+  }
+
+  clearStatusFilter(): void {
+    this.selectedStatus = 'all';
+    this.currentPage = 1;
+    this.loadHoaDon();
+  }
+
+  clearPaymentStatusFilter(): void {
+    this.selectedPaymentStatus = 'all';
+    this.currentPage = 1;
+    this.loadHoaDon();
+  }
+
+  clearPaymentMethodFilter(): void {
+    this.selectedPaymentMethod = 'all';
+    this.currentPage = 1;
+    this.loadHoaDon();
+  }
+
+  getActiveFilterCount(): number {
+    let count = 0;
+    if (this.searchTerm && this.searchTerm.trim()) count++;
+    if (this.selectedStatus !== 'all') count++;
+    if (this.selectedPaymentStatus !== 'all') count++;
+    if (this.selectedPaymentMethod !== 'all') count++;
+    return count;
+  }
+
 
   onSearchChange(): void {
     this.currentPage = 1;
@@ -390,14 +454,8 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   }
 
   getStatusLabel(status: string): string {
-    const statusLabels: { [key: string]: string } = {
-      'CHO_XAC_NHAN': 'Chờ xác nhận',
-      'DA_XAC_NHAN': 'Đã xác nhận',
-      'DANG_GIAO_HANG': 'Đang giao hàng',
-      'DA_GIAO_HANG': 'Đã giao hàng',
-      'HUY': 'Hủy',
-    };
-    return statusLabels[status] || status;
+    const option = this.statusOptions.find(opt => opt.value === status);
+    return option ? option.label : status;
   }
 
   getPaymentStatusClass(paymentStatus: string): string {
@@ -411,23 +469,13 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   }
 
   getPaymentStatusLabel(paymentStatus: string): string {
-    const statusLabels: { [key: string]: string } = {
-      pending: 'Chờ thanh toán',
-      paid: 'Đã thanh toán',
-      partial: 'Thanh toán một phần',
-      refunded: 'Hoàn tiền',
-    };
-    return statusLabels[paymentStatus] || paymentStatus;
+    const option = this.paymentStatusOptions.find(opt => opt.value === paymentStatus);
+    return option ? option.label : paymentStatus;
   }
 
   getPaymentMethodLabel(method: string): string {
-    const methodLabels: { [key: string]: string } = {
-      cash: 'Tiền mặt',
-      transfer: 'Chuyển khoản',
-      'Tại quầy': 'Tiền mặt',
-      'Online': 'Chuyển khoản',
-    };
-    return methodLabels[method] || 'Tiền mặt'; // Default to cash
+    const option = this.paymentMethodOptions.find(opt => opt.value === method);
+    return option ? option.label : method;
   }
 
   formatCurrency(amount: number): string {
@@ -439,6 +487,13 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
 
   formatDate(date: string): string {
     return new Intl.DateTimeFormat('vi-VN').format(new Date(date));
+  }
+
+  formatDateTimeForAPI(dateTime: string): string | undefined {
+    if (!dateTime) return undefined;
+    // Chuyển đổi từ datetime-local format sang ISO string
+    const date = new Date(dateTime);
+    return date.toISOString();
   }
 
   // CRUD Operations
@@ -496,7 +551,22 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
 
   updateInvoice(): void {
     if (this.editingInvoice && this.editingInvoice.id) {
-      this.hoaDonService.updateHoaDon(this.editingInvoice.id, this.editingInvoice).subscribe({
+      // Chuẩn hóa dữ liệu trước khi gửi
+      const invoiceData = {
+        ...this.editingInvoice,
+        tongTien: this.editingInvoice.tongTien ? Number(this.editingInvoice.tongTien) : 0,
+        tienGiamGia: this.editingInvoice.tienGiamGia ? Number(this.editingInvoice.tienGiamGia) : 0,
+        thanhTien: this.editingInvoice.thanhTien ? Number(this.editingInvoice.thanhTien) : 0,
+        nhanVienId: this.editingInvoice.nhanVienId ? Number(this.editingInvoice.nhanVienId) : undefined,
+        khachHangId: this.editingInvoice.khachHangId ? Number(this.editingInvoice.khachHangId) : undefined,
+        // Chuẩn hóa định dạng ngày tháng
+        ngayThanhToan: this.editingInvoice.ngayThanhToan ? this.formatDateTimeForAPI(this.editingInvoice.ngayThanhToan) : undefined,
+        ngayTao: this.editingInvoice.ngayTao ? this.formatDateTimeForAPI(this.editingInvoice.ngayTao) : undefined
+      };
+
+      console.log('Sending invoice data:', invoiceData);
+      
+      this.hoaDonService.updateHoaDon(this.editingInvoice.id, invoiceData).subscribe({
         next: (result) => {
           console.log('Invoice updated:', result);
           this.closeModals();
@@ -562,34 +632,62 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
 
   // Product selection methods
   openProductModal(): void {
-    this.showProductModal = true;
     this.selectedProductIds.clear(); // Reset selection when opening modal
+    this.showProductModal = true;
     this.loadProducts();
   }
 
   closeProductModal(): void {
     this.showProductModal = false;
+    this.selectedProductIds.clear(); // Clear selection when closing modal
   }
 
   loadProducts(): void {
+    this.loadingProducts = true;
+    console.log('Loading products...');
+    
     this.hoaDonService.getProducts().subscribe({
       next: (products) => {
-        this.availableProducts = products;
-        console.log('Products loaded:', products);
+        // Map API response to match frontend expected format
+        this.availableProducts = products.map((product: any) => ({
+          id: product.id,
+          maSanPham: product.maSanPham,
+          tenSanPham: product.tenSanPham,
+          giaBan: product.giaBan,
+          donGia: product.giaBan, // Map giaBan to donGia for compatibility
+          soLuongTon: product.soLuongTon || 0,
+          moTa: product.moTa,
+          trangThai: product.trangThai,
+          danhMuc: product.loaiMuBaoHiemTen,
+          thuongHieu: product.nhaSanXuatTen,
+          chatLieu: product.chatLieuVoTen,
+          trongLuong: product.trongLuongTen,
+          xuatXu: product.xuatXuTen,
+          kieuDang: product.kieuDangMuTen,
+          congNgheAnToan: product.congNgheAnToanTen,
+          mauSac: product.mauSacTen,
+          anhSanPham: product.anhSanPham
+        }));
+        this.loadingProducts = false;
+        console.log('Products loaded from API:', this.availableProducts);
       },
       error: (error) => {
         console.error('Error loading products:', error);
+        this.loadingProducts = false;
         alert('Lỗi khi tải danh sách sản phẩm: ' + (error.error?.message || error.message));
         // Fallback sample products
         this.availableProducts = [
           {
             id: 1,
+            maSanPham: 'SP001',
             tenSanPham: 'Mũ bảo hiểm AGV K1',
             giaBan: 1500000,
             donGia: 1500000,
             soLuongTon: 10,
             moTa: 'Mũ bảo hiểm cao cấp',
-            trangThai: true
+            trangThai: true,
+            danhMuc: 'Mũ bảo hiểm',
+            thuongHieu: 'AGV'
           },
           {
             id: 2,
@@ -608,10 +706,20 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   updateProductQuantity(product: any, quantity: number): void {
     const selectedProduct = this.selectedProducts.find(p => p.id === product.id);
     if (selectedProduct) {
-      selectedProduct.soLuong = quantity;
-      // Không cần tính thanhTien ở đây vì calculateTotal() sẽ tính lại
+      // Đảm bảo số lượng là số nguyên dương
+      const validQuantity = Math.max(1, Math.floor(quantity || 1));
+      selectedProduct.soLuong = validQuantity;
+      
+      console.log(`Cập nhật số lượng sản phẩm ${product.tenSanPham}: ${validQuantity}`);
+      
+      // Tính lại tổng tiền
       this.calculateTotal();
     }
+  }
+
+  onQuantityInputChange(product: any, event: any): void {
+    const quantity = parseInt(event.target.value) || 1;
+    this.updateProductQuantity(product, quantity);
   }
 
   removeProduct(product: any): void {
@@ -623,6 +731,13 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   }
 
   calculateTotal(): void {
+    console.log('=== BẮT ĐẦU TÍNH TỔNG TIỀN ===');
+    console.log('Danh sách sản phẩm:', this.selectedProducts.map(p => ({
+      ten: p.tenSanPham,
+      giaBan: p.giaBan,
+      soLuong: p.soLuong
+    })));
+
     // Tính tổng tiền từ các sản phẩm đã chọn
     // Công thức: Σ(đơn giá × số lượng) cho tất cả sản phẩm
     this.newInvoice.tongTien = this.selectedProducts.reduce((total, product) => {
@@ -637,7 +752,7 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
     // Tính thành tiền
     this.newInvoice.thanhTien = (this.newInvoice.tongTien || 0) - (this.newInvoice.tienGiamGia || 0);
 
-    console.log('=== TÍNH TỔNG TIỀN ===');
+    console.log('=== KẾT QUẢ TÍNH TOÁN ===');
     console.log('Tổng tiền:', this.newInvoice.tongTien);
     console.log('Tiền giảm giá:', this.newInvoice.tienGiamGia);
     console.log('Thành tiền:', this.newInvoice.thanhTien);
@@ -719,8 +834,32 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
   }
 
   confirmProductSelection(): void {
-    this.newInvoice.danhSachSanPham = [...this.selectedProducts];
+    // Thêm các sản phẩm đã chọn vào hóa đơn
+    const selectedProducts = this.getSelectedProducts();
+    selectedProducts.forEach(product => {
+      const existingProduct = this.selectedProducts.find(p => p.id === product.id);
+      if (existingProduct) {
+        // Nếu sản phẩm đã tồn tại, chỉ tăng số lượng nếu người dùng chưa chỉnh sửa
+        if (existingProduct.soLuong === 1) {
+          existingProduct.soLuong += 1;
+        }
+        console.log(`Sản phẩm ${product.tenSanPham} đã tồn tại, số lượng: ${existingProduct.soLuong}`);
+      } else {
+        this.selectedProducts.push({
+          ...product,
+          soLuong: 1
+        });
+        console.log(`Thêm sản phẩm mới ${product.tenSanPham}, số lượng: 1`);
+      }
+    });
+    
+    // Tính lại tổng tiền
+    this.calculateTotal();
+    
+    // Đóng modal
     this.closeProductModal();
+    
+    console.log('Đã xác nhận chọn sản phẩm. Tổng số sản phẩm:', this.selectedProducts.length);
   }
 
   // Load customer names for all invoices
@@ -847,28 +986,8 @@ export class InvoiceManagementComponent implements OnInit, OnDestroy {
     return this.availableProducts.filter(p => this.selectedProductIds.has(p.id));
   }
 
-  addSelectedProducts(): void {
-    const selectedProducts = this.getSelectedProducts();
-    selectedProducts.forEach(product => {
-      const existingProduct = this.selectedProducts.find(p => p.id === product.id);
-      if (existingProduct) {
-        existingProduct.soLuong += 1;
-      } else {
-        this.selectedProducts.push({
-          ...product,
-          soLuong: 1
-        });
-      }
-    });
-    this.selectedProductIds.clear();
-    this.calculateTotal();
-  }
 
-  removeSelectedProducts(): void {
-    const selectedProducts = this.getSelectedProducts();
-    selectedProducts.forEach(product => {
-      this.removeProductFromInvoice(product);
-    });
-    this.selectedProductIds.clear();
+  onDiscountChange(): void {
+    this.calculateTotal();
   }
 }

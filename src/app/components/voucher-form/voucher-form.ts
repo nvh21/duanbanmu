@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PhieuGiamGiaService, PhieuGiamGiaResponse, PhieuGiamGiaRequest } from '../../services/phieu-giam-gia.service';
+import { PhieuGiamGiaService } from '../../services/phieu-giam-gia.service';
+import { PhieuGiamGiaResponse, PhieuGiamGiaRequest } from '../../interfaces/phieu-giam-gia.interface';
 
 interface Voucher {
   id: number;
@@ -160,9 +161,9 @@ export class VoucherForm implements OnInit {
     console.log('Loading vouchers from API...');
     
     this.phieuGiamGiaService.getAllActivePhieuGiamGia().subscribe({
-      next: (response: PhieuGiamGiaResponse[]) => {
+      next: (response: any) => {
         console.log('API Response:', response);
-        this.vouchers = this.mapApiResponseToVouchers(response);
+        this.vouchers = this.mapApiResponseToVouchers(response.data || []);
         console.log('Mapped vouchers:', this.vouchers);
         this.filteredVouchers = [...this.vouchers];
         this.loading = false;
@@ -186,16 +187,16 @@ export class VoucherForm implements OnInit {
       const voucher: Voucher = {
         id: item.id,
         code: item.maPhieu,
-        name: item.tenPhieu,
-        type: item.loaiGiamGia === 'PHAN_TRAM' ? 'percentage' : 'cash',
+        name: item.tenPhieuGiamGia,
+        type: item.loaiPhieuGiamGia ? 'cash' : 'percentage',
         value: item.giaTriGiam,
         minOrder: item.giaTriToiThieu,
-        quantity: item.soLuong,
+        quantity: item.soLuongDung,
         startDate: new Date(item.ngayBatDau),
         endDate: new Date(item.ngayKetThuc),
         status: this.determineStatus(item.ngayBatDau, item.ngayKetThuc, item.trangThai),
         isActive: item.trangThai,
-        description: item.moTa || ''
+        description: ''
       };
       
       console.log('Mapped voucher:', voucher);
@@ -297,10 +298,10 @@ export class VoucherForm implements OnInit {
 
   toggleVoucherStatus(voucher: Voucher) {
     this.phieuGiamGiaService.togglePhieuGiamGiaStatus(voucher.id).subscribe({
-      next: (response: PhieuGiamGiaResponse) => {
+      next: (response: any) => {
         // Update local data
-        voucher.isActive = response.trangThai;
-        voucher.status = this.determineStatus(response.ngayBatDau, response.ngayKetThuc, response.trangThai);
+        voucher.isActive = response.data?.trangThai || !voucher.isActive;
+        voucher.status = voucher.isActive ? 'active' : 'inactive';
         console.log('Voucher status updated:', response);
       },
       error: (error: any) => {
@@ -422,19 +423,20 @@ export class VoucherForm implements OnInit {
     // Convert form data to API request format
     const request: PhieuGiamGiaRequest = {
       maPhieu: this.voucherForm.code,
-      tenPhieu: this.voucherForm.name,
-      moTa: this.voucherForm.description,
-      ngayBatDau: this.voucherForm.startDate,
-      ngayKetThuc: this.voucherForm.endDate,
+      tenPhieuGiamGia: this.voucherForm.name,
+      loaiPhieuGiamGia: this.voucherForm.type === 'cash',
       giaTriGiam: this.voucherForm.maxDiscount,
       giaTriToiThieu: this.voucherForm.minOrder,
-      soLuong: this.voucherForm.quantity,
-      loaiGiamGia: this.voucherForm.type === 'percentage' ? 'PHAN_TRAM' : 'TIEN_MAT',
+      soTienToiDa: this.voucherForm.maxDiscount,
+      hoaDonToiThieu: this.voucherForm.minOrder,
+      soLuongDung: this.voucherForm.quantity,
+      ngayBatDau: this.voucherForm.startDate,
+      ngayKetThuc: this.voucherForm.endDate,
       trangThai: true
     };
 
     this.phieuGiamGiaService.createPhieuGiamGia(request).subscribe({
-      next: (response: PhieuGiamGiaResponse) => {
+      next: (response: any) => {
         console.log('Voucher created successfully:', response);
         alert('Tạo phiếu giảm giá thành công!');
         this.goBackToList();
@@ -465,9 +467,9 @@ export class VoucherForm implements OnInit {
   // Create sample data
   createSampleData() {
     this.phieuGiamGiaService.createSampleData().subscribe({
-      next: (response: string) => {
+      next: (response: any) => {
         console.log('Sample data created:', response);
-        alert(response);
+        alert(response.message || 'Sample data created successfully');
         this.loadVouchers(); // Reload the list
       },
       error: (error: any) => {
@@ -481,9 +483,9 @@ export class VoucherForm implements OnInit {
   testApiConnection() {
     console.log('Testing API connection...');
     this.phieuGiamGiaService.testApi().subscribe({
-      next: (response: string) => {
+      next: (response: any) => {
         console.log('API Test Response:', response);
-        alert('API kết nối thành công: ' + response);
+        alert('API kết nối thành công: ' + (response.message || 'Success'));
       },
       error: (error: any) => {
         console.error('API Test Error:', error);
