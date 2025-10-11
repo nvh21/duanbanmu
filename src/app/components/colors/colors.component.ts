@@ -35,6 +35,9 @@ export class ColorsComponent implements OnInit {
   totalElements = 0;
   sort = 'id,desc';
 
+  // Track which fields have been touched by user
+  touchedFields: Set<string> = new Set();
+
   constructor(private api: ColorApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -68,6 +71,7 @@ export class ColorsComponent implements OnInit {
     this.isViewMode = false;
     this.selected = null;
     this.newColor = { id: 0, name: '', code: '', status: true };
+    this.resetTouchedFields();
     this.showModal = true;
   }
   openEditModal(c: ColorVM) {
@@ -75,6 +79,7 @@ export class ColorsComponent implements OnInit {
     this.isViewMode = false;
     this.selected = c;
     this.newColor = { ...c };
+    this.resetTouchedFields();
     this.showModal = true;
   }
   viewColor(c: ColorVM) {
@@ -92,8 +97,36 @@ export class ColorsComponent implements OnInit {
   }
 
   save() {
-    if (!this.newColor.name.trim()) {
-      alert('Vui lòng nhập tên màu');
+    // Mark all fields as touched when user tries to submit
+    this.touchedFields.add('name');
+    this.touchedFields.add('code');
+
+    // Validation chi tiết
+    const validationErrors: string[] = [];
+
+    // Kiểm tra tên màu
+    if (!this.newColor.name?.trim()) {
+      validationErrors.push('Tên màu không được để trống');
+    } else if (this.newColor.name.trim().length < 2) {
+      validationErrors.push('Tên màu phải có ít nhất 2 ký tự');
+    } else if (this.newColor.name.trim().length > 100) {
+      validationErrors.push('Tên màu không được vượt quá 100 ký tự');
+    }
+
+    // Kiểm tra mã màu (bắt buộc)
+    if (!this.newColor.code?.trim()) {
+      validationErrors.push('Mã màu không được để trống');
+    } else {
+      const colorCode = this.newColor.code.trim();
+      // Kiểm tra định dạng hex color
+      if (!/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(colorCode)) {
+        validationErrors.push('Mã màu phải có định dạng hex hợp lệ (ví dụ: #FF0000 hoặc #F00)');
+      }
+    }
+
+    // Hiển thị lỗi nếu có
+    if (validationErrors.length > 0) {
+      // Không hiển thị alert, chỉ mark fields as touched để hiển thị validation errors
       return;
     }
     if (this.isEditMode && this.selected) {
@@ -108,7 +141,7 @@ export class ColorsComponent implements OnInit {
             this.fetch(0);
             this.closeModal();
           },
-          error: () => alert('Cập nhật thất bại'),
+          error: () => console.error('Cập nhật thất bại'),
         });
     } else {
       this.api
@@ -122,7 +155,7 @@ export class ColorsComponent implements OnInit {
             this.fetch(0);
             this.closeModal();
           },
-          error: () => alert('Thêm mới thất bại'),
+          error: () => console.error('Thêm mới thất bại'),
         });
     }
   }
@@ -167,7 +200,53 @@ export class ColorsComponent implements OnInit {
         this.fetch(0);
         this.closeDeleteModal();
       },
-      error: () => alert('Xóa thất bại'),
+      error: () => console.error('Xóa thất bại'),
     });
+  }
+
+  // Validation methods
+  markFieldTouched(field: string) {
+    this.touchedFields.add(field);
+  }
+
+  hasFieldError(field: string): boolean {
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+
+    switch (field) {
+      case 'name':
+        return !this.newColor.name?.trim() || 
+               this.newColor.name.trim().length < 2 || 
+               this.newColor.name.trim().length > 100;
+      case 'code':
+        if (!this.newColor.code?.trim()) return true; // Required field
+        const colorCode = this.newColor.code.trim();
+        return !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(colorCode);
+      default:
+        return false;
+    }
+  }
+
+  getFieldError(field: string): string | null {
+    if (!this.hasFieldError(field)) {
+      return null;
+    }
+
+    switch (field) {
+      case 'name':
+        if (!this.newColor.name?.trim()) return 'Tên màu không được để trống';
+        if (this.newColor.name.trim().length < 2) return 'Tên màu phải có ít nhất 2 ký tự';
+        if (this.newColor.name.trim().length > 100) return 'Tên màu không được vượt quá 100 ký tự';
+        break;
+      case 'code':
+        if (!this.newColor.code?.trim()) return 'Mã màu không được để trống';
+        return 'Mã màu phải có định dạng hex hợp lệ (ví dụ: #FF0000 hoặc #F00)';
+    }
+    return null;
+  }
+
+  resetTouchedFields() {
+    this.touchedFields.clear();
   }
 }

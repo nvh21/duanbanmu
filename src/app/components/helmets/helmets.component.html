@@ -54,6 +54,7 @@
                   aria-hidden="true"
                 ></i>
               </th>
+              <th>Ảnh sản phẩm</th>
               <th (click)="changeSort('tenSanPham')" style="cursor: pointer">
                 Tên sản phẩm
                 <i
@@ -105,6 +106,17 @@
           <tbody>
             <tr *ngFor="let product of filteredProducts; trackBy: trackByProductId">
               <td>{{ product.code }}</td>
+              <td>
+                <div *ngIf="product.anhSanPham" class="product-image-container">
+                  <img 
+                    [src]="product.anhSanPham" 
+                    [alt]="product.name"
+                    class="product-image"
+                    (error)="onImageError($event)"
+                  />
+                </div>
+                <span *ngIf="!product.anhSanPham" class="text-muted">-</span>
+              </td>
               <td>{{ product.name }}</td>
               <td>{{ product.loaiMuBaoHiem || '-' }}</td>
               <td>{{ product.nhaSanXuat || '-' }}</td>
@@ -244,11 +256,16 @@
                 <input
                   type="text"
                   class="form-control"
+                  [class.is-invalid]="hasFieldError('code')"
                   [(ngModel)]="newProduct.code"
                   name="code"
                   placeholder="Nhập mã sản phẩm"
                   [readonly]="isViewMode || isEditMode"
+                  (blur)="markFieldTouched('code')"
                 />
+                <div *ngIf="hasFieldError('code')" class="invalid-feedback">
+                  {{ getCodeError() }}
+                </div>
               </div>
             </div>
             <div class="col-md-6">
@@ -260,11 +277,16 @@
                 <input
                   type="text"
                   class="form-control"
+                  [class.is-invalid]="hasFieldError('name')"
                   [(ngModel)]="newProduct.name"
                   name="name"
                   placeholder="Nhập tên sản phẩm"
                   [readonly]="isViewMode"
+                  (blur)="markFieldTouched('name')"
                 />
+                <div *ngIf="hasFieldError('name')" class="invalid-feedback">
+                  {{ getNameError() }}
+                </div>
               </div>
             </div>
           </div>
@@ -277,12 +299,18 @@
                 <input
                   type="number"
                   class="form-control"
+                  [class.is-invalid]="hasFieldError('price')"
                   [(ngModel)]="newProduct.price"
                   name="price"
                   min="0"
+                  max="999999999"
                   placeholder="0"
                   [readonly]="isViewMode"
+                  (blur)="markFieldTouched('price')"
                 />
+                <div *ngIf="hasFieldError('price')" class="invalid-feedback">
+                  {{ getPriceError() }}
+                </div>
               </div>
             </div>
             <div class="col-md-6">
@@ -322,9 +350,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm loại mũ bảo hiểm mới'"
+                [class.is-invalid]="hasDropdownError('loaiMuBaoHiemId')"
                 (selectionChange)="onSelect('loaiMuBaoHiemId', $event)"
                 (addButtonClick)="openQuickAddModal('loaiMuBaoHiem')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('loaiMuBaoHiemId')" class="invalid-feedback d-block">
+                Vui lòng chọn loại mũ bảo hiểm
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
@@ -337,9 +369,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm nhà sản xuất mới'"
+                [class.is-invalid]="hasDropdownError('nhaSanXuatId')"
                 (selectionChange)="onSelect('nhaSanXuatId', $event)"
                 (addButtonClick)="openQuickAddModal('nhaSanXuat')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('nhaSanXuatId')" class="invalid-feedback d-block">
+                Vui lòng chọn nhà sản xuất
+              </div>
             </div>
           </div>
 
@@ -355,9 +391,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm chất liệu vỏ mới'"
+                [class.is-invalid]="hasDropdownError('chatLieuVoId')"
                 (selectionChange)="onSelect('chatLieuVoId', $event)"
                 (addButtonClick)="openQuickAddModal('chatLieuVo')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('chatLieuVoId')" class="invalid-feedback d-block">
+                Vui lòng chọn chất liệu vỏ
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
@@ -370,9 +410,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm trọng lượng mới'"
+                [class.is-invalid]="hasDropdownError('trongLuongId')"
                 (selectionChange)="onSelect('trongLuongId', $event)"
                 (addButtonClick)="openQuickAddModal('trongLuong')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('trongLuongId')" class="invalid-feedback d-block">
+                Vui lòng chọn trọng lượng
+              </div>
             </div>
           </div>
 
@@ -388,9 +432,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm xuất xứ mới'"
+                [class.is-invalid]="hasDropdownError('xuatXuId')"
                 (selectionChange)="onSelect('xuatXuId', $event)"
                 (addButtonClick)="openQuickAddModal('xuatXu')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('xuatXuId')" class="invalid-feedback d-block">
+                Vui lòng chọn xuất xứ
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
@@ -403,9 +451,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm kiểu dáng mũ mới'"
+                [class.is-invalid]="hasDropdownError('kieuDangMuId')"
                 (selectionChange)="onSelect('kieuDangMuId', $event)"
                 (addButtonClick)="openQuickAddModal('kieuDangMu')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('kieuDangMuId')" class="invalid-feedback d-block">
+                Vui lòng chọn kiểu dáng mũ
+              </div>
             </div>
           </div>
 
@@ -421,9 +473,13 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm công nghệ an toàn mới'"
+                [class.is-invalid]="hasDropdownError('congNgheAnToanId')"
                 (selectionChange)="onSelect('congNgheAnToanId', $event)"
                 (addButtonClick)="openQuickAddModal('congNgheAnToan')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('congNgheAnToanId')" class="invalid-feedback d-block">
+                Vui lòng chọn công nghệ an toàn
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
@@ -436,9 +492,66 @@
                 [disabled]="isViewMode"
                 [showAddButton]="true"
                 [addButtonTitle]="'Thêm màu sắc mới'"
+                [class.is-invalid]="hasDropdownError('mauSacId')"
                 (selectionChange)="onSelect('mauSacId', $event)"
                 (addButtonClick)="openQuickAddModal('mauSac')"
               ></app-searchable-dropdown>
+              <div *ngIf="hasDropdownError('mauSacId')" class="invalid-feedback d-block">
+                Vui lòng chọn màu sắc
+              </div>
+            </div>
+          </div>
+
+          <!-- Ảnh sản phẩm -->
+          <div class="section-title mb-3">
+            <h6 class="text-primary fw-bold mb-0">
+              <i class="bi bi-image me-2"></i>Ảnh sản phẩm
+            </h6>
+            <hr class="mt-2" />
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-12">
+              <div class="image-upload-container">
+                <div *ngIf="newProduct.anhSanPham" class="image-preview">
+                  <img [src]="newProduct.anhSanPham" [alt]="newProduct.name" class="preview-image" />
+                  <button
+                    *ngIf="!isViewMode"
+                    type="button"
+                    class="btn btn-sm btn-danger remove-image-btn"
+                    (click)="removeImage()"
+                    title="Xóa ảnh"
+                  >
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+                <div *ngIf="!newProduct.anhSanPham" class="image-placeholder">
+                  <i class="bi bi-cloud-upload"></i>
+                  <p>Chưa có ảnh</p>
+                </div>
+                <input
+                  *ngIf="!isViewMode"
+                  type="file"
+                  class="form-control mt-2"
+                  accept="image/*"
+                  (change)="onImageSelected($event)"
+                  #fileInput
+                />
+                <div *ngIf="!isViewMode" class="mt-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    [class.is-invalid]="hasFieldError('image')"
+                    [(ngModel)]="newProduct.anhSanPham"
+                    name="anhSanPham"
+                    placeholder="Hoặc nhập URL ảnh"
+                    (blur)="markFieldTouched('image')"
+                  />
+                  <div *ngIf="hasFieldError('image')" class="invalid-feedback">
+                    {{ getImageError() }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

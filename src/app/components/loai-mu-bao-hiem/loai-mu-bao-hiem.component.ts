@@ -43,6 +43,9 @@ export class LoaiMuBaoHiemComponent implements OnInit {
     trangThai: true,
   };
 
+  // Track which fields have been touched by user
+  touchedFields: Set<string> = new Set();
+
   // Status options
   statusOptions = [
     { value: null, label: 'Tất cả' },
@@ -162,6 +165,7 @@ export class LoaiMuBaoHiemComponent implements OnInit {
       moTa: '',
       trangThai: true,
     };
+    this.resetTouchedFields();
     this.showModal = true;
   }
 
@@ -173,6 +177,7 @@ export class LoaiMuBaoHiemComponent implements OnInit {
       moTa: item.moTa || '',
       trangThai: item.trangThai,
     };
+    this.resetTouchedFields();
     this.showModal = true;
   }
 
@@ -183,8 +188,30 @@ export class LoaiMuBaoHiemComponent implements OnInit {
   }
 
   save() {
+    // Mark all fields as touched when user tries to submit
+    this.touchedFields.add('tenLoai');
+    this.touchedFields.add('moTa');
+
+    // Validation chi tiết
+    const validationErrors: string[] = [];
+
+    // Kiểm tra tên loại mũ bảo hiểm
     if (!this.form.tenLoai?.trim()) {
-      alert('Tên loại mũ bảo hiểm là bắt buộc');
+      validationErrors.push('Tên loại mũ bảo hiểm không được để trống');
+    } else if (this.form.tenLoai.trim().length < 2) {
+      validationErrors.push('Tên loại mũ bảo hiểm phải có ít nhất 2 ký tự');
+    } else if (this.form.tenLoai.trim().length > 100) {
+      validationErrors.push('Tên loại mũ bảo hiểm không được vượt quá 100 ký tự');
+    }
+
+    // Kiểm tra mô tả (nếu có)
+    if (this.form.moTa?.trim() && this.form.moTa.trim().length > 500) {
+      validationErrors.push('Mô tả không được vượt quá 500 ký tự');
+    }
+
+    // Hiển thị lỗi nếu có
+    if (validationErrors.length > 0) {
+      // Không hiển thị alert, chỉ mark fields as touched để hiển thị validation errors
       return;
     }
 
@@ -209,9 +236,9 @@ export class LoaiMuBaoHiemComponent implements OnInit {
       error: (error) => {
         console.error('Error saving:', error);
         if (error.status === 409) {
-          alert('Tên loại mũ bảo hiểm đã tồn tại');
+          console.error('Tên loại mũ bảo hiểm đã tồn tại');
         } else {
-          alert('Có lỗi xảy ra khi lưu dữ liệu');
+          console.error('Có lỗi xảy ra khi lưu dữ liệu');
         }
       },
     });
@@ -226,7 +253,7 @@ export class LoaiMuBaoHiemComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error deleting:', error);
-          alert('Có lỗi xảy ra khi xóa dữ liệu');
+          console.error('Có lỗi xảy ra khi xóa dữ liệu');
         },
       });
     }
@@ -257,5 +284,48 @@ export class LoaiMuBaoHiemComponent implements OnInit {
       return 'bi-arrow-down-up';
     }
     return this.sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down';
+  }
+
+  // Validation methods
+  markFieldTouched(field: string) {
+    this.touchedFields.add(field);
+  }
+
+  hasFieldError(field: string): boolean {
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+
+    switch (field) {
+      case 'tenLoai':
+        return !this.form.tenLoai?.trim() || 
+               this.form.tenLoai.trim().length < 2 || 
+               this.form.tenLoai.trim().length > 100;
+      case 'moTa':
+        return !!(this.form.moTa?.trim() && this.form.moTa.trim().length > 500);
+      default:
+        return false;
+    }
+  }
+
+  getFieldError(field: string): string | null {
+    if (!this.hasFieldError(field)) {
+      return null;
+    }
+
+    switch (field) {
+      case 'tenLoai':
+        if (!this.form.tenLoai?.trim()) return 'Tên loại mũ bảo hiểm không được để trống';
+        if (this.form.tenLoai.trim().length < 2) return 'Tên loại mũ bảo hiểm phải có ít nhất 2 ký tự';
+        if (this.form.tenLoai.trim().length > 100) return 'Tên loại mũ bảo hiểm không được vượt quá 100 ký tự';
+        break;
+      case 'moTa':
+        return 'Mô tả không được vượt quá 500 ký tự';
+    }
+    return null;
+  }
+
+  resetTouchedFields() {
+    this.touchedFields.clear();
   }
 }

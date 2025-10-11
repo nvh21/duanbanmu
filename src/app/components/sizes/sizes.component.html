@@ -143,20 +143,30 @@
             <input
               type="text"
               class="form-control"
+              [class.is-invalid]="hasFieldError('name')"
               [(ngModel)]="newItem.name"
               name="name"
               [readonly]="isViewMode"
+              (blur)="markFieldTouched('name')"
             />
+            <div *ngIf="hasFieldError('name')" class="invalid-feedback">
+              {{ getFieldError('name') }}
+            </div>
           </div>
           <div class="form-group mb-3">
             <label>Mô tả</label>
             <textarea
               class="form-control"
+              [class.is-invalid]="hasFieldError('description')"
               rows="3"
               [(ngModel)]="newItem.description"
               name="description"
               [readonly]="isViewMode"
+              (blur)="markFieldTouched('description')"
             ></textarea>
+            <div *ngIf="hasFieldError('description')" class="invalid-feedback">
+              {{ getFieldError('description') }}
+            </div>
           </div>
           <div class="form-group mb-3">
             <label>Trạng thái</label>

@@ -39,6 +39,9 @@ export class OriginsComponent implements OnInit {
 
   form: OriginVM = { id: 0, tenXuatXu: '', moTa: '', trangThai: true };
 
+  // Track which fields have been touched by user
+  touchedFields: Set<string> = new Set();
+
   constructor(private api: OriginApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -111,6 +114,7 @@ export class OriginsComponent implements OnInit {
     this.isViewMode = false;
     this.selected = null;
     this.form = { id: 0, tenXuatXu: '', moTa: '', trangThai: true };
+    this.resetTouchedFields();
     this.showModal = true;
   }
   openEditModal(x: OriginVM) {
@@ -118,6 +122,7 @@ export class OriginsComponent implements OnInit {
     this.isViewMode = false;
     this.selected = x;
     this.form = { ...x };
+    this.resetTouchedFields();
     this.showModal = true;
   }
   viewItem(x: OriginVM) {
@@ -135,8 +140,30 @@ export class OriginsComponent implements OnInit {
   }
 
   save() {
-    if (!this.form.tenXuatXu.trim()) {
-      alert('Vui lòng nhập tên xuất xứ');
+    // Mark all fields as touched when user tries to submit
+    this.touchedFields.add('tenXuatXu');
+    this.touchedFields.add('moTa');
+
+    // Validation chi tiết
+    const validationErrors: string[] = [];
+
+    // Kiểm tra tên xuất xứ
+    if (!this.form.tenXuatXu?.trim()) {
+      validationErrors.push('Tên xuất xứ không được để trống');
+    } else if (this.form.tenXuatXu.trim().length < 2) {
+      validationErrors.push('Tên xuất xứ phải có ít nhất 2 ký tự');
+    } else if (this.form.tenXuatXu.trim().length > 100) {
+      validationErrors.push('Tên xuất xứ không được vượt quá 100 ký tự');
+    }
+
+    // Kiểm tra mô tả (nếu có)
+    if (this.form.moTa?.trim() && this.form.moTa.trim().length > 500) {
+      validationErrors.push('Mô tả không được vượt quá 500 ký tự');
+    }
+
+    // Hiển thị lỗi nếu có
+    if (validationErrors.length > 0) {
+      // Không hiển thị alert, chỉ mark fields as touched để hiển thị validation errors
       return;
     }
     const payload = {
@@ -159,7 +186,7 @@ export class OriginsComponent implements OnInit {
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại.'
               : 'Cập nhật xuất xứ thất bại');
-          alert(msg);
+          console.error(msg);
         },
       });
     } else {
@@ -177,7 +204,7 @@ export class OriginsComponent implements OnInit {
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng nhập tên xuất xứ.'
               : 'Thêm xuất xứ thất bại');
-          alert(msg);
+          console.error(msg);
         },
       });
     }
@@ -197,7 +224,7 @@ export class OriginsComponent implements OnInit {
           console.error(err);
           const msg =
             (err?.error && (err.error.message || err.error.error)) || 'Xóa xuất xứ thất bại';
-          alert(msg);
+          console.error(msg);
         },
       });
     }
@@ -210,5 +237,48 @@ export class OriginsComponent implements OnInit {
 
   trackById(i: number, x: OriginVM) {
     return x.id;
+  }
+
+  // Validation methods
+  markFieldTouched(field: string) {
+    this.touchedFields.add(field);
+  }
+
+  hasFieldError(field: string): boolean {
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+
+    switch (field) {
+      case 'tenXuatXu':
+        return !this.form.tenXuatXu?.trim() || 
+               this.form.tenXuatXu.trim().length < 2 || 
+               this.form.tenXuatXu.trim().length > 100;
+      case 'moTa':
+        return !!(this.form.moTa?.trim() && this.form.moTa.trim().length > 500);
+      default:
+        return false;
+    }
+  }
+
+  getFieldError(field: string): string | null {
+    if (!this.hasFieldError(field)) {
+      return null;
+    }
+
+    switch (field) {
+      case 'tenXuatXu':
+        if (!this.form.tenXuatXu?.trim()) return 'Tên xuất xứ không được để trống';
+        if (this.form.tenXuatXu.trim().length < 2) return 'Tên xuất xứ phải có ít nhất 2 ký tự';
+        if (this.form.tenXuatXu.trim().length > 100) return 'Tên xuất xứ không được vượt quá 100 ký tự';
+        break;
+      case 'moTa':
+        return 'Mô tả không được vượt quá 500 ký tự';
+    }
+    return null;
+  }
+
+  resetTouchedFields() {
+    this.touchedFields.clear();
   }
 }

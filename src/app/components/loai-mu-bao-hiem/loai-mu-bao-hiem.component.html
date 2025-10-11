@@ -161,24 +161,34 @@
             <input
               type="text"
               class="form-control"
+              [class.is-invalid]="hasFieldError('tenLoai')"
               id="tenLoai"
               [(ngModel)]="form.tenLoai"
               name="tenLoai"
               placeholder="Nhập tên loại mũ bảo hiểm"
               required
+              (blur)="markFieldTouched('tenLoai')"
             />
+            <div *ngIf="hasFieldError('tenLoai')" class="invalid-feedback">
+              {{ getFieldError('tenLoai') }}
+            </div>
           </div>
 
           <div class="mb-3">
             <label for="moTa" class="form-label">Mô tả</label>
             <textarea
               class="form-control"
+              [class.is-invalid]="hasFieldError('moTa')"
               id="moTa"
               [(ngModel)]="form.moTa"
               name="moTa"
               rows="3"
               placeholder="Nhập mô tả (tùy chọn)"
+              (blur)="markFieldTouched('moTa')"
             ></textarea>
+            <div *ngIf="hasFieldError('moTa')" class="invalid-feedback">
+              {{ getFieldError('moTa') }}
+            </div>
           </div>
 
           <div class="mb-3">

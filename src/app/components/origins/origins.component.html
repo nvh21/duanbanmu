@@ -1,21 +1,23 @@
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Xuất xứ</h2>
+    <h2>Quản lý xuất xứ</h2>
     <button class="btn btn-primary" (click)="openAddModal()">
-      <i class="bi bi-plus-circle me-1"></i>Thêm mới
+      <i class="bi bi-plus-circle me-1"></i>Thêm xuất xứ mới
     </button>
   </div>
 
   <div class="row g-3 mb-3">
     <div class="col-md-6">
+      <label class="form-label">Tìm kiếm:</label>
       <input
         class="form-control"
-        placeholder="Tìm theo tên, mô tả"
+        placeholder="Tìm theo tên xuất xứ..."
         [(ngModel)]="searchTerm"
         (input)="onSearchChange()"
       />
     </div>
     <div class="col-md-3">
+      <label class="form-label">Trạng thái:</label>
       <select class="form-select" [(ngModel)]="selectedStatus" (change)="onStatusChange()">
         <option value="all">Tất cả</option>
         <option value="active">Đang dùng</option>
@@ -28,9 +30,42 @@
     <table class="table table-striped table-hover">
       <thead class="table-dark">
         <tr>
-          <th (click)="setSort('tenXuatXu')" style="cursor: pointer">Tên xuất xứ</th>
-          <th (click)="setSort('moTa')" style="cursor: pointer">Mô tả</th>
-          <th (click)="setSort('trangThai')" style="cursor: pointer">Trạng thái</th>
+          <th (click)="setSort('tenXuatXu')" style="cursor: pointer">
+            Tên xuất xứ
+            <i
+              class="bi ms-1 text-white"
+              [ngClass]="{
+                'bi-caret-up-fill': sort === 'tenXuatXu,asc',
+                'bi-caret-down-fill': sort === 'tenXuatXu,desc',
+                'bi-arrow-down-up': !sort.startsWith('tenXuatXu')
+              }"
+              aria-hidden="true"
+            ></i>
+          </th>
+          <th (click)="setSort('moTa')" style="cursor: pointer">
+            Mô tả
+            <i
+              class="bi ms-1 text-white"
+              [ngClass]="{
+                'bi-caret-up-fill': sort === 'moTa,asc',
+                'bi-caret-down-fill': sort === 'moTa,desc',
+                'bi-arrow-down-up': !sort.startsWith('moTa')
+              }"
+              aria-hidden="true"
+            ></i>
+          </th>
+          <th (click)="setSort('trangThai')" style="cursor: pointer">
+            Trạng thái
+            <i
+              class="bi ms-1 text-white"
+              [ngClass]="{
+                'bi-caret-up-fill': sort === 'trangThai,asc',
+                'bi-caret-down-fill': sort === 'trangThai,desc',
+                'bi-arrow-down-up': !sort.startsWith('trangThai')
+              }"
+              aria-hidden="true"
+            ></i>
+          </th>
           <th>Thao tác</th>
         </tr>
       </thead>
@@ -99,31 +134,52 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            {{ isViewMode ? 'Xem' : isEditMode ? 'Sửa' : 'Thêm' }} xuất xứ
+            <span *ngIf="isViewMode">Xem xuất xứ</span>
+            <span *ngIf="isEditMode">Chỉnh sửa xuất xứ</span>
+            <span *ngIf="!isViewMode && !isEditMode">Thêm xuất xứ mới</span>
           </h5>
           <button type="button" class="btn-close" (click)="closeModal()"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Tên xuất xứ</label>
-            <input class="form-control" [(ngModel)]="form.tenXuatXu" [readonly]="isViewMode" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Mô tả</label>
-            <textarea
-              class="form-control"
-              rows="3"
-              [(ngModel)]="form.moTa"
-              [readonly]="isViewMode"
-            ></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Trạng thái</label>
-            <select class="form-select" [(ngModel)]="form.trangThai" [disabled]="isViewMode">
-              <option [ngValue]="true">Đang dùng</option>
-              <option [ngValue]="false">Không dùng nữa</option>
-            </select>
-          </div>
+          <form>
+            <div class="form-group mb-3">
+              <label>Tên xuất xứ <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('tenXuatXu')"
+                [(ngModel)]="form.tenXuatXu"
+                name="tenXuatXu"
+                [readonly]="isViewMode"
+                (blur)="markFieldTouched('tenXuatXu')"
+              />
+              <div *ngIf="hasFieldError('tenXuatXu')" class="invalid-feedback">
+                {{ getFieldError('tenXuatXu') }}
+              </div>
+            </div>
+            <div class="form-group mb-3">
+              <label>Mô tả</label>
+              <textarea
+                class="form-control"
+                [class.is-invalid]="hasFieldError('moTa')"
+                rows="3"
+                [(ngModel)]="form.moTa"
+                name="moTa"
+                [readonly]="isViewMode"
+                (blur)="markFieldTouched('moTa')"
+              ></textarea>
+              <div *ngIf="hasFieldError('moTa')" class="invalid-feedback">
+                {{ getFieldError('moTa') }}
+              </div>
+            </div>
+            <div class="form-group mb-3">
+              <label>Trạng thái</label>
+              <select class="form-control" [(ngModel)]="form.trangThai" name="trangThai" [disabled]="isViewMode">
+                <option [ngValue]="true">Đang hoạt động</option>
+                <option [ngValue]="false">Ngừng</option>
+              </select>
+            </div>
+          </form>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" (click)="closeModal()">

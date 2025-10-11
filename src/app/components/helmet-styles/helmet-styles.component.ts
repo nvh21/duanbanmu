@@ -33,6 +33,9 @@ export class HelmetStylesComponent implements OnInit {
   showDeleteModal = false;
   itemToDelete: HelmetStyleVM | null = null;
 
+  // Track which fields have been touched by user
+  touchedFields: Set<string> = new Set();
+
   currentPage = 0;
   pageSize = 10;
   totalPages = 0;
@@ -72,6 +75,7 @@ export class HelmetStylesComponent implements OnInit {
     this.isViewMode = false;
     this.selected = null;
     this.newItem = { id: 0, name: '', description: '', status: true };
+    this.resetTouchedFields();
     this.showModal = true;
   }
   openEditModal(i: HelmetStyleVM) {
@@ -79,6 +83,7 @@ export class HelmetStylesComponent implements OnInit {
     this.isViewMode = false;
     this.selected = i;
     this.newItem = { ...i };
+    this.resetTouchedFields();
     this.showModal = true;
   }
   view(i: HelmetStyleVM) {
@@ -96,8 +101,30 @@ export class HelmetStylesComponent implements OnInit {
   }
 
   save() {
-    if (!this.newItem.name.trim()) {
-      alert('Vui lòng nhập tên kiểu dáng');
+    // Mark all fields as touched when user tries to submit
+    this.touchedFields.add('name');
+    this.touchedFields.add('description');
+
+    // Validation chi tiết
+    const validationErrors: string[] = [];
+
+    // Kiểm tra tên kiểu dáng
+    if (!this.newItem.name?.trim()) {
+      validationErrors.push('Tên kiểu dáng không được để trống');
+    } else if (this.newItem.name.trim().length < 2) {
+      validationErrors.push('Tên kiểu dáng phải có ít nhất 2 ký tự');
+    } else if (this.newItem.name.trim().length > 100) {
+      validationErrors.push('Tên kiểu dáng không được vượt quá 100 ký tự');
+    }
+
+    // Kiểm tra mô tả (nếu có)
+    if (this.newItem.description?.trim() && this.newItem.description.trim().length > 500) {
+      validationErrors.push('Mô tả không được vượt quá 500 ký tự');
+    }
+
+    // Hiển thị lỗi nếu có
+    if (validationErrors.length > 0) {
+      // Không hiển thị alert, chỉ mark fields as touched để hiển thị validation errors
       return;
     }
     if (this.isEditMode && this.selected) {
@@ -112,7 +139,7 @@ export class HelmetStylesComponent implements OnInit {
             this.fetch(0);
             this.closeModal();
           },
-          error: () => alert('Cập nhật thất bại'),
+          error: () => console.error('Cập nhật thất bại'),
         });
     } else {
       this.api
@@ -126,7 +153,7 @@ export class HelmetStylesComponent implements OnInit {
             this.fetch(0);
             this.closeModal();
           },
-          error: () => alert('Thêm mới thất bại'),
+          error: () => console.error('Thêm mới thất bại'),
         });
     }
   }
@@ -142,7 +169,7 @@ export class HelmetStylesComponent implements OnInit {
         this.fetch(0);
         this.closeDeleteModal();
       },
-      error: () => alert('Xóa thất bại'),
+      error: () => console.error('Xóa thất bại'),
     });
   }
   closeDeleteModal() {
@@ -170,5 +197,48 @@ export class HelmetStylesComponent implements OnInit {
   changePageSize(size: number) {
     this.pageSize = size;
     this.fetch(0);
+  }
+
+  // Validation methods
+  markFieldTouched(field: string) {
+    this.touchedFields.add(field);
+  }
+
+  hasFieldError(field: string): boolean {
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+
+    switch (field) {
+      case 'name':
+        return !this.newItem.name?.trim() || 
+               this.newItem.name.trim().length < 2 || 
+               this.newItem.name.trim().length > 100;
+      case 'description':
+        return !!(this.newItem.description?.trim() && this.newItem.description.trim().length > 500);
+      default:
+        return false;
+    }
+  }
+
+  getFieldError(field: string): string | null {
+    if (!this.hasFieldError(field)) {
+      return null;
+    }
+
+    switch (field) {
+      case 'name':
+        if (!this.newItem.name?.trim()) return 'Tên kiểu dáng không được để trống';
+        if (this.newItem.name.trim().length < 2) return 'Tên kiểu dáng phải có ít nhất 2 ký tự';
+        if (this.newItem.name.trim().length > 100) return 'Tên kiểu dáng không được vượt quá 100 ký tự';
+        break;
+      case 'description':
+        return 'Mô tả không được vượt quá 500 ký tự';
+    }
+    return null;
+  }
+
+  resetTouchedFields() {
+    this.touchedFields.clear();
   }
 }

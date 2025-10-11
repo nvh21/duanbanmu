@@ -28,6 +28,7 @@ export interface SanPhamResponse {
   mauSacId?: number | null;
   mauSacTen?: string | null;
   mauSacMa?: string | null;
+  anhSanPham?: string | null;
 }
 
 export interface PageResponse<T> {
@@ -104,14 +105,20 @@ export class ProductApiService {
     );
   }
   getNhaSanXuatAll(): Observable<any> {
-    // reuse search endpoint first page large size
+    // reuse search endpoint first page large size, only active items
     return this.http.get(`${environment.apiBaseUrl}/nha-san-xuat`, {
-      params: new HttpParams().set('page', '0').set('size', '1000'),
+      params: new HttpParams()
+        .set('page', '0')
+        .set('size', '1000')
+        .set('trangThai', 'true'),
     });
   }
   getChatLieuVoAll(): Observable<any> {
     return this.http.get(`${environment.apiBaseUrl}/chat-lieu-vo`, {
-      params: new HttpParams().set('page', '0').set('size', '1000'),
+      params: new HttpParams()
+        .set('page', '0')
+        .set('size', '1000')
+        .set('trangThai', 'true'),
     });
   }
   getTrongLuongAll(): Observable<any[]> {
@@ -122,7 +129,10 @@ export class ProductApiService {
   }
   getKieuDangMuAll(): Observable<any> {
     return this.http.get(`${environment.apiBaseUrl}/kieu-dang-mu`, {
-      params: new HttpParams().set('page', '0').set('size', '1000'),
+      params: new HttpParams()
+        .set('page', '0')
+        .set('size', '1000')
+        .set('trangThai', 'true'),
     });
   }
   getCongNgheAnToanAll(): Observable<any[]> {

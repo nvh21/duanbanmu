@@ -17,6 +17,11 @@ import {
   LoaiMuBaoHiemRequest,
 } from '../../services/loai-mu-bao-hiem-api.service';
 import { ColorApiService } from '../../services/color-api.service';
+import { ManufacturerApiService } from '../../services/manufacturer-api.service';
+import { MaterialApiService } from '../../services/material-api.service';
+import { TrongLuongApiService } from '../../services/trong-luong-api.service';
+import { OriginApiService } from '../../services/origin-api.service';
+import { HelmetStyleApiService } from '../../services/helmet-style-api.service';
 
 interface HelmetProduct {
   id: number;
@@ -31,6 +36,7 @@ interface HelmetProduct {
   congNgheAnToan?: string | null;
   mauSac?: string | null;
   mauSacMa?: string | null;
+  anhSanPham?: string | null;
   // ID liên kết để tạo mới
   loaiMuBaoHiemId?: number | null;
   nhaSanXuatId?: number | null;
@@ -109,6 +115,9 @@ export class HelmetsComponent implements OnInit {
     updatedAt: new Date(),
   };
 
+  // Track which fields have been touched by user
+  touchedFields: Set<string> = new Set();
+
   // Quick Add Modal state
   showQuickAddModal: boolean = false;
   quickAddModalType: string = '';
@@ -117,7 +126,12 @@ export class HelmetsComponent implements OnInit {
     private productApi: ProductApiService,
     private cdr: ChangeDetectorRef,
     private loaiMuBaoHiemApi: LoaiMuBaoHiemApiService,
-    private colorApi: ColorApiService
+    private colorApi: ColorApiService,
+    private manufacturerApi: ManufacturerApiService,
+    private materialApi: MaterialApiService,
+    private trongLuongApi: TrongLuongApiService,
+    private originApi: OriginApiService,
+    private helmetStyleApi: HelmetStyleApiService
   ) {}
 
   ngOnInit() {
@@ -235,6 +249,7 @@ export class HelmetsComponent implements OnInit {
             congNgheAnToan: p.congNgheAnToanTen ?? null,
             mauSac: p.mauSacTen ?? null,
             mauSacMa: p.mauSacMa ?? null,
+            anhSanPham: p.anhSanPham ?? null,
             price: Number(p.giaBan ?? 0),
             status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
             description: p.moTa ?? '',
@@ -318,10 +333,29 @@ export class HelmetsComponent implements OnInit {
   }
 
   canSubmit(): boolean {
-    const basicValidation = (
+    // Kiểm tra mã sản phẩm (chỉ khi thêm mới)
+    const codeValid = this.isEditMode || (
+      !!this.newProduct.code?.trim() &&
+      this.newProduct.code.trim().length >= 3 &&
+      /^[A-Za-z0-9_-]+$/.test(this.newProduct.code.trim())
+    );
+
+    // Kiểm tra tên sản phẩm
+    const nameValid = (
       !!this.newProduct.name?.trim() &&
+      this.newProduct.name.trim().length >= 2 &&
+      this.newProduct.name.trim().length <= 255
+    );
+
+    // Kiểm tra giá bán
+    const priceValid = (
       !!this.newProduct.price &&
       this.newProduct.price > 0 &&
+      this.newProduct.price <= 999999999
+    );
+
+    // Kiểm tra các trường bắt buộc
+    const requiredFieldsValid = (
       Number.isInteger(Number(this.newProduct.loaiMuBaoHiemId)) &&
       Number.isInteger(Number(this.newProduct.nhaSanXuatId)) &&
       Number.isInteger(Number(this.newProduct.chatLieuVoId)) &&
@@ -332,31 +366,90 @@ export class HelmetsComponent implements OnInit {
       Number.isInteger(Number(this.newProduct.mauSacId))
     );
 
-    // Chỉ yêu cầu mã sản phẩm khi thêm mới, không yêu cầu khi chỉnh sửa
-    if (this.isEditMode) {
-      return basicValidation;
-    } else {
-      return basicValidation && !!this.newProduct.code?.trim();
-    }
+    return codeValid && nameValid && priceValid && requiredFieldsValid;
   }
 
   onSelect(field: keyof HelmetProduct, value: any) {
     const n = Number(value);
     (this.newProduct as any)[field] = Number.isFinite(n) ? n : value;
+    // Mark field as touched when user makes a selection
+    this.markFieldTouched(field as string);
   }
 
   saveProduct() {
-    // Validation tối thiểu cho thêm mới vào DB (khớp BE)
-    if (!this.newProduct.name.trim()) {
-      alert('Vui lòng nhập tên sản phẩm');
-      return;
+    // Mark all fields as touched when user tries to submit
+    this.markAllFieldsTouched();
+    
+    // Validation chi tiết cho thêm mới vào DB
+    const validationErrors: string[] = [];
+
+    // Kiểm tra mã sản phẩm (chỉ khi thêm mới)
+    if (!this.isEditMode) {
+      if (!this.newProduct.code?.trim()) {
+        validationErrors.push('Mã sản phẩm không được để trống');
+      } else if (this.newProduct.code.trim().length < 3) {
+        validationErrors.push('Mã sản phẩm phải có ít nhất 3 ký tự');
+      } else if (!/^[A-Za-z0-9_-]+$/.test(this.newProduct.code.trim())) {
+        validationErrors.push('Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới');
+      }
     }
-    if (!this.isEditMode && !this.newProduct.code.trim()) {
-      alert('Vui lòng nhập mã sản phẩm');
-      return;
+
+    // Kiểm tra tên sản phẩm
+    if (!this.newProduct.name?.trim()) {
+      validationErrors.push('Tên sản phẩm không được để trống');
+    } else if (this.newProduct.name.trim().length < 2) {
+      validationErrors.push('Tên sản phẩm phải có ít nhất 2 ký tự');
+    } else if (this.newProduct.name.trim().length > 255) {
+      validationErrors.push('Tên sản phẩm không được vượt quá 255 ký tự');
     }
+
+    // Kiểm tra giá bán
     if (!this.newProduct.price || this.newProduct.price <= 0) {
-      alert('Giá bán phải > 0');
+      validationErrors.push('Giá bán phải lớn hơn 0');
+    } else if (this.newProduct.price > 999999999) {
+      validationErrors.push('Giá bán không được vượt quá 999,999,999 VNĐ');
+    }
+
+    // Kiểm tra các trường bắt buộc
+    const requiredFields = [
+      { field: 'loaiMuBaoHiemId', name: 'Loại mũ bảo hiểm' },
+      { field: 'nhaSanXuatId', name: 'Nhà sản xuất' },
+      { field: 'chatLieuVoId', name: 'Chất liệu vỏ' },
+      { field: 'trongLuongId', name: 'Trọng lượng' },
+      { field: 'xuatXuId', name: 'Xuất xứ' },
+      { field: 'kieuDangMuId', name: 'Kiểu dáng mũ' },
+      { field: 'congNgheAnToanId', name: 'Công nghệ an toàn' },
+      { field: 'mauSacId', name: 'Màu sắc' }
+    ];
+
+    requiredFields.forEach(({ field, name }) => {
+      const value = (this.newProduct as any)[field];
+      if (!value || !Number.isInteger(Number(value)) || Number(value) <= 0) {
+        validationErrors.push(`Vui lòng chọn ${name}`);
+      }
+    });
+
+    // Kiểm tra ảnh sản phẩm (tùy chọn nhưng nếu có thì phải hợp lệ)
+    if (this.newProduct.anhSanPham) {
+      // Kiểm tra nếu là URL
+      if (this.newProduct.anhSanPham.startsWith('http')) {
+        try {
+          new URL(this.newProduct.anhSanPham);
+        } catch {
+          validationErrors.push('URL ảnh sản phẩm không hợp lệ');
+        }
+      }
+      // Kiểm tra nếu là base64
+      else if (this.newProduct.anhSanPham.startsWith('data:image/')) {
+        // Base64 hợp lệ, không cần kiểm tra thêm
+      } else {
+        validationErrors.push('Định dạng ảnh sản phẩm không hợp lệ');
+      }
+    }
+
+    // Hiển thị lỗi nếu có
+    if (validationErrors.length > 0) {
+      alert('Vui lòng kiểm tra lại thông tin:\n\n' + validationErrors.join('\n'));
       return;
     }
     // Chuẩn hóa giá trị danh mục: gõ hoặc chọn đều được (bỏ dấu, so khớp gần đúng)
@@ -451,6 +544,7 @@ export class HelmetsComponent implements OnInit {
         kieuDangMuId: Number(this.newProduct.kieuDangMuId),
         congNgheAnToanId: Number(this.newProduct.congNgheAnToanId),
         mauSacId: Number(this.newProduct.mauSacId),
+        anhSanPham: this.newProduct.anhSanPham || null,
       } as any;
 
       this.productApi.update(this.selectedProduct.id, payloadUpdate).subscribe({
@@ -487,6 +581,7 @@ export class HelmetsComponent implements OnInit {
       kieuDangMuId: toId(this.newProduct.kieuDangMuId),
       congNgheAnToanId: toId(this.newProduct.congNgheAnToanId),
       mauSacId: toId(this.newProduct.mauSacId),
+      anhSanPham: this.newProduct.anhSanPham || null,
     } as any;
 
     this.productApi.create(payload).subscribe({
@@ -562,6 +657,8 @@ export class HelmetsComponent implements OnInit {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    // Reset touched fields when opening new modal
+    this.touchedFields.clear();
 
     // Force reload helmet types if empty
     if (this.loaiMuList.length === 0) {
@@ -594,10 +691,10 @@ export class HelmetsComponent implements OnInit {
 
   loadColors() {
     console.log('Loading colors...');
-    this.colorApi.search({ page: 0, size: 1000 }).subscribe({
+    this.colorApi.getAllActive().subscribe({
       next: (data) => {
         console.log('Colors loaded:', data);
-        this.mauSacList = (data.content || []).map((x) => ({ 
+        this.mauSacList = data.map((x) => ({ 
           id: x.id, 
           tenMau: x.tenMau,
           maMau: x.maMau || ''
@@ -636,6 +733,118 @@ export class HelmetsComponent implements OnInit {
 
   trackByProductId(index: number, product: HelmetProduct): number {
     return product.id;
+  }
+
+  onImageError(event: any) {
+    event.target.style.display = 'none';
+    event.target.parentElement.innerHTML = '<span class="text-muted">Lỗi tải ảnh</span>';
+  }
+
+  onImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      // Kiểm tra kích thước file (tối đa 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Kích thước file quá lớn. Vui lòng chọn file nhỏ hơn 5MB.');
+        return;
+      }
+
+      // Kiểm tra định dạng file
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file ảnh hợp lệ.');
+        return;
+      }
+
+      // Đọc file và chuyển thành base64
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.newProduct.anhSanPham = e.target.result;
+        this.markFieldTouched('image');
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeImage() {
+    this.newProduct.anhSanPham = null;
+  }
+
+  // Validation methods for real-time feedback
+  getCodeError(): string | null {
+    if (this.isEditMode) return null;
+    if (!this.newProduct.code?.trim()) return 'Mã sản phẩm không được để trống';
+    if (this.newProduct.code.trim().length < 3) return 'Mã sản phẩm phải có ít nhất 3 ký tự';
+    if (!/^[A-Za-z0-9_-]+$/.test(this.newProduct.code.trim())) return 'Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới';
+    return null;
+  }
+
+  getNameError(): string | null {
+    if (!this.newProduct.name?.trim()) return 'Tên sản phẩm không được để trống';
+    if (this.newProduct.name.trim().length < 2) return 'Tên sản phẩm phải có ít nhất 2 ký tự';
+    if (this.newProduct.name.trim().length > 255) return 'Tên sản phẩm không được vượt quá 255 ký tự';
+    return null;
+  }
+
+  getPriceError(): string | null {
+    if (!this.newProduct.price || this.newProduct.price <= 0) return 'Giá bán phải lớn hơn 0';
+    if (this.newProduct.price > 999999999) return 'Giá bán không được vượt quá 999,999,999 VNĐ';
+    return null;
+  }
+
+  getImageError(): string | null {
+    if (!this.newProduct.anhSanPham) return null;
+    if (this.newProduct.anhSanPham.startsWith('http')) {
+      try {
+        new URL(this.newProduct.anhSanPham);
+        return null;
+      } catch {
+        return 'URL ảnh sản phẩm không hợp lệ';
+      }
+    } else if (this.newProduct.anhSanPham.startsWith('data:image/')) {
+      return null;
+    } else {
+      return 'Định dạng ảnh sản phẩm không hợp lệ';
+    }
+  }
+
+  hasFieldError(field: string): boolean {
+    // Only show error if field has been touched
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+    
+    switch (field) {
+      case 'code': return !!this.getCodeError();
+      case 'name': return !!this.getNameError();
+      case 'price': return !!this.getPriceError();
+      case 'image': return !!this.getImageError();
+      default: return false;
+    }
+  }
+
+  // Method to mark field as touched
+  markFieldTouched(field: string) {
+    this.touchedFields.add(field);
+  }
+
+  // Method to mark all fields as touched (when user tries to submit)
+  markAllFieldsTouched() {
+    const allFields = [
+      'code', 'name', 'price', 'image',
+      'loaiMuBaoHiemId', 'nhaSanXuatId', 'chatLieuVoId', 'trongLuongId',
+      'xuatXuId', 'kieuDangMuId', 'congNgheAnToanId', 'mauSacId'
+    ];
+    allFields.forEach(field => this.touchedFields.add(field));
+  }
+
+  // Method to check if dropdown has error (only if touched)
+  hasDropdownError(field: string): boolean {
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+    
+    const value = (this.newProduct as any)[field];
+    return !value || !Number.isInteger(Number(value)) || Number(value) <= 0;
   }
 
   // Method để mở modal thêm nhanh
@@ -687,6 +896,108 @@ export class HelmetsComponent implements OnInit {
           console.error('Error creating MauSac:', error);
           alert(
             'Lỗi khi thêm mới Màu sắc: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
+    } else if (event.type === 'nhaSanXuat') {
+      this.manufacturerApi.create({
+        ten: event.data.tenNhaSanXuat,
+        moTa: event.data.moTa,
+        trangThai: event.data.trangThai,
+        quocGia: event.data.quocGia,
+      }).subscribe({
+        next: (response) => {
+          console.log('Manufacturer created:', response);
+          alert('Thêm mới Nhà sản xuất thành công!');
+          this.loadLookups(); // Refresh all dropdowns
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating Manufacturer:', error);
+          alert(
+            'Lỗi khi thêm mới Nhà sản xuất: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
+    } else if (event.type === 'chatLieuVo') {
+      this.materialApi.create({
+        tenChatLieu: event.data.tenChatLieu,
+        moTa: event.data.moTa,
+        trangThai: event.data.trangThai,
+      }).subscribe({
+        next: (response) => {
+          console.log('Material created:', response);
+          alert('Thêm mới Chất liệu vỏ thành công!');
+          this.loadLookups(); // Refresh all dropdowns
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating Material:', error);
+          alert(
+            'Lỗi khi thêm mới Chất liệu vỏ: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
+    } else if (event.type === 'trongLuong') {
+      this.trongLuongApi.create({
+        giaTriTrongLuong: event.data.giaTriTrongLuong,
+        donVi: event.data.donVi,
+        moTa: event.data.moTa,
+        trangThai: event.data.trangThai,
+      }).subscribe({
+        next: (response) => {
+          console.log('TrongLuong created:', response);
+          alert('Thêm mới Trọng lượng thành công!');
+          this.loadLookups(); // Refresh all dropdowns
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating TrongLuong:', error);
+          alert(
+            'Lỗi khi thêm mới Trọng lượng: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
+    } else if (event.type === 'xuatXu') {
+      this.originApi.create({
+        tenXuatXu: event.data.tenXuatXu,
+        moTa: event.data.moTa,
+        trangThai: event.data.trangThai,
+      }).subscribe({
+        next: (response) => {
+          console.log('Origin created:', response);
+          alert('Thêm mới Xuất xứ thành công!');
+          this.loadLookups(); // Refresh all dropdowns
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating Origin:', error);
+          alert(
+            'Lỗi khi thêm mới Xuất xứ: ' +
+              (error.error?.message || error.message || 'Không thể kết nối đến server')
+          );
+        },
+      });
+    } else if (event.type === 'kieuDangMu') {
+      this.helmetStyleApi.create({
+        tenKieuDang: event.data.tenKieuDang,
+        moTa: event.data.moTa,
+        trangThai: event.data.trangThai,
+      }).subscribe({
+        next: (response) => {
+          console.log('HelmetStyle created:', response);
+          alert('Thêm mới Kiểu dáng mũ thành công!');
+          this.loadLookups(); // Refresh all dropdowns
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error creating HelmetStyle:', error);
+          alert(
+            'Lỗi khi thêm mới Kiểu dáng mũ: ' +
               (error.error?.message || error.message || 'Không thể kết nối đến server')
           );
         },

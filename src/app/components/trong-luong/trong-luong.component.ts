@@ -49,6 +49,9 @@ export class TrongLuongComponent implements OnInit {
     trangThai: true,
   };
 
+  // Track which fields have been touched by user
+  touchedFields: Set<string> = new Set();
+
   constructor(private api: TrongLuongApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -128,6 +131,7 @@ export class TrongLuongComponent implements OnInit {
       moTa: '',
       trangThai: true,
     };
+    this.resetTouchedFields();
     this.showModal = true;
   }
 
@@ -136,6 +140,7 @@ export class TrongLuongComponent implements OnInit {
     this.isViewMode = false;
     this.selected = t;
     this.form = { ...t };
+    this.resetTouchedFields();
     this.showModal = true;
   }
 
@@ -155,12 +160,34 @@ export class TrongLuongComponent implements OnInit {
   }
 
   save() {
+    // Mark all fields as touched when user tries to submit
+    this.touchedFields.add('giaTriTrongLuong');
+    this.touchedFields.add('donVi');
+    this.touchedFields.add('moTa');
+
+    // Validation chi tiết
+    const validationErrors: string[] = [];
+
+    // Kiểm tra giá trị trọng lượng
     if (!this.form.giaTriTrongLuong || this.form.giaTriTrongLuong <= 0) {
-      alert('Vui lòng nhập giá trị trọng lượng hợp lệ');
-      return;
+      validationErrors.push('Giá trị trọng lượng phải lớn hơn 0');
+    } else if (this.form.giaTriTrongLuong > 999999) {
+      validationErrors.push('Giá trị trọng lượng không được vượt quá 999,999');
     }
-    if (!this.form.donVi.trim()) {
-      alert('Vui lòng chọn đơn vị');
+
+    // Kiểm tra đơn vị
+    if (!this.form.donVi?.trim()) {
+      validationErrors.push('Vui lòng chọn đơn vị');
+    }
+
+    // Kiểm tra mô tả (nếu có)
+    if (this.form.moTa?.trim() && this.form.moTa.trim().length > 500) {
+      validationErrors.push('Mô tả không được vượt quá 500 ký tự');
+    }
+
+    // Hiển thị lỗi nếu có
+    if (validationErrors.length > 0) {
+      // Không hiển thị alert, chỉ mark fields as touched để hiển thị validation errors
       return;
     }
 
@@ -186,7 +213,7 @@ export class TrongLuongComponent implements OnInit {
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại.'
               : 'Cập nhật trọng lượng thất bại');
-          alert(msg);
+          console.error(msg);
         },
       });
     } else {
@@ -204,7 +231,7 @@ export class TrongLuongComponent implements OnInit {
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng nhập đầy đủ thông tin.'
               : 'Thêm trọng lượng thất bại');
-          alert(msg);
+          console.error(msg);
         },
       });
     }
@@ -225,7 +252,7 @@ export class TrongLuongComponent implements OnInit {
           console.error(err);
           const msg =
             (err?.error && (err.error.message || err.error.error)) || 'Xóa trọng lượng thất bại';
-          alert(msg);
+          console.error(msg);
         },
       });
     }
@@ -239,6 +266,56 @@ export class TrongLuongComponent implements OnInit {
 
   trackById(i: number, t: TrongLuongVM) {
     return t.id;
+  }
+
+  // Validation methods
+  markFieldTouched(field: string) {
+    this.touchedFields.add(field);
+  }
+
+  hasFieldError(field: string): boolean {
+    if (!this.touchedFields.has(field)) {
+      return false;
+    }
+
+    switch (field) {
+      case 'giaTriTrongLuong':
+        return !this.form.giaTriTrongLuong || 
+               this.form.giaTriTrongLuong <= 0 || 
+               this.form.giaTriTrongLuong > 999999;
+      case 'donVi':
+        return !this.form.donVi?.trim();
+      case 'moTa':
+        return !!(this.form.moTa?.trim() && this.form.moTa.trim().length > 500);
+      default:
+        return false;
+    }
+  }
+
+  getFieldError(field: string): string | null {
+    if (!this.hasFieldError(field)) {
+      return null;
+    }
+
+    switch (field) {
+      case 'giaTriTrongLuong':
+        if (!this.form.giaTriTrongLuong || this.form.giaTriTrongLuong <= 0) {
+          return 'Giá trị trọng lượng phải lớn hơn 0';
+        }
+        if (this.form.giaTriTrongLuong > 999999) {
+          return 'Giá trị trọng lượng không được vượt quá 999,999';
+        }
+        break;
+      case 'donVi':
+        return 'Vui lòng chọn đơn vị';
+      case 'moTa':
+        return 'Mô tả không được vượt quá 500 ký tự';
+    }
+    return null;
+  }
+
+  resetTouchedFields() {
+    this.touchedFields.clear();
   }
 }
 

@@ -158,10 +158,15 @@
                 <input
                   type="text"
                   class="form-control"
+                  [class.is-invalid]="hasFieldError('name')"
                   [(ngModel)]="newManufacturer.name"
                   name="name"
                   [readonly]="isViewMode"
+                  (blur)="markFieldTouched('name')"
                 />
+                <div *ngIf="hasFieldError('name')" class="invalid-feedback">
+                  {{ getFieldError('name') }}
+                </div>
               </div>
             </div>
           </div>
@@ -183,14 +188,19 @@
             </div>
             <div class="col-md-6">
               <div class="form-group mb-3">
-                <label>Quốc gia</label>
+                <label>Quốc gia <span class="text-danger">*</span></label>
                 <input
                   type="text"
                   class="form-control"
+                  [class.is-invalid]="hasFieldError('country')"
                   [(ngModel)]="newManufacturer.country"
                   name="country"
                   [readonly]="isViewMode"
+                  (blur)="markFieldTouched('country')"
                 />
+                <div *ngIf="hasFieldError('country')" class="invalid-feedback">
+                  {{ getFieldError('country') }}
+                </div>
               </div>
             </div>
           </div>
@@ -199,11 +209,16 @@
             <label>Mô tả</label>
             <textarea
               class="form-control"
+              [class.is-invalid]="hasFieldError('description')"
               rows="4"
               [(ngModel)]="newManufacturer.description"
               name="description"
               [readonly]="isViewMode"
+              (blur)="markFieldTouched('description')"
             ></textarea>
+            <div *ngIf="hasFieldError('description')" class="invalid-feedback">
+              {{ getFieldError('description') }}
+            </div>
           </div>
         </form>
       </div>
