@@ -13,7 +13,7 @@ export class HoaDonService {
   constructor(private http: HttpClient) { }
 
 
-//kk
+//kkh
   getAllHoaDon(): Observable<HoaDonDTO[]> {
     return this.http.get<HoaDonDTO[]>(this.apiUrl);
   }
