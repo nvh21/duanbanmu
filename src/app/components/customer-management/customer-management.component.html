@@ -1,4 +1,5 @@
 <div class="container">
+  
   <!-- Filter Section -->
   <div class="filter-section">
     <!-- Header -->
@@ -73,8 +74,22 @@
       </div>
     </div>
 
-    <!-- Table Body -->
-    <div *ngIf="paginatedCustomers.length === 0" class="empty-state">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Đang tải dữ liệu...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error && !isLoading" class="error-state">
+      <div class="icon">⚠️</div>
+      <h3 class="title">Có lỗi xảy ra</h3>
+      <p class="subtitle">{{ error }}</p>
+      <button (click)="loadCustomers()" class="retry-btn">Thử lại</button>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && !error && paginatedCustomers.length === 0" class="empty-state">
       <div class="icon">👥</div>
       <h3 class="title">Không có khách hàng nào</h3>
       <p class="subtitle">Hãy thêm khách hàng đầu tiên</p>
@@ -84,9 +99,9 @@
          class="customer-row">
       
       <div class="stt">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</div>
-      <div class="customer-code">{{ customer.customerCode || 'KH' + customer.id.toString().padStart(5, '0') }}</div>
-      <div class="customer-name">{{ customer.name }}</div>
-      <div class="phone">{{ customer.phone }}</div>
+      <div class="customer-code">{{ customer.customerCode || 'KH' + (customer.id || 0).toString().padStart(5, '0') }}</div>
+      <div class="customer-name">{{ customer.ho_ten || customer.name }}</div>
+      <div class="phone">{{ customer.so_dien_thoai || customer.phone }}</div>
       <div class="email">{{ customer.email }}</div>
       <div class="address">{{ customer.address || 'Chưa cập nhật' }}</div>
       <div>
@@ -175,8 +190,8 @@
               <!-- Customer Name -->
               <div class="form-group">
                 <label>Tên khách hàng *</label>
-                <input [(ngModel)]="customerForm.name" 
-                       name="name" 
+                <input [(ngModel)]="customerForm.ho_ten" 
+                       name="ho_ten" 
                        required 
                        placeholder="Nhập tên khách hàng">
               </div>
@@ -197,17 +212,17 @@
                 <div class="radio-group">
                   <label>
                     <input type="radio" 
-                           [(ngModel)]="customerForm.gender" 
-                           name="gender" 
-                           value="Nam" 
+                           [(ngModel)]="customerForm.gioi_tinh" 
+                           name="gioi_tinh" 
+                           [value]="true" 
                            required>
                     Nam
                   </label>
                   <label>
                     <input type="radio" 
-                           [(ngModel)]="customerForm.gender" 
-                           name="gender" 
-                           value="Nữ" 
+                           [(ngModel)]="customerForm.gioi_tinh" 
+                           name="gioi_tinh" 
+                           [value]="false" 
                            required>
                     Nữ
                   </label>
@@ -220,8 +235,8 @@
               <!-- Phone -->
               <div class="form-group">
                 <label>Số điện thoại *</label>
-                <input [(ngModel)]="customerForm.phone" 
-                       name="phone" 
+                <input [(ngModel)]="customerForm.so_dien_thoai" 
+                       name="so_dien_thoai" 
                        required 
                        placeholder="Nhập số điện thoại">
               </div>
@@ -229,8 +244,8 @@
               <!-- Date of Birth -->
               <div class="form-group">
                 <label>Ngày sinh *</label>
-                <input [(ngModel)]="customerForm.dateOfBirth" 
-                       name="dateOfBirth" 
+                <input [(ngModel)]="customerForm.ngay_sinh" 
+                       name="ngay_sinh" 
                        type="date" 
                        required>
               </div>
@@ -388,8 +403,7 @@
             <input [(ngModel)]="addressForm.specificAddress" 
                    name="specificAddress" 
                    required 
-                   placeholder="Nhập số nhà, tên đường..."
-                   class="form-control">
+                   placeholder="Nhập số nhà, tên đường...">
           </div>
 
           <!-- Province -->
@@ -398,8 +412,7 @@
             <select [(ngModel)]="addressForm.province" 
                     name="province" 
                     required 
-                    (change)="onProvinceChange()"
-                    class="form-control">
+                    (change)="onProvinceChange()">
               <option value="">Chọn tỉnh/thành phố</option>
               <option *ngFor="let province of provinces" [value]="province.id">
                 {{ province.name }}
@@ -414,8 +427,7 @@
                     name="district" 
                     required 
                     (change)="onDistrictChange()"
-                    [disabled]="!addressForm.province"
-                    class="form-control">
+                    [disabled]="!addressForm.province">
               <option value="">Chọn quận/huyện</option>
               <option *ngFor="let district of filteredDistricts" [value]="district.id">
                 {{ district.name }}
@@ -428,9 +440,8 @@
             <label>Phường/Xã *</label>
             <select [(ngModel)]="addressForm.ward" 
                     name="ward" 
-                    required 
-                    [disabled]="!addressForm.district"
-                    class="form-control">
+                    required
+                    [disabled]="!addressForm.district">
               <option value="">Chọn phường/xã</option>
               <option *ngFor="let ward of filteredWards" [value]="ward.id">
                 {{ ward.name }}
@@ -444,8 +455,7 @@
               <input type="checkbox" 
                      [(ngModel)]="addressForm.isDefault" 
                      name="isDefault">
-              <span class="checkmark"></span>
-              Đặt làm địa chỉ mặc định
+              <span>Đặt làm địa chỉ mặc định</span>
             </label>
           </div>
         </form>
