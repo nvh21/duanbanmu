@@ -118,8 +118,7 @@
       }
     }
 
-
-//hh
+    //hh
     tbody {
       tr {
         transition: all 0.3s ease;
@@ -357,5 +356,120 @@
     .btn {
       width: 100%;
     }
+  }
+}
+
+// Modal styles
+.modal {
+  &.fade {
+    &.show {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .modal-dialog {
+    margin: 0;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+
+    &.modal-lg {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    &.modal-xl {
+      max-width: 1200px;
+      width: 100%;
+    }
+  }
+
+  .modal-content {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: none;
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 100%;
+  }
+
+  .modal-header {
+    border-bottom: 2px solid #e9ecef;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px 12px 0 0;
+
+    .modal-title {
+      font-weight: 600;
+      color: #2c3e50;
+      margin: 0;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #6c757d;
+      opacity: 0.7;
+      transition: opacity 0.3s ease;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+    background: white;
+  }
+
+  .modal-footer {
+    border-top: 2px solid #e9ecef;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+}
+
+// Modal backdrop
+.modal-backdrop {
+  &.fade {
+    opacity: 0;
+  }
+
+  &.show {
+    opacity: 0.5;
+  }
+}
+
+// Product selection modal specific styles
+.modal-xl {
+  .modal-content {
+    max-height: 85vh;
+  }
+
+  .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
   }
 }
