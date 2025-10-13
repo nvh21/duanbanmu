@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,13 +10,13 @@ import { PhieuGiamGiaResponse } from '../../interfaces/phieu-giam-gia.interface'
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './phieu-giam-gia-list.component.html',
-  styleUrls: ['./phieu-giam-gia-list.component.scss']
+  styleUrls: ['./phieu-giam-gia-list.component.scss'],
 })
 export class PhieuGiamGiaListComponent implements OnInit {
-  
   private phieuGiamGiaService = inject(PhieuGiamGiaService);
   private router = inject(Router);
-  
+  private cdr = inject(ChangeDetectorRef);
+
   // Filter properties
   searchTerm = '';
   selectedType = 'all';
@@ -25,13 +25,13 @@ export class PhieuGiamGiaListComponent implements OnInit {
   endDate = '';
   minValue = 0;
   maxValue = 5000000; // Mặc định là giá trị cao nhất
-  
+
   // Data
   phieuGiamGiaList: PhieuGiamGiaResponse[] = [];
   filteredList: PhieuGiamGiaResponse[] = [];
-  loading = false; // Tắt loading
+  loading = true; // Bắt đầu với loading = true
   error = '';
-  
+
   // Edit modal
   showEditModal = false;
   editingPhieu: PhieuGiamGiaResponse | null = null;
@@ -46,10 +46,10 @@ export class PhieuGiamGiaListComponent implements OnInit {
     soLuongDung: 0,
     ngayBatDau: '',
     ngayKetThuc: '',
-    trangThai: true
+    trangThai: true,
   };
   isUpdating = false;
-  
+
   // Pagination
   currentPage = 1;
   itemsPerPage = 10;
@@ -59,37 +59,54 @@ export class PhieuGiamGiaListComponent implements OnInit {
     this.loadPhieuGiamGiaList();
   }
 
+  // Method để refresh dữ liệu khi cần thiết
+  refreshData() {
+    this.loadPhieuGiamGiaList();
+  }
+
   loadPhieuGiamGiaList() {
-    // Không set loading = true để tắt loading overlay
+    this.loading = true;
+    this.error = '';
+
     this.phieuGiamGiaService.getAllPhieuGiamGia(0, 1000, 'id', 'desc').subscribe({
       next: (response: any) => {
         if (response.success && response.data) {
           this.phieuGiamGiaList = response.data.data || [];
           this.filteredList = [...this.phieuGiamGiaList];
           this.totalItems = this.filteredList.length;
+          this.currentPage = 1; // Reset về trang đầu tiên
+
+          // Force change detection để UI update ngay lập tức
+          this.cdr.detectChanges();
+        } else {
+          this.error = response.message || 'Không có dữ liệu phiếu giảm giá';
         }
-        // Không set loading = false vì đã tắt loading
+        this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (error: any) => {
         console.error('Error loading phiếu giảm giá:', error);
-        this.error = 'Không thể tải danh sách phiếu giảm giá';
-        // Không set loading = false vì đã tắt loading
-      }
+        this.error = 'Không thể tải danh sách phiếu giảm giá: ' + (error.message || error);
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 
   // Filter methods
   applyFilters() {
-    this.filteredList = this.phieuGiamGiaList.filter(phieu => {
+    this.filteredList = this.phieuGiamGiaList.filter((phieu) => {
       // Search filter
       if (this.searchTerm) {
         const searchLower = this.searchTerm.toLowerCase();
-        if (!phieu.maPhieu.toLowerCase().includes(searchLower) && 
-            !phieu.tenPhieuGiamGia.toLowerCase().includes(searchLower)) {
+        if (
+          !phieu.maPhieu.toLowerCase().includes(searchLower) &&
+          !phieu.tenPhieuGiamGia.toLowerCase().includes(searchLower)
+        ) {
           return false;
         }
       }
-      
+
       // Type filter
       if (this.selectedType !== 'all') {
         const isTienMat = this.selectedType === 'tien_mat';
@@ -97,7 +114,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
           return false;
         }
       }
-      
+
       // Status filter
       if (this.selectedStatus !== 'all') {
         const isActive = this.selectedStatus === 'active';
@@ -105,29 +122,30 @@ export class PhieuGiamGiaListComponent implements OnInit {
           return false;
         }
       }
-      
+
       // Date range filter
       if (this.startDate && this.endDate) {
         const phieuStartDate = new Date(phieu.ngayBatDau);
         const phieuEndDate = new Date(phieu.ngayKetThuc);
         const filterStartDate = new Date(this.startDate);
         const filterEndDate = new Date(this.endDate);
-        
+
         if (phieuStartDate < filterStartDate || phieuEndDate > filterEndDate) {
           return false;
         }
       }
-      
+
       // Value range filter - chỉ filter theo maxValue
       if (phieu.giaTriGiam > this.maxValue) {
         return false;
       }
-      
+
       return true;
     });
-    
+
     this.totalItems = this.filteredList.length;
     this.currentPage = 1;
+    this.cdr.detectChanges();
   }
 
   resetFilters() {
@@ -141,6 +159,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
     this.filteredList = [...this.phieuGiamGiaList];
     this.totalItems = this.filteredList.length;
     this.currentPage = 1;
+    this.cdr.detectChanges();
   }
 
   exportExcel() {
@@ -165,7 +184,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
       soLuongDung: phieu.soLuongDung,
       ngayBatDau: phieu.ngayBatDau,
       ngayKetThuc: phieu.ngayKetThuc,
-      trangThai: phieu.trangThai
+      trangThai: phieu.trangThai,
     };
     this.showEditModal = true;
   }
@@ -179,7 +198,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
-      currency: 'VND'
+      currency: 'VND',
     }).format(amount);
   }
 
@@ -259,7 +278,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
     if (!this.editingPhieu) return;
 
     this.isUpdating = true;
-    
+
     const updateData = {
       maPhieu: this.editForm.maPhieu,
       tenPhieuGiamGia: this.editForm.tenPhieuGiamGia,
@@ -271,7 +290,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
       soLuongDung: this.editForm.soLuongDung,
       ngayBatDau: this.editForm.ngayBatDau,
       ngayKetThuc: this.editForm.ngayKetThuc,
-      trangThai: this.editForm.trangThai
+      trangThai: this.editForm.trangThai,
     };
 
     this.phieuGiamGiaService.updatePhieuGiamGia(this.editingPhieu.id, updateData).subscribe({
@@ -289,7 +308,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
         console.error('Error updating phiếu giảm giá:', error);
         this.error = 'Lỗi khi cập nhật phiếu giảm giá: ' + error.message;
         this.isUpdating = false;
-      }
+      },
     });
   }
 }

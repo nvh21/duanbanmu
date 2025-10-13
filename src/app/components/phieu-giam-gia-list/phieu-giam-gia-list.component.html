@@ -15,28 +15,26 @@
       <i class="bi bi-funnel"></i>
       <h3>Bộ Lọc Tìm Kiếm</h3>
     </div>
-    
+
     <div class="filter-content">
       <!-- Row 1: Search, Type, Status -->
       <div class="filter-group">
         <label>Tìm kiếm phiếu</label>
         <div class="search-input-group">
           <i class="bi bi-search search-icon"></i>
-          <input 
-            type="text" 
+          <input
+            type="text"
             [(ngModel)]="searchTerm"
             (input)="applyFilters()"
             placeholder="Mã phiếu, tên phiếu..."
-            class="search-input">
+            class="search-input"
+          />
         </div>
       </div>
 
       <div class="filter-group">
         <label>Loại phiếu</label>
-        <select 
-          [(ngModel)]="selectedType"
-          (change)="applyFilters()"
-          class="filter-select">
+        <select [(ngModel)]="selectedType" (change)="applyFilters()" class="filter-select">
           <option value="all">Tất cả loại phiếu</option>
           <option value="tien_mat">Tiền mặt</option>
           <option value="phan_tram">Phần trăm</option>
@@ -45,10 +43,7 @@
 
       <div class="filter-group">
         <label>Trạng thái</label>
-        <select 
-          [(ngModel)]="selectedStatus"
-          (change)="applyFilters()"
-          class="filter-select">
+        <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="filter-select">
           <option value="all">Tất cả trạng thái</option>
           <option value="active">Đang hoạt động</option>
           <option value="inactive">Không hoạt động</option>
@@ -60,20 +55,17 @@
         <label>Khoảng thời gian</label>
         <div class="date-range">
           <div class="date-input-group">
-            <input 
-              type="date" 
+            <input
+              type="date"
               [(ngModel)]="startDate"
               (change)="applyFilters()"
-              class="date-input">
+              class="date-input"
+            />
             <i class="bi bi-calendar3 calendar-icon"></i>
           </div>
           <span class="date-separator">đến</span>
           <div class="date-input-group">
-            <input 
-              type="date" 
-              [(ngModel)]="endDate"
-              (change)="applyFilters()"
-              class="date-input">
+            <input type="date" [(ngModel)]="endDate" (change)="applyFilters()" class="date-input" />
             <i class="bi bi-calendar3 calendar-icon"></i>
           </div>
         </div>
@@ -87,16 +79,28 @@
             <span class="max-value">{{ formatCurrency(maxValue) }}</span>
           </div>
           <div class="slider-container">
-            <div class="slider-track" [style.background]="'linear-gradient(to right, ' + getSliderColor() + ' ' + getSliderWidth() + ', #e9ecef ' + getSliderWidth() + ')'">
-              <input 
-                type="range" 
+            <div
+              class="slider-track"
+              [style.background]="
+                'linear-gradient(to right, ' +
+                getSliderColor() +
+                ' ' +
+                getSliderWidth() +
+                ', #e9ecef ' +
+                getSliderWidth() +
+                ')'
+              "
+            >
+              <input
+                type="range"
                 [(ngModel)]="maxValue"
                 (input)="applyFilters()"
-                min="0" 
-                max="5000000" 
+                min="0"
+                max="5000000"
                 step="100000"
                 class="range-slider"
-                [style.accent-color]="getSliderColor()">
+                [style.accent-color]="getSliderColor()"
+              />
             </div>
           </div>
         </div>
@@ -107,21 +111,9 @@
 
       <!-- Action Buttons -->
       <div class="filter-actions">
-        <button 
-          class="btn-reset"
-          (click)="resetFilters()">
-          Đặt lại bộ lọc
-        </button>
-        <button 
-          class="btn-export"
-          (click)="exportExcel()">
-          Xuất Excel
-        </button>
-        <button 
-          class="btn-add"
-          (click)="addPhieuGiamGia()">
-          Thêm Phiếu Giảm Giá
-        </button>
+        <button class="btn-reset" (click)="resetFilters()">Đặt lại bộ lọc</button>
+        <button class="btn-export" (click)="exportExcel()">Xuất Excel</button>
+        <button class="btn-add" (click)="addPhieuGiamGia()">Thêm Phiếu Giảm Giá</button>
       </div>
     </div>
   </div>
@@ -131,11 +123,29 @@
     <div class="list-header">
       <i class="bi bi-table"></i>
       <h3>Danh Sách Phiếu Giảm Giá</h3>
-      <span class="item-count">{{ totalItems }} phiếu giảm giá</span>
+      <div class="header-actions">
+        <button
+          class="btn-refresh"
+          (click)="refreshData()"
+          [disabled]="loading"
+          title="Làm mới dữ liệu"
+        >
+          <i class="bi bi-arrow-clockwise" [class.spinning]="loading"></i>
+        </button>
+        <span class="item-count">{{ totalItems }} phiếu giảm giá</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="loading-spinner">
+        <i class="bi bi-arrow-clockwise"></i>
+        <span>Đang tải dữ liệu...</span>
+      </div>
     </div>
 
     <!-- Data Table -->
-    <div class="table-container">
+    <div class="table-container" *ngIf="!loading">
       <table class="data-table">
         <thead>
           <tr>
@@ -176,42 +186,43 @@
             <td>{{ formatDate(phieu.ngayKetThuc) }}</td>
             <td class="actions">
               <div class="toggle-switch" [class.active]="phieu.trangThai">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   [checked]="phieu.trangThai"
                   (change)="toggleStatus(phieu)"
-                  class="toggle-input">
+                  class="toggle-input"
+                />
                 <span class="toggle-slider"></span>
               </div>
-              <button 
-                class="btn-edit"
-                (click)="editPhieuGiamGia(phieu)"
-                title="Chỉnh sửa">
+              <button class="btn-edit" (click)="editPhieuGiamGia(phieu)" title="Chỉnh sửa">
                 <i class="bi bi-pencil"></i>
               </button>
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- Empty State -->
+      <div *ngIf="!loading && paginatedList.length === 0" class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h4>Không có dữ liệu</h4>
+        <p>Chưa có phiếu giảm giá nào trong hệ thống</p>
+        <button class="btn-add" (click)="addPhieuGiamGia()">
+          <i class="bi bi-plus"></i>
+          Thêm phiếu giảm giá đầu tiên
+        </button>
+      </div>
     </div>
 
     <!-- Pagination -->
     <div class="pagination" *ngIf="totalPages > 1">
-      <button 
-        class="page-btn"
-        [disabled]="currentPage === 1"
-        (click)="previousPage()">
+      <button class="page-btn" [disabled]="currentPage === 1" (click)="previousPage()">
         <i class="bi bi-chevron-left"></i>
       </button>
-      
-      <span class="page-info">
-        Trang {{ currentPage }} / {{ totalPages }}
-      </span>
-      
-      <button 
-        class="page-btn"
-        [disabled]="currentPage === totalPages"
-        (click)="nextPage()">
+
+      <span class="page-info"> Trang {{ currentPage }} / {{ totalPages }} </span>
+
+      <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
         <i class="bi bi-chevron-right"></i>
       </button>
     </div>
@@ -232,45 +243,45 @@
           <i class="bi bi-x"></i>
         </button>
       </div>
-      
+
       <div class="modal-body">
         <form>
           <div class="form-row">
             <div class="form-group">
               <label>Mã Phiếu</label>
-              <input 
-                type="text" 
-                [(ngModel)]="editForm.maPhieu" 
+              <input
+                type="text"
+                [(ngModel)]="editForm.maPhieu"
                 class="form-control"
-                name="maPhieu">
+                name="maPhieu"
+              />
             </div>
             <div class="form-group">
               <label>Tên Phiếu</label>
-              <input 
-                type="text" 
-                [(ngModel)]="editForm.tenPhieuGiamGia" 
+              <input
+                type="text"
+                [(ngModel)]="editForm.tenPhieuGiamGia"
                 class="form-control"
-                name="tenPhieuGiamGia">
+                name="tenPhieuGiamGia"
+              />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Loại Phiếu</label>
-              <select 
-                [(ngModel)]="editForm.loaiPhieuGiamGia" 
+              <select
+                [(ngModel)]="editForm.loaiPhieuGiamGia"
                 class="form-control"
-                name="loaiPhieuGiamGia">
+                name="loaiPhieuGiamGia"
+              >
                 <option [ngValue]="true">Tiền mặt</option>
                 <option [ngValue]="false">Phần trăm</option>
               </select>
             </div>
             <div class="form-group">
               <label>Trạng thái</label>
-              <select 
-                [(ngModel)]="editForm.trangThai" 
-                class="form-control"
-                name="trangThai">
+              <select [(ngModel)]="editForm.trangThai" class="form-control" name="trangThai">
                 <option [ngValue]="true">Hoạt động</option>
                 <option [ngValue]="false">Không hoạt động</option>
               </select>
@@ -281,24 +292,26 @@
             <div class="form-group">
               <label>Giá trị giảm</label>
               <div class="input-group">
-                <input 
-                  type="number" 
-                  [(ngModel)]="editForm.giaTriGiam" 
+                <input
+                  type="number"
+                  [(ngModel)]="editForm.giaTriGiam"
                   class="form-control"
                   name="giaTriGiam"
-                  min="0">
+                  min="0"
+                />
                 <span class="input-group-text">{{ editForm.loaiPhieuGiamGia ? 'VND' : '%' }}</span>
               </div>
             </div>
             <div class="form-group">
               <label>Giá trị tối thiểu</label>
               <div class="input-group">
-                <input 
-                  type="number" 
-                  [(ngModel)]="editForm.giaTriToiThieu" 
+                <input
+                  type="number"
+                  [(ngModel)]="editForm.giaTriToiThieu"
                   class="form-control"
                   name="giaTriToiThieu"
-                  min="0">
+                  min="0"
+                />
                 <span class="input-group-text">{{ editForm.loaiPhieuGiamGia ? 'VND' : '%' }}</span>
               </div>
             </div>
@@ -308,24 +321,26 @@
             <div class="form-group">
               <label>Số tiền tối đa</label>
               <div class="input-group">
-                <input 
-                  type="number" 
-                  [(ngModel)]="editForm.soTienToiDa" 
+                <input
+                  type="number"
+                  [(ngModel)]="editForm.soTienToiDa"
                   class="form-control"
                   name="soTienToiDa"
-                  min="0">
+                  min="0"
+                />
                 <span class="input-group-text">VND</span>
               </div>
             </div>
             <div class="form-group">
               <label>Hóa đơn tối thiểu</label>
               <div class="input-group">
-                <input 
-                  type="number" 
-                  [(ngModel)]="editForm.hoaDonToiThieu" 
+                <input
+                  type="number"
+                  [(ngModel)]="editForm.hoaDonToiThieu"
                   class="form-control"
                   name="hoaDonToiThieu"
-                  min="0">
+                  min="0"
+                />
                 <span class="input-group-text">VND</span>
               </div>
             </div>
@@ -334,49 +349,54 @@
           <div class="form-row">
             <div class="form-group">
               <label>Số lượng</label>
-              <input 
-                type="number" 
-                [(ngModel)]="editForm.soLuongDung" 
+              <input
+                type="number"
+                [(ngModel)]="editForm.soLuongDung"
                 class="form-control"
                 name="soLuongDung"
-                min="0">
+                min="0"
+              />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label>Ngày bắt đầu</label>
-              <input 
-                type="date" 
-                [(ngModel)]="editForm.ngayBatDau" 
+              <input
+                type="date"
+                [(ngModel)]="editForm.ngayBatDau"
                 class="form-control"
-                name="ngayBatDau">
+                name="ngayBatDau"
+              />
             </div>
             <div class="form-group">
               <label>Ngày kết thúc</label>
-              <input 
-                type="date" 
-                [(ngModel)]="editForm.ngayKetThuc" 
+              <input
+                type="date"
+                [(ngModel)]="editForm.ngayKetThuc"
                 class="form-control"
-                name="ngayKetThuc">
+                name="ngayKetThuc"
+              />
             </div>
           </div>
         </form>
       </div>
-      
+
       <div class="modal-footer">
-        <button 
-          type="button" 
-          class="btn btn-secondary" 
+        <button
+          type="button"
+          class="btn btn-secondary"
           (click)="closeEditModal()"
-          [disabled]="isUpdating">
+          [disabled]="isUpdating"
+        >
           Hủy
         </button>
-        <button 
-          type="button" 
-          class="btn btn-primary" 
+        <button
+          type="button"
+          class="btn btn-primary"
           (click)="updatePhieuGiamGia()"
-          [disabled]="isUpdating">
+          [disabled]="isUpdating"
+        >
           <span *ngIf="isUpdating" class="spinner-border spinner-border-sm" role="status"></span>
           {{ isUpdating ? 'Đang cập nhật...' : 'Cập nhật' }}
         </button>
