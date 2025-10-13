@@ -87,6 +87,18 @@
                   aria-hidden="true"
                 ></i>
               </th>
+              <th (click)="changeSort('soLuongTon')" style="cursor: pointer">
+                Số lượng tồn
+                <i
+                  class="bi ms-1 text-white"
+                  [ngClass]="{
+                    'bi-caret-up-fill': sortField === 'soLuongTon' && sortDir === 'asc',
+                    'bi-caret-down-fill': sortField === 'soLuongTon' && sortDir === 'desc',
+                    'bi-arrow-down-up': sortField !== 'soLuongTon'
+                  }"
+                  aria-hidden="true"
+                ></i>
+              </th>
               <th>Trạng thái</th>
               <th (click)="changeSort('ngayTao')" style="cursor: pointer">
                 Ngày tạo
@@ -108,8 +120,8 @@
               <td>{{ product.code }}</td>
               <td>
                 <div *ngIf="product.anhSanPham" class="product-image-container">
-                  <img 
-                    [src]="product.anhSanPham" 
+                  <img
+                    [src]="product.anhSanPham"
                     [alt]="product.name"
                     class="product-image"
                     (error)="onImageError($event)"
@@ -127,16 +139,21 @@
               <td>{{ product.congNgheAnToan || '-' }}</td>
               <td>
                 <span *ngIf="product.mauSac" class="d-flex align-items-center">
-                  <span *ngIf="product.mauSacMa" 
-                        class="color-preview me-2" 
-                        [style.background-color]="product.mauSacMa"
-                        [title]="product.mauSac">
+                  <span
+                    *ngIf="product.mauSacMa"
+                    class="color-preview me-2"
+                    [style.background-color]="product.mauSacMa"
+                    [title]="product.mauSac"
+                  >
                   </span>
                   {{ product.mauSac }}
                 </span>
                 <span *ngIf="!product.mauSac">-</span>
               </td>
               <td>{{ formatPrice(product.price) }}</td>
+              <td>
+                <span class="badge bg-info">{{ product.quantity }}</span>
+              </td>
               <td>
                 <span
                   class="badge"
@@ -313,6 +330,32 @@
                 </div>
               </div>
             </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"
+                >Số lượng tồn <span class="text-danger">*</span></label
+              >
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-box"></i></span>
+                <input
+                  type="number"
+                  class="form-control"
+                  [class.is-invalid]="hasFieldError('quantity')"
+                  [(ngModel)]="newProduct.quantity"
+                  name="quantity"
+                  min="0"
+                  max="999999"
+                  placeholder="0"
+                  [readonly]="isViewMode"
+                  (blur)="markFieldTouched('quantity')"
+                />
+                <div *ngIf="hasFieldError('quantity')" class="invalid-feedback">
+                  {{ getQuantityError() }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-4">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Trạng thái</label>
               <div class="input-group">
@@ -504,9 +547,7 @@
 
           <!-- Ảnh sản phẩm -->
           <div class="section-title mb-3">
-            <h6 class="text-primary fw-bold mb-0">
-              <i class="bi bi-image me-2"></i>Ảnh sản phẩm
-            </h6>
+            <h6 class="text-primary fw-bold mb-0"><i class="bi bi-image me-2"></i>Ảnh sản phẩm</h6>
             <hr class="mt-2" />
           </div>
 
@@ -514,7 +555,11 @@
             <div class="col-md-12">
               <div class="image-upload-container">
                 <div *ngIf="newProduct.anhSanPham" class="image-preview">
-                  <img [src]="newProduct.anhSanPham" [alt]="newProduct.name" class="preview-image" />
+                  <img
+                    [src]="newProduct.anhSanPham"
+                    [alt]="newProduct.name"
+                    class="preview-image"
+                  />
                   <button
                     *ngIf="!isViewMode"
                     type="button"

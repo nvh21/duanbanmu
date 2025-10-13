@@ -48,6 +48,7 @@ interface HelmetProduct {
   congNgheAnToanId?: number | null;
   mauSacId?: number | null;
   price: number;
+  quantity: number;
   status: string;
   description: string;
   createdAt: Date;
@@ -110,6 +111,7 @@ export class HelmetsComponent implements OnInit {
     kieuDangMuId: null,
     congNgheAnToanId: null,
     price: 0,
+    quantity: 0,
     status: 'Đang bán',
     description: '',
     createdAt: new Date(),
@@ -253,6 +255,7 @@ export class HelmetsComponent implements OnInit {
             mauSacMa: p.mauSacMa ?? null,
             anhSanPham: p.anhSanPham ?? null,
             price: Number(p.giaBan ?? 0),
+            quantity: Number(p.soLuongTon ?? 0),
             status: p.trangThai ? 'Đang bán' : 'Ngừng bán',
             description: p.moTa ?? '',
             createdAt: new Date((p as any).ngayTao ?? new Date()),
@@ -352,6 +355,12 @@ export class HelmetsComponent implements OnInit {
     const priceValid =
       !!this.newProduct.price && this.newProduct.price > 0 && this.newProduct.price <= 999999999;
 
+    // Kiểm tra số lượng tồn
+    const quantityValid =
+      !!this.newProduct.quantity &&
+      this.newProduct.quantity >= 0 &&
+      this.newProduct.quantity <= 999999;
+
     // Kiểm tra các trường bắt buộc
     const requiredFieldsValid =
       Number.isInteger(Number(this.newProduct.loaiMuBaoHiemId)) &&
@@ -363,7 +372,7 @@ export class HelmetsComponent implements OnInit {
       Number.isInteger(Number(this.newProduct.congNgheAnToanId)) &&
       Number.isInteger(Number(this.newProduct.mauSacId));
 
-    return codeValid && nameValid && priceValid && requiredFieldsValid;
+    return codeValid && nameValid && priceValid && quantityValid && requiredFieldsValid;
   }
 
   onSelect(field: keyof HelmetProduct, value: any) {
@@ -405,6 +414,17 @@ export class HelmetsComponent implements OnInit {
       validationErrors.push('Giá bán phải lớn hơn 0');
     } else if (this.newProduct.price > 999999999) {
       validationErrors.push('Giá bán không được vượt quá 999,999,999 VNĐ');
+    }
+
+    // Kiểm tra số lượng tồn
+    if (
+      this.newProduct.quantity === undefined ||
+      this.newProduct.quantity === null ||
+      this.newProduct.quantity < 0
+    ) {
+      validationErrors.push('Số lượng tồn phải lớn hơn hoặc bằng 0');
+    } else if (this.newProduct.quantity > 999999) {
+      validationErrors.push('Số lượng tồn không được vượt quá 999,999');
     }
 
     // Kiểm tra các trường bắt buộc
@@ -528,6 +548,7 @@ export class HelmetsComponent implements OnInit {
         tenSanPham: this.newProduct.name,
         moTa: this.newProduct.description || '',
         giaBan: this.newProduct.price || 0,
+        soLuongTon: this.newProduct.quantity || 0,
         trangThai: this.newProduct.status !== 'Ngừng bán',
         loaiMuBaoHiemId: Number(this.newProduct.loaiMuBaoHiemId),
         nhaSanXuatId: Number(this.newProduct.nhaSanXuatId),
@@ -565,6 +586,7 @@ export class HelmetsComponent implements OnInit {
       tenSanPham: this.newProduct.name,
       moTa: this.newProduct.description || '',
       giaBan: this.newProduct.price || 0,
+      soLuongTon: this.newProduct.quantity || 0,
       trangThai: this.newProduct.status !== 'Ngừng bán',
       loaiMuBaoHiemId: toId(this.newProduct.loaiMuBaoHiemId),
       nhaSanXuatId: toId(this.newProduct.nhaSanXuatId),
@@ -645,6 +667,7 @@ export class HelmetsComponent implements OnInit {
       code: '',
       name: '',
       price: 0,
+      quantity: 0,
       status: 'Đang bán',
       description: '',
       createdAt: new Date(),
@@ -785,6 +808,17 @@ export class HelmetsComponent implements OnInit {
     return null;
   }
 
+  getQuantityError(): string | null {
+    if (
+      this.newProduct.quantity === undefined ||
+      this.newProduct.quantity === null ||
+      this.newProduct.quantity < 0
+    )
+      return 'Số lượng tồn phải lớn hơn hoặc bằng 0';
+    if (this.newProduct.quantity > 999999) return 'Số lượng tồn không được vượt quá 999,999';
+    return null;
+  }
+
   getImageError(): string | null {
     if (!this.newProduct.anhSanPham) return null;
     if (this.newProduct.anhSanPham.startsWith('http')) {
@@ -814,6 +848,8 @@ export class HelmetsComponent implements OnInit {
         return !!this.getNameError();
       case 'price':
         return !!this.getPriceError();
+      case 'quantity':
+        return !!this.getQuantityError();
       case 'image':
         return !!this.getImageError();
       default:
@@ -832,6 +868,7 @@ export class HelmetsComponent implements OnInit {
       'code',
       'name',
       'price',
+      'quantity',
       'image',
       'loaiMuBaoHiemId',
       'nhaSanXuatId',

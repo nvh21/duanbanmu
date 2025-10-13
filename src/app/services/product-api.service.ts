@@ -10,6 +10,7 @@ export interface SanPhamResponse {
   tenSanPham: string;
   moTa: string;
   giaBan: number;
+  soLuongTon: number;
   trangThai: boolean;
   ngayTao: string;
   loaiMuBaoHiemId?: number | null;
@@ -78,6 +79,7 @@ export class ProductApiService {
       maSanPham: string;
       tenSanPham: string;
       giaBan: number;
+      soLuongTon: number;
       trangThai: boolean;
       loaiMuBaoHiemId?: number;
       nhaSanXuatId?: number;
@@ -130,7 +132,7 @@ export class ProductApiService {
   getCongNgheAnToanAll(): Observable<any[]> {
     // reuse search endpoint first page large size, only active items
     return this.http
-      .get(`${environment.apiBaseUrl}/cong-nghe-an-toan`, {
+      .get(`${environment.apiBaseUrl}/api/cong-nghe-an-toan`, {
         params: new HttpParams().set('page', '0').set('size', '1000').set('trangThai', 'true'),
       })
       .pipe(map((response: any) => response.content));

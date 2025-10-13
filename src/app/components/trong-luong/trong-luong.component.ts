@@ -192,7 +192,7 @@ export class TrongLuongComponent implements OnInit {
     }
 
     const payload = {
-      giaTriTrongLuong: this.form.giaTriTrongLuong,
+      giaTriTrongLuong: Number(this.form.giaTriTrongLuong),
       donVi: this.form.donVi,
       moTa: this.form.moTa,
       trangThai: this.form.trangThai,
@@ -213,7 +213,7 @@ export class TrongLuongComponent implements OnInit {
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại.'
               : 'Cập nhật trọng lượng thất bại');
-          console.error(msg);
+          alert(msg);
         },
       });
     } else {
@@ -231,7 +231,7 @@ export class TrongLuongComponent implements OnInit {
               : err?.status === 400
               ? 'Dữ liệu không hợp lệ, vui lòng nhập đầy đủ thông tin.'
               : 'Thêm trọng lượng thất bại');
-          console.error(msg);
+          alert(msg);
         },
       });
     }
@@ -252,7 +252,7 @@ export class TrongLuongComponent implements OnInit {
           console.error(err);
           const msg =
             (err?.error && (err.error.message || err.error.error)) || 'Xóa trọng lượng thất bại';
-          console.error(msg);
+          alert(msg);
         },
       });
     }
@@ -280,9 +280,11 @@ export class TrongLuongComponent implements OnInit {
 
     switch (field) {
       case 'giaTriTrongLuong':
-        return !this.form.giaTriTrongLuong || 
-               this.form.giaTriTrongLuong <= 0 || 
-               this.form.giaTriTrongLuong > 999999;
+        return (
+          !this.form.giaTriTrongLuong ||
+          this.form.giaTriTrongLuong <= 0 ||
+          this.form.giaTriTrongLuong > 999999
+        );
       case 'donVi':
         return !this.form.donVi?.trim();
       case 'moTa':
@@ -318,4 +320,3 @@ export class TrongLuongComponent implements OnInit {
     this.touchedFields.clear();
   }
 }
-
