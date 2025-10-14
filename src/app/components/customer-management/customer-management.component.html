@@ -7,20 +7,17 @@
       <div class="header-content">
         <div class="title-section">
           <div class="icon">
-            👥
+            📋
           </div>
           <div>
             <h2 class="title">Quản lý khách hàng</h2>
-            <div class="badge">
-              {{ filteredCustomers.length }} khách hàng
+            <div class="subtitle">
+              Quản lý hồ sơ khách hàng, địa chỉ và trạng thái hoạt động
             </div>
           </div>
         </div>
         
         <div class="actions">
-          <button (click)="resetFilters()" class="btn reset">
-            🔄 Reset
-          </button>
           <button (click)="openAddModal()" class="btn add">
             <span style="font-size: 16px;">+</span> Thêm khách hàng
           </button>
@@ -46,11 +43,11 @@
             Tất cả
           </label>
           <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="Active" (change)="applyFilters()">
+            <input type="radio" [(ngModel)]="statusFilter" value="active" (change)="applyFilters()">
             Hoạt động
           </label>
           <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="Inactive" (change)="applyFilters()">
+            <input type="radio" [(ngModel)]="statusFilter" value="inactive" (change)="applyFilters()">
             Không hoạt động
           </label>
         </div>
@@ -63,25 +60,32 @@
     <!-- Table Header -->
     <div class="table-header">
       <div class="header-grid">
-        <div>STT</div>
-        <div>Mã KH</div>
-        <div>Tên khách hàng</div>
-        <div>Số điện thoại</div>
-        <div>Email</div>
+        <div>Mã khách hàng</div>
+        <div (click)="sortCustomers('ho_ten')" class="sortable-header">
+          Họ tên {{ getSortIcon('ho_ten') }}
+        </div>
+        <div (click)="sortCustomers('email')" class="sortable-header">
+          Email {{ getSortIcon('email') }}
+        </div>
+        <div (click)="sortCustomers('so_dien_thoai')" class="sortable-header">
+          Điện thoại {{ getSortIcon('so_dien_thoai') }}
+        </div>
         <div>Địa chỉ</div>
-        <div>Trạng thái</div>
-        <div>Hành động</div>
+        <div (click)="sortCustomers('diem_tich_luy')" class="sortable-header">
+          Điểm tích lũy {{ getSortIcon('diem_tich_luy') }}
+        </div>
+        <div (click)="sortCustomers('ngay_tao')" class="sortable-header">
+          Ngày tạo {{ getSortIcon('ngay_tao') }}
+        </div>
+        <div (click)="sortCustomers('trang_thai')" class="sortable-header">
+          Trạng thái {{ getSortIcon('trang_thai') }}
+        </div>
+        <div>Thao tác</div>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Đang tải dữ liệu...</p>
-    </div>
-
     <!-- Error State -->
-    <div *ngIf="error && !isLoading" class="error-state">
+    <div *ngIf="error" class="error-state">
       <div class="icon">⚠️</div>
       <h3 class="title">Có lỗi xảy ra</h3>
       <p class="subtitle">{{ error }}</p>
@@ -89,74 +93,82 @@
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="!isLoading && !error && paginatedCustomers.length === 0" class="empty-state">
+    <div *ngIf="!error && paginatedCustomers.length === 0" class="empty-state">
       <div class="icon">👥</div>
       <h3 class="title">Không có khách hàng nào</h3>
       <p class="subtitle">Hãy thêm khách hàng đầu tiên</p>
     </div>
 
-    <div *ngFor="let customer of paginatedCustomers; let i = index" 
-         class="customer-row">
+    <div class="customer-list-container">
+      <div *ngFor="let customer of paginatedCustomers; let i = index" 
+           class="customer-row">
       
-      <div class="stt">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</div>
-      <div class="customer-code">{{ customer.customerCode || 'KH' + (customer.id || 0).toString().padStart(5, '0') }}</div>
+      <div class="customer-code">{{ getCustomerCode(customer) }}</div>
       <div class="customer-name">{{ customer.ho_ten || customer.name }}</div>
-      <div class="phone">{{ customer.so_dien_thoai || customer.phone }}</div>
       <div class="email">{{ customer.email }}</div>
-      <div class="address">{{ customer.address || 'Chưa cập nhật' }}</div>
+      <div class="phone">{{ customer.so_dien_thoai || customer.phone }}</div>
+      <div class="address">{{ getCustomerAddress(customer) }}</div>
+      <div class="points">{{ customer.diem_tich_luy || customer.diemTichLuy || 0 }}</div>
+      <div class="date">{{ formatDate(customer.ngay_tao || customer.registrationDate) }}</div>
       <div>
-        <span [class]="'status-badge ' + (customer.status === 'Active' ? 'active' : 'inactive')">
-          {{ customer.status === 'Active' ? 'Hoạt động' : 'Không hoạt động' }}
+        <span [class]="'status-badge ' + (getCustomerStatus(customer) === 'Active' ? 'active' : 'inactive')">
+          {{ getCustomerStatus(customer) === 'Active' ? 'Hoạt động' : 'Không hoạt động' }}
         </span>
       </div>
       <div class="actions">
-        <button (click)="toggleCustomerStatus(customer)" 
-                [class]="'toggle-status ' + (customer.status === 'Active' ? 'active' : 'inactive')">
-          {{ customer.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt' }}
+        <button (click)="viewCustomer(customer)" class="view" title="Xem chi tiết">
+          <span class="action-icon">👁️</span>
         </button>
-        <button (click)="openEditModal(customer)" class="edit">
-          ✏️ Sửa
+        <button (click)="openEditModal(customer)" class="edit" title="Chỉnh sửa">
+          <span class="action-icon">✏️</span>
+        </button>
+        <button (click)="toggleCustomerStatus(customer)" 
+                [class]="'toggle-status ' + (getCustomerStatus(customer) === 'Active' ? 'active' : 'inactive')"
+                [title]="getCustomerStatus(customer) === 'Active' ? 'Tắt hoạt động' : 'Bật hoạt động'">
+          <span class="toggle-icon">
+            {{ getCustomerStatus(customer) === 'Active' ? '⏸️' : '▶️' }}
+          </span>
+        </button>
+        <button (click)="deleteCustomer(customer)" class="delete" title="Xóa khách hàng">
+          <span class="action-icon">🗑️</span>
         </button>
       </div>
+    </div>
     </div>
   </div>
 
   <!-- Pagination -->
-  <div *ngIf="totalPages > 1" class="pagination">
+  <div class="pagination">
     <!-- Items per page -->
     <div class="items-per-page">
-      <span>Hiển thị</span>
-      <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()">
+      <span class="label">Hiển thị:</span>
+      <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="page-select">
         <option value="5">5</option>
         <option value="10">10</option>
         <option value="20">20</option>
         <option value="50">50</option>
       </select>
-      <span>trên {{ filteredCustomers.length }} khách hàng</span>
+      <span class="label">mục mỗi trang</span>
+    </div>
+
+    <!-- Page info -->
+    <div class="page-info">
+      <span>Hiển thị {{ getStartItem() }} - {{ getEndItem() }} trong tổng số {{ filteredCustomers.length }} mục</span>
     </div>
 
     <!-- Page navigation -->
     <div class="page-navigation">
-      <button (click)="goToFirstPage()" [disabled]="currentPage === 1">
-        ⏮️
+      <button (click)="goToFirstPage()" [disabled]="currentPage === 1" class="nav-btn first" title="Trang đầu">
+        «
       </button>
-      <button (click)="previousPage()" [disabled]="currentPage === 1">
-        ◀️
+      <button (click)="previousPage()" [disabled]="currentPage === 1" class="nav-btn prev" title="Trang trước">
+        <
       </button>
-      
-      <div style="display: flex; gap: 5px;">
-        <button *ngFor="let page of getPageNumbers()" 
-                (click)="goToPage(page)"
-                [class.active]="page === currentPage">
-          {{ page }}
-        </button>
-      </div>
-      
-      <button (click)="nextPage()" [disabled]="currentPage === totalPages">
-        ▶️
+      <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="nav-btn next" title="Trang sau">
+        >
       </button>
-      <button (click)="goToLastPage()" [disabled]="currentPage === totalPages">
-        ⏭️
+      <button (click)="goToLastPage()" [disabled]="currentPage === totalPages" class="nav-btn last" title="Trang cuối">
+        »
       </button>
     </div>
   </div>
@@ -190,20 +202,36 @@
               <!-- Customer Name -->
               <div class="form-group">
                 <label>Tên khách hàng *</label>
-                <input [(ngModel)]="customerForm.ho_ten" 
-                       name="ho_ten" 
-                       required 
-                       placeholder="Nhập tên khách hàng">
+                <div class="input-container">
+                  <input [(ngModel)]="customerForm.ho_ten" 
+                         name="ho_ten" 
+                         required 
+                         placeholder="Nhập tên khách hàng"
+                         [class.error]="customerErrors.ho_ten"
+                         (input)="clearError('ho_ten')">
+                  <span *ngIf="customerErrors.ho_ten" class="error-icon">⚠️</span>
+                </div>
+                <div *ngIf="customerErrors.ho_ten" class="error-message">
+                  {{ customerErrors.ho_ten }}
+                </div>
               </div>
 
               <!-- Email -->
               <div class="form-group">
                 <label>Email *</label>
-                <input [(ngModel)]="customerForm.email" 
-                       name="email" 
-                       type="email" 
-                       required 
-                       placeholder="Nhập email">
+                <div class="input-container">
+                  <input [(ngModel)]="customerForm.email" 
+                         name="email" 
+                         type="email" 
+                         required 
+                         placeholder="Nhập email"
+                         [class.error]="customerErrors.email"
+                         (input)="clearError('email')">
+                  <span *ngIf="customerErrors.email" class="error-icon">⚠️</span>
+                </div>
+                <div *ngIf="customerErrors.email" class="error-message">
+                  {{ customerErrors.email }}
+                </div>
               </div>
 
               <!-- Gender -->
@@ -235,19 +263,35 @@
               <!-- Phone -->
               <div class="form-group">
                 <label>Số điện thoại *</label>
-                <input [(ngModel)]="customerForm.so_dien_thoai" 
-                       name="so_dien_thoai" 
-                       required 
-                       placeholder="Nhập số điện thoại">
+                <div class="input-container">
+                  <input [(ngModel)]="customerForm.so_dien_thoai" 
+                         name="so_dien_thoai" 
+                         required 
+                         placeholder="Nhập số điện thoại"
+                         [class.error]="customerErrors.so_dien_thoai"
+                         (input)="clearError('so_dien_thoai')">
+                  <span *ngIf="customerErrors.so_dien_thoai" class="error-icon">⚠️</span>
+                </div>
+                <div *ngIf="customerErrors.so_dien_thoai" class="error-message">
+                  {{ customerErrors.so_dien_thoai }}
+                </div>
               </div>
 
               <!-- Date of Birth -->
               <div class="form-group">
                 <label>Ngày sinh *</label>
-                <input [(ngModel)]="customerForm.ngay_sinh" 
-                       name="ngay_sinh" 
-                       type="date" 
-                       required>
+                <div class="input-container">
+                  <input [value]="formatDateForInput(customerForm.ngay_sinh)" 
+                         (input)="onDateChange($event); clearError('ngay_sinh')"
+                         name="ngay_sinh" 
+                         type="date" 
+                         required
+                         [class.error]="customerErrors.ngay_sinh">
+                  <span *ngIf="customerErrors.ngay_sinh" class="error-icon">⚠️</span>
+                </div>
+                <div *ngIf="customerErrors.ngay_sinh" class="error-message">
+                  {{ customerErrors.ngay_sinh }}
+                </div>
               </div>
 
               <!-- Address -->
@@ -286,9 +330,14 @@
               </div>
             </div>
             
-            <button (click)="openAddressAddModal()" class="add-btn">
-              <span style="font-size: 14px;">+</span> Thêm địa chỉ
-            </button>
+            <div class="address-actions">
+              <button (click)="showAddressDetails()" class="btn info">
+                📋 Xem chi tiết
+              </button>
+              <button (click)="openAddressAddModal()" class="add-btn">
+                <span style="font-size: 14px;">+</span> Thêm địa chỉ
+              </button>
+            </div>
           </div>
 
           <!-- Address Navigation -->
@@ -325,7 +374,7 @@
                  class="address-item">
               
               <!-- Default Badge -->
-              <div *ngIf="address.isDefault" class="default-badge">
+              <div *ngIf="getAddressDefault(address)" class="default-badge">
                 ⭐ Mặc định
               </div>
               
@@ -338,7 +387,7 @@
                   <div class="detail-item">
                     <span class="icon">📍</span>
                     <span class="label">Địa chỉ cụ thể:</span>
-                    <span>{{ address.specificAddress }}</span>
+                    <span>{{ getAddressSpecific(address) }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="icon">🏢</span>
@@ -356,6 +405,9 @@
                 </button>
                 <button (click)="openAddressEditModal(address)" class="edit">
                   ✏️ Sửa
+                </button>
+                <button (click)="deleteAddress(address)" class="delete" title="Xóa địa chỉ">
+                  🗑️ Xóa
                 </button>
               </div>
             </div>
@@ -472,4 +524,13 @@
       </div>
     </div>
   </div>
+  
+  <!-- Sorting Info -->
+  <div class="sorting-info" *ngIf="sortField">
+    <span class="sort-label">Sắp xếp theo:</span>
+    <span class="sort-field">{{ getFieldDisplayName(sortField) }}</span>
+    <span class="sort-direction">{{ sortDirection === 'asc' ? 'A → Z' : 'Z → A' }}</span>
+    <button (click)="resetSorting()" class="reset-sort-btn">Reset</button>
+  </div>
 </div>
+

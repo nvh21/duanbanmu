@@ -23,6 +23,10 @@ export interface Customer {
   customerCode?: string; // Mã khách hàng
   address?: string; // Địa chỉ chính
   notes?: string; // Ghi chú
+  // Các trường từ backend
+  diemTichLuy?: number; // Điểm tích lũy (backend format)
+  userId?: number; // User ID
+  diaChi?: Address[]; // Địa chỉ (backend format)
 }
 
 export interface CustomerFormData {
@@ -46,6 +50,7 @@ export interface CustomerRequestData {
   ngay_sinh: Date | string; // Ngày sinh
   gioi_tinh: boolean; // Giới tính (true = Nam, false = Nữ)
   trang_thai?: boolean; // Trạng thái (true = Active, false = Inactive)
+  customerCode?: string; // Mã khách hàng
   // Các trường bổ sung cho authentication
   username?: string;
   password?: string;

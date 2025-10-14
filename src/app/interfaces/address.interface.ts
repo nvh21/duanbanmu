@@ -10,6 +10,15 @@ export interface Address {
   createdAt?: Date | string; // Optional, có thể tự tạo
   updatedAt?: Date | string; // Optional, có thể tự tạo
   customerId?: number; // Thêm để liên kết với customer
+  // Các trường từ backend
+  tenDiaChi?: string; // Tên địa chỉ
+  thanhPho?: string; // Thành phố
+  quan?: string; // Quận
+  phuong?: string; // Phường
+  diaChiCuThe?: string; // Địa chỉ cụ thể
+  macDinh?: boolean; // Mặc định (backend format)
+  soDienThoai?: string; // Số điện thoại
+  tenNguoiNhan?: string; // Tên người nhận
 }
 
 export interface AddressFormData {
