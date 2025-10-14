@@ -1,86 +1,158 @@
-<div class="page">
-  <div class="page-header">
-    <h1><i class="bi bi-person-workspace"></i> Quản lý nhân viên</h1>
-    <p>Quản lý hồ sơ nhân viên, phòng ban và trạng thái làm việc</p>
-  </div>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="page-header">
+        <h2>Quản lý nhân viên</h2>
+        <button class="btn btn-primary" (click)="openAdd()">
+          <i class="bi bi-plus-circle"></i>
+          Thêm nhân viên mới
+        </button>
+      </div>
 
-  <div class="toolbar">
-    <div class="search-box">
-      <i class="bi bi-search"></i>
-      <input
-        type="text"
-        placeholder="Tìm theo tên, email, số điện thoại"
-        [(ngModel)]="searchTerm"
-        (input)="onSearchChange()"
-      />
-    </div>
-    <div class="filters">
-      <select [(ngModel)]="selectedDept" (change)="onDeptChange()">
-        <option value="all">Tất cả phòng ban</option>
-        <option>Bán hàng</option>
-        <option>Kho</option>
-        <option>Kế toán</option>
-        <option>Marketing</option>
-        <option>CSKH</option>
-      </select>
-      <select [(ngModel)]="selectedStatus" (change)="onStatusChange()">
-        <option value="all">Tất cả trạng thái</option>
-        <option>Hoạt động</option>
-        <option>Tạm nghỉ</option>
-        <option>Nghỉ việc</option>
-      </select>
-      <button class="btn btn-primary" (click)="openAdd()">
-        <i class="bi bi-plus-lg"></i> Thêm nhân viên
-      </button>
-    </div>
-  </div>
+      <!-- Error/Success Messages -->
+      <div *ngIf="errorMessage" class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i> {{ errorMessage }}
+        <button class="btn btn-sm btn-outline-primary ms-2" (click)="retryConnection()">
+          <i class="bi bi-arrow-clockwise"></i> Thử lại
+        </button>
+      </div>
 
-  <div class="table-container">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Họ tên</th>
-          <th>Email</th>
-          <th>Điện thoại</th>
-          <th>Phòng ban</th>
-          <th>Trạng thái</th>
-          <th>Ngày vào</th>
-          <th>Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let s of filtered">
-          <td>{{ s.id }}</td>
-          <td>{{ s.name }}</td>
-          <td>{{ s.email }}</td>
-          <td>{{ s.phone }}</td>
-          <td>{{ s.department }}</td>
-          <td>
-            <span class="status-badge" [ngClass]="statusClass(s.status)">{{ s.status }}</span>
-          </td>
-          <td>{{ s.joinDate | date : 'dd/MM/yyyy' }}</td>
-          <td class="actions">
-            <button class="action-btn view" (click)="view(s)"><i class="bi bi-eye"></i></button>
-            <button class="action-btn edit" (click)="openEdit(s)">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="action-btn danger" (click)="remove(s)">
-              <i class="bi bi-trash"></i>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="filtered.length === 0">
-          <td colspan="8" class="no-data"><i class="bi bi-inbox"></i> Không có nhân viên</td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- Bộ lọc -->
+      <div class="filter-section">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="form-group">
+              <label>Tìm kiếm:</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Tìm theo tên, email, số điện thoại..."
+                [(ngModel)]="searchTerm"
+                (input)="onFilterChange()"
+              />
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label>Trạng thái:</label>
+              <select class="form-control" [(ngModel)]="selectedStatus" (change)="onFilterChange()">
+                <option value="all">Tất cả</option>
+                <option value="Hoạt động">Hoạt động</option>
+                <option value="Nghỉ việc">Nghỉ việc</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bảng nhân viên -->
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>#</th>
+              <th>Mã NV</th>
+              <th>Họ tên</th>
+              <th>Email</th>
+              <th>Điện thoại</th>
+              <th>Giới tính</th>
+              <th>Ngày sinh</th>
+              <th>Địa chỉ</th>
+              <th>Trạng thái</th>
+              <th>Ngày vào</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let nv of filteredList; let i = index">
+              <td>{{ currentPage * pageSize + i + 1 }}</td>
+              <td>{{ nv.maNhanVien || 'Chưa có' }}</td>
+              <td>{{ nv.hoTen }}</td>
+              <td>{{ nv.email }}</td>
+              <td>{{ nv.soDienThoai }}</td>
+              <td>{{ getGioiTinhText(nv.gioiTinh) }}</td>
+              <td>{{ formatDate(nv.ngaySinh) }}</td>
+              <td class="text-truncate" style="max-width: 180px" title="{{ nv.diaChi }}">
+                {{ truncateText(nv.diaChi, 30) }}
+              </td>
+              <td>
+                <span class="badge" [class]="nv.trangThai ? 'bg-success' : 'bg-danger'">
+                  {{ getTrangThaiText(nv.trangThai) }}
+                </span>
+              </td>
+              <td class="text-truncate" style="max-width: 120px">
+                {{ nv.ngayVaoLam | date : 'short' }}
+              </td>
+              <td>
+                <div class="btn-group" role="group">
+                  <button
+                    class="btn btn-sm btn-outline-info"
+                    (click)="view(nv)"
+                    title="Xem chi tiết"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-warning"
+                    (click)="openEdit(nv)"
+                    title="Chỉnh sửa"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="remove(nv)" title="Xóa">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredList.length === 0">
+              <td colspan="11" class="text-center text-muted">
+                <i class="bi bi-inbox"></i> Không có nhân viên nào
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination controls -->
+      <div class="d-flex justify-content-between align-items-center my-3">
+        <div>
+          <button
+            class="btn btn-outline-secondary btn-sm me-2"
+            (click)="onPageChange(currentPage - 1)"
+            [disabled]="currentPage === 0"
+          >
+            Trang trước
+          </button>
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            (click)="onPageChange(currentPage + 1)"
+            [disabled]="currentPage + 1 >= totalPages"
+          >
+            Trang sau
+          </button>
+        </div>
+        <div>
+          <span class="me-3">Trang {{ currentPage + 1 }}/{{ totalPages || 1 }}</span>
+          <select
+            class="form-select form-select-sm d-inline-block"
+            style="width: auto"
+            [(ngModel)]="pageSize"
+            (ngModelChange)="onPageSizeChange($event)"
+          >
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+          </select>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="modal-overlay" *ngIf="showModal" (click)="close()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>
+        <h3 class="text-primary">
           <i class="bi bi-person-badge"></i>
           {{
             isViewMode ? 'Xem chi tiết nhân viên' : isEditMode ? 'Sửa nhân viên' : 'Thêm nhân viên'
@@ -89,84 +161,260 @@
         <button class="close-btn" (click)="close()"><i class="bi bi-x"></i></button>
       </div>
       <div class="modal-body">
-        <form (ngSubmit)="save()">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Họ tên *</label>
-              <input
-                type="text"
-                [(ngModel)]="form.name"
-                name="name"
-                required
-                [disabled]="isViewMode"
-              />
-            </div>
-            <div class="form-group">
-              <label>Email *</label>
-              <input
-                type="email"
-                [(ngModel)]="form.email"
-                name="email"
-                required
-                [disabled]="isViewMode"
-              />
-            </div>
+        <form (ngSubmit)="save()" class="needs-validation" novalidate>
+          <!-- Error message in modal -->
+          <div
+            *ngIf="errorMessage"
+            class="alert alert-danger alert-dismissible fade show"
+            role="alert"
+          >
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {{ errorMessage }}
+            <button
+              type="button"
+              class="btn-close"
+              (click)="errorMessage = ''"
+              aria-label="Close"
+            ></button>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Điện thoại *</label>
-              <input
-                type="text"
-                [(ngModel)]="form.phone"
-                name="phone"
-                required
-                [disabled]="isViewMode"
-              />
-            </div>
-            <div class="form-group">
-              <label>Phòng ban *</label>
-              <select
-                [(ngModel)]="form.department"
-                name="department"
-                required
-                [disabled]="isViewMode"
-              >
-                <option>Bán hàng</option>
-                <option>Kho</option>
-                <option>Kế toán</option>
-                <option>Marketing</option>
-                <option>CSKH</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Trạng thái *</label>
-              <select [(ngModel)]="form.status" name="status" required [disabled]="isViewMode">
-                <option>Hoạt động</option>
-                <option>Tạm nghỉ</option>
-                <option>Nghỉ việc</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Ngày vào *</label>
-              <input
-                type="date"
-                [ngModel]="form.joinDate | date : 'yyyy-MM-dd'"
-                (ngModelChange)="form.joinDate = $event ? dateFrom($event) : form.joinDate"
-                name="joinDate"
-                required
-                [disabled]="isViewMode"
-              />
+
+          <!-- Personal Information Section -->
+          <div class="mb-4">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-person-circle me-2"></i>
+              Thông tin cá nhân
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="hoTen" class="form-label">
+                  Họ tên <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="hoTen"
+                  [(ngModel)]="form.hoTen"
+                  name="hoTen"
+                  required
+                  [disabled]="isViewMode"
+                  placeholder="Nhập họ tên đầy đủ"
+                  (blur)="validateField('hoTen')"
+                  [class.is-invalid]="fieldErrors['hoTen']"
+                />
+                <div class="invalid-feedback" *ngIf="fieldErrors['hoTen']">
+                  {{ fieldErrors['hoTen'] }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="maNhanVien" class="form-label">
+                  Mã nhân viên
+                  <i
+                    class="bi bi-info-circle text-muted ms-1"
+                    title="Để trống để hệ thống tự động tạo"
+                  ></i>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="maNhanVien"
+                  [(ngModel)]="form.maNhanVien"
+                  name="maNhanVien"
+                  [disabled]="isViewMode || isEditMode"
+                  placeholder="NV001, NV002..."
+                  (blur)="validateField('maNhanVien')"
+                  (input)="validateField('maNhanVien')"
+                  [class.is-invalid]="fieldErrors['maNhanVien']"
+                />
+                <div class="invalid-feedback" *ngIf="fieldErrors['maNhanVien']">
+                  {{ fieldErrors['maNhanVien'] }}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="modal-actions">
-            <button type="button" class="btn btn-secondary" (click)="close()">
+          <!-- Contact Information Section -->
+          <div class="mb-4">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-telephone me-2"></i>
+              Thông tin liên hệ
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="email" class="form-label">
+                  Email <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-envelope"></i>
+                  </span>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="email"
+                    [(ngModel)]="form.email"
+                    name="email"
+                    required
+                    [disabled]="isViewMode"
+                    placeholder="example@tdk.vn"
+                    (blur)="validateField('email')"
+                    (input)="validateField('email')"
+                    [class.is-invalid]="fieldErrors['email']"
+                  />
+                </div>
+                <div class="invalid-feedback" *ngIf="fieldErrors['email']">
+                  {{ fieldErrors['email'] }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="soDienThoai" class="form-label">
+                  Điện thoại <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="bi bi-phone"></i>
+                  </span>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    id="soDienThoai"
+                    [(ngModel)]="form.soDienThoai"
+                    name="soDienThoai"
+                    required
+                    [disabled]="isViewMode"
+                    placeholder="0901234567"
+                    (blur)="validateField('soDienThoai')"
+                    (input)="validateField('soDienThoai')"
+                    [class.is-invalid]="fieldErrors['soDienThoai']"
+                  />
+                </div>
+                <div class="invalid-feedback" *ngIf="fieldErrors['soDienThoai']">
+                  {{ fieldErrors['soDienThoai'] }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Personal Details Section -->
+          <div class="mb-4">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-calendar3 me-2"></i>
+              Thông tin chi tiết
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="gioiTinh" class="form-label">Giới tính</label>
+                <select
+                  class="form-select"
+                  id="gioiTinh"
+                  [(ngModel)]="form.gioiTinh"
+                  name="gioiTinh"
+                  [disabled]="isViewMode"
+                >
+                  <option [value]="true">Nam</option>
+                  <option [value]="false">Nữ</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label for="ngaySinh" class="form-label">Ngày sinh</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="ngaySinh"
+                  [(ngModel)]="form.ngaySinh"
+                  name="ngaySinh"
+                  [disabled]="isViewMode"
+                />
+              </div>
+              <div class="col-md-4">
+                <label for="ngayVaoLam" class="form-label">Ngày vào làm</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="ngayVaoLam"
+                  [(ngModel)]="form.ngayVaoLam"
+                  name="ngayVaoLam"
+                  [disabled]="isViewMode"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Section -->
+          <div class="mb-4">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-gear me-2"></i>
+              Trạng thái
+            </h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="trangThai" class="form-label">Trạng thái làm việc</label>
+                <select
+                  class="form-select"
+                  id="trangThai"
+                  [(ngModel)]="form.trangThai"
+                  name="trangThai"
+                  [disabled]="isViewMode"
+                >
+                  <option [value]="true">Hoạt động</option>
+                  <option [value]="false">Nghỉ việc</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Address Section -->
+          <div class="mb-4">
+            <h6 class="text-primary mb-3">
+              <i class="bi bi-geo-alt me-2"></i>
+              Địa chỉ
+            </h6>
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="diaChi" class="form-label">Địa chỉ</label>
+                <textarea
+                  class="form-control"
+                  id="diaChi"
+                  [(ngModel)]="form.diaChi"
+                  name="diaChi"
+                  rows="3"
+                  [disabled]="isViewMode"
+                  placeholder="Nhập địa chỉ đầy đủ (số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố)"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Thông tin User liên kết (chỉ hiển thị khi xem chi tiết) -->
+          <div *ngIf="isViewMode && (form.username || form.fullName)" class="form-row">
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" [value]="form.username || 'Chưa có'" disabled readonly />
+            </div>
+            <div class="form-group">
+              <label>Full Name (User)</label>
+              <input type="text" [value]="form.fullName || 'Chưa có'" disabled readonly />
+            </div>
+          </div>
+
+          <div class="modal-footer bg-light">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="close()"
+              [disabled]="loading"
+            >
+              <i class="bi bi-x-circle me-2"></i>
               {{ isViewMode ? 'Đóng' : 'Hủy' }}
             </button>
-            <button type="submit" class="btn btn-primary" *ngIf="!isViewMode">
-              <i class="bi bi-check"></i> {{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}
+            <button type="submit" class="btn btn-primary" *ngIf="!isViewMode" [disabled]="loading">
+              <i class="bi bi-check-circle me-2" *ngIf="!loading"></i>
+              <span
+                class="spinner-border spinner-border-sm me-2"
+                *ngIf="loading"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              {{ loading ? 'Đang xử lý...' : isEditMode ? 'Cập nhật' : 'Thêm mới' }}
             </button>
           </div>
         </form>
