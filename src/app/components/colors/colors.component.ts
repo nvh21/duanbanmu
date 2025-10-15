@@ -21,6 +21,7 @@ export class ColorsComponent implements OnInit {
   colors: ColorVM[] = [];
   filtered: ColorVM[] = [];
   searchTerm = '';
+  selectedStatus = 'all';
   showModal = false;
   isEditMode = false;
   isViewMode = false;
@@ -37,6 +38,9 @@ export class ColorsComponent implements OnInit {
 
   // Track which fields have been touched by user
   touchedFields: Set<string> = new Set();
+
+  // Expose Math to template
+  Math = Math;
 
   constructor(private api: ColorApiService, private cdr: ChangeDetectorRef) {}
 
@@ -62,8 +66,53 @@ export class ColorsComponent implements OnInit {
       });
   }
 
+  filterColors() {
+    // Nếu searchTerm chỉ chứa dấu cách hoặc rỗng, hiển thị tất cả màu sắc
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.filtered = this.colors.filter((color) => {
+        const matchesStatus =
+          this.selectedStatus === 'all' ||
+          (this.selectedStatus === 'true' && color.status) ||
+          (this.selectedStatus === 'false' && !color.status);
+        return matchesStatus;
+      });
+      return;
+    }
+
+    this.filtered = this.colors.filter((color) => {
+      const searchTerm = this.searchTerm.toLowerCase().trim();
+
+      // Tìm kiếm trong các trường: Mã màu, Tên màu
+      const matchesSearch =
+        color.code.toLowerCase().includes(searchTerm) ||
+        color.name.toLowerCase().includes(searchTerm);
+
+      const matchesStatus =
+        this.selectedStatus === 'all' ||
+        (this.selectedStatus === 'true' && color.status) ||
+        (this.selectedStatus === 'false' && !color.status);
+
+      return matchesSearch && matchesStatus;
+    });
+  }
+
   onSearchChange() {
-    this.fetch(0);
+    // Không tìm kiếm nếu chỉ có dấu cách
+    if (this.searchTerm && this.searchTerm.trim() === '') {
+      return;
+    }
+    this.filterColors();
+  }
+
+  onStatusChange() {
+    this.filterColors();
+  }
+
+  resetFilter() {
+    this.searchTerm = '';
+    this.selectedStatus = 'all';
+    this.currentPage = 0;
+    this.fetch();
   }
 
   openAddModal() {
@@ -188,6 +237,34 @@ export class ColorsComponent implements OnInit {
     this.fetch(0);
   }
 
+  onPageSizeChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.changePageSize(+target.value);
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages - 1, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i + 1);
+    }
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+      this.fetch(page);
+    }
+  }
+
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.colorToDelete = null;
@@ -216,9 +293,11 @@ export class ColorsComponent implements OnInit {
 
     switch (field) {
       case 'name':
-        return !this.newColor.name?.trim() || 
-               this.newColor.name.trim().length < 2 || 
-               this.newColor.name.trim().length > 100;
+        return (
+          !this.newColor.name?.trim() ||
+          this.newColor.name.trim().length < 2 ||
+          this.newColor.name.trim().length > 100
+        );
       case 'code':
         if (!this.newColor.code?.trim()) return true; // Required field
         const colorCode = this.newColor.code.trim();

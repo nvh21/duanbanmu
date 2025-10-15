@@ -44,15 +44,20 @@ export interface CustomerPaginatedResponse {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CustomerService {
   private apiUrl = `${environment.apiBaseUrl}/api/khach-hang`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   // Lấy tất cả khách hàng với phân trang
-  getAllCustomers(page: number = 0, size: number = 10, sortBy: string = 'id', sortDir: string = 'asc'): Observable<CustomerPaginatedResponse> {
+  getAllCustomers(
+    page: number = 0,
+    size: number = 10,
+    sortBy: string = 'id',
+    sortDir: string = 'asc'
+  ): Observable<CustomerPaginatedResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString())
@@ -134,7 +139,9 @@ export class CustomerService {
 
   // Lấy khách hàng theo khoảng thời gian
   getCustomersByDateRange(startDate: string, endDate: string): Observable<CustomerDTO[]> {
-    return this.http.get<CustomerDTO[]>(`${this.apiUrl}/date-range?startDate=${startDate}&endDate=${endDate}`);
+    return this.http.get<CustomerDTO[]>(
+      `${this.apiUrl}/date-range?startDate=${startDate}&endDate=${endDate}`
+    );
   }
 
   // Cập nhật điểm tích lũy
@@ -156,7 +163,7 @@ export class CustomerService {
   getAllCustomersSimple(): Observable<CustomerDTO[]> {
     console.log('CustomerService: Calling API:', this.apiUrl);
     return this.http.get<CustomerPaginatedResponse>(this.apiUrl).pipe(
-      map(response => {
+      map((response) => {
         console.log('CustomerService: API Response:', response);
         return response.content;
       })

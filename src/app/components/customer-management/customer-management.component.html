@@ -1,465 +1,838 @@
-<div class="container">
-  <!-- Filter Section -->
-  <div class="filter-section">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-content">
-        <div class="title-section">
-          <div class="icon">
-            👥
-          </div>
-          <div>
-            <h2 class="title">Quản lý khách hàng</h2>
-            <div class="badge">
-              {{ filteredCustomers.length }} khách hàng
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <!-- Bộ Lọc Tìm Kiếm Section -->
+      <div class="filter-search-section">
+        <div class="section-header">
+          <i class="bi bi-funnel"></i>
+          <h3>Bộ Lọc Tìm Kiếm</h3>
+        </div>
+
+        <div class="filter-content">
+          <div class="search-section">
+            <label class="filter-label">Tìm kiếm</label>
+            <div class="search-input-wrapper">
+              <i class="bi bi-search search-icon"></i>
+              <input
+                type="text"
+                class="search-input"
+                placeholder="Mã, tên, email, SĐT..."
+                [(ngModel)]="searchTerm"
+                (input)="onFilterChange()"
+              />
             </div>
+            <div class="total-customers">Tổng số khách hàng: {{ totalCustomers }}</div>
           </div>
-        </div>
-        
-        <div class="actions">
-          <button (click)="resetFilters()" class="btn reset">
-            🔄 Reset
-          </button>
-          <button (click)="openAddModal()" class="btn add">
-            <span style="font-size: 16px;">+</span> Thêm khách hàng
-          </button>
-        </div>
-      </div>
-    </div>
 
-    <!-- Filters -->
-    <div class="filters">
-      <div class="filter-content">
-        <!-- Search -->
-        <div class="search-input">
-          <input [(ngModel)]="searchTerm" 
-                 (input)="applyFilters()" 
-                 placeholder="🔍 Tìm kiếm theo tên, email, số điện thoại, mã khách hàng...">
-        </div>
-        
-        <!-- Status Filter -->
-        <div class="status-filter">
-          <span class="label">Trạng thái:</span>
-          <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="all" (change)="applyFilters()">
-            Tất cả
-          </label>
-          <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="Active" (change)="applyFilters()">
-            Hoạt động
-          </label>
-          <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="Inactive" (change)="applyFilters()">
-            Không hoạt động
-          </label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Customer List -->
-  <div class="customer-list">
-    <!-- Table Header -->
-    <div class="table-header">
-      <div class="header-grid">
-        <div>STT</div>
-        <div>Mã KH</div>
-        <div>Tên khách hàng</div>
-        <div>Số điện thoại</div>
-        <div>Email</div>
-        <div>Địa chỉ</div>
-        <div>Trạng thái</div>
-        <div>Hành động</div>
-      </div>
-    </div>
-
-    <!-- Table Body -->
-    <div *ngIf="paginatedCustomers.length === 0" class="empty-state">
-      <div class="icon">👥</div>
-      <h3 class="title">Không có khách hàng nào</h3>
-      <p class="subtitle">Hãy thêm khách hàng đầu tiên</p>
-    </div>
-
-    <div *ngFor="let customer of paginatedCustomers; let i = index" 
-         class="customer-row">
-      
-      <div class="stt">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</div>
-      <div class="customer-code">{{ customer.customerCode || 'KH' + customer.id.toString().padStart(5, '0') }}</div>
-      <div class="customer-name">{{ customer.name }}</div>
-      <div class="phone">{{ customer.phone }}</div>
-      <div class="email">{{ customer.email }}</div>
-      <div class="address">{{ customer.address || 'Chưa cập nhật' }}</div>
-      <div>
-        <span [class]="'status-badge ' + (customer.status === 'Active' ? 'active' : 'inactive')">
-          {{ customer.status === 'Active' ? 'Hoạt động' : 'Không hoạt động' }}
-        </span>
-      </div>
-      <div class="actions">
-        <button (click)="toggleCustomerStatus(customer)" 
-                [class]="'toggle-status ' + (customer.status === 'Active' ? 'active' : 'inactive')">
-          {{ customer.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt' }}
-        </button>
-        <button (click)="openEditModal(customer)" class="edit">
-          ✏️ Sửa
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pagination -->
-  <div *ngIf="totalPages > 1" class="pagination">
-    <!-- Items per page -->
-    <div class="items-per-page">
-      <span>Hiển thị</span>
-      <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()">
-        <option value="5">5</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
-      </select>
-      <span>trên {{ filteredCustomers.length }} khách hàng</span>
-    </div>
-
-    <!-- Page navigation -->
-    <div class="page-navigation">
-      <button (click)="goToFirstPage()" [disabled]="currentPage === 1">
-        ⏮️
-      </button>
-      <button (click)="previousPage()" [disabled]="currentPage === 1">
-        ◀️
-      </button>
-      
-      <div style="display: flex; gap: 5px;">
-        <button *ngFor="let page of getPageNumbers()" 
-                (click)="goToPage(page)"
-                [class.active]="page === currentPage">
-          {{ page }}
-        </button>
-      </div>
-      
-      <button (click)="nextPage()" [disabled]="currentPage === totalPages">
-        ▶️
-      </button>
-      <button (click)="goToLastPage()" [disabled]="currentPage === totalPages">
-        ⏭️
-      </button>
-    </div>
-  </div>
-
-  <!-- Add/Edit Customer Modal -->
-  <div *ngIf="showAddModal || showEditModal" 
-       class="modal-overlay"
-       (click)="closeModals()">
-    <div class="modal-content"
-         (click)="$event.stopPropagation()">
-      
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <div class="header-content">
-          <h2 class="title">
-            {{ showEditModal ? 'Chỉnh sửa khách hàng' : 'Thêm Khách Hàng' }}
-          </h2>
-          <button (click)="closeModals()" class="close-btn">
-            ×
-          </button>
-        </div>
-      </div>
-
-      <!-- Modal Content -->
-      <div class="modal-body">
-        <!-- Customer Form -->
-        <form (ngSubmit)="saveCustomer()">
-          <div class="form-grid">
-            <!-- Left Column -->
-            <div>
-              <!-- Customer Name -->
-              <div class="form-group">
-                <label>Tên khách hàng *</label>
-                <input [(ngModel)]="customerForm.name" 
-                       name="name" 
-                       required 
-                       placeholder="Nhập tên khách hàng">
-              </div>
-
-              <!-- Email -->
-              <div class="form-group">
-                <label>Email *</label>
-                <input [(ngModel)]="customerForm.email" 
-                       name="email" 
-                       type="email" 
-                       required 
-                       placeholder="Nhập email">
-              </div>
-
-              <!-- Gender -->
-              <div class="form-group">
-                <label>Giới tính *</label>
-                <div class="radio-group">
-                  <label>
-                    <input type="radio" 
-                           [(ngModel)]="customerForm.gender" 
-                           name="gender" 
-                           value="Nam" 
-                           required>
-                    Nam
-                  </label>
-                  <label>
-                    <input type="radio" 
-                           [(ngModel)]="customerForm.gender" 
-                           name="gender" 
-                           value="Nữ" 
-                           required>
-                    Nữ
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column -->
-            <div>
-              <!-- Phone -->
-              <div class="form-group">
-                <label>Số điện thoại *</label>
-                <input [(ngModel)]="customerForm.phone" 
-                       name="phone" 
-                       required 
-                       placeholder="Nhập số điện thoại">
-              </div>
-
-              <!-- Date of Birth -->
-              <div class="form-group">
-                <label>Ngày sinh *</label>
-                <input [(ngModel)]="customerForm.dateOfBirth" 
-                       name="dateOfBirth" 
-                       type="date" 
-                       required>
-              </div>
-
-              <!-- Address -->
-              <div class="form-group">
-                <label>Địa chỉ</label>
-                <input [(ngModel)]="customerForm.address" 
-                       name="address" 
-                       placeholder="Nhập địa chỉ">
-              </div>
+          <div class="status-section">
+            <label class="filter-label">Trạng thái</label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input
+                  type="radio"
+                  name="status"
+                  value=""
+                  [(ngModel)]="selectedStatus"
+                  (change)="onFilterChange()"
+                  checked
+                />
+                <span class="radio-custom"></span>
+                <span class="radio-text">Tất cả</span>
+              </label>
+              <label class="radio-item">
+                <input
+                  type="radio"
+                  name="status"
+                  value="true"
+                  [(ngModel)]="selectedStatus"
+                  (change)="onFilterChange()"
+                />
+                <span class="radio-custom"></span>
+                <span class="radio-text">Kích hoạt</span>
+              </label>
+              <label class="radio-item">
+                <input
+                  type="radio"
+                  name="status"
+                  value="false"
+                  [(ngModel)]="selectedStatus"
+                  (change)="onFilterChange()"
+                />
+                <span class="radio-custom"></span>
+                <span class="radio-text">Hủy kích hoạt</span>
+              </label>
             </div>
           </div>
 
-          <!-- Notes -->
-          <div class="form-group">
-            <label>Ghi chú</label>
-            <textarea [(ngModel)]="customerForm.notes" 
-                      name="notes" 
-                      placeholder="Nhập ghi chú (tùy chọn)"
-                      rows="3"></textarea>
+          <div class="action-buttons">
+            <button class="btn-reset" (click)="resetFilter()">Đặt lại bộ lọc</button>
+            <button class="btn-add" (click)="openAdd()">Thêm Khách Hàng</button>
+            <button class="btn-export" (click)="forceRefreshData()">Refresh Data</button>
+            <button class="btn-import">Nhập từ Excel</button>
           </div>
-        </form>
+        </div>
+      </div>
 
-        <!-- Address Management Section -->
-        <div class="address-section">
-          <!-- Address Header -->
-          <div class="section-header">
-            <div class="section-title">
-              <div class="icon">
-                📍
-              </div>
-              <div>
-                <h3 class="title">Quản lý địa chỉ</h3>
-                <div class="badge">
-                  {{ addresses.length }} địa chỉ
-                </div>
-              </div>
+      <!-- Danh Sách Khách Hàng Section -->
+      <div class="customer-list-section">
+        <div class="section-header">
+          <i class="bi bi-calendar3"></i>
+          <h3>Danh Sách Khách Hàng</h3>
+        </div>
+
+        <div class="list-content">
+          <div class="list-header">
+            <span class="customer-count">{{ filteredList.length }} khách hàng</span>
+          </div>
+
+          <!-- Customer Table -->
+          <div class="table-container">
+            <table class="customer-table">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Mã Khách Hàng</th>
+                  <th>Tên Khách Hàng</th>
+                  <th>Số Điện Thoại</th>
+                  <th>Email</th>
+                  <th>Địa Chỉ</th>
+                  <th>Trạng Thái</th>
+                  <th>Hành Động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let kh of paginatedList; let i = index">
+                  <td>{{ currentPage * pageSize + i + 1 }}</td>
+                  <td>
+                    <span class="customer-code" *ngIf="kh.maKhachHang">{{ kh.maKhachHang }}</span>
+                    <span class="no-data" *ngIf="!kh.maKhachHang">-</span>
+                  </td>
+                  <td>{{ kh.tenKhachHang }}</td>
+                  <td>
+                    <span *ngIf="kh.soDienThoai">{{ kh.soDienThoai }}</span>
+                    <span class="no-data" *ngIf="!kh.soDienThoai">Không có số điện thoại</span>
+                  </td>
+                  <td>
+                    <span *ngIf="kh.email">{{ kh.email }}</span>
+                    <span class="no-data" *ngIf="!kh.email">Không có email</span>
+                  </td>
+                  <td>
+                    <span>{{ getCustomerAddress(kh) }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="status-badge"
+                      [class.active]="kh.trangThai"
+                      [class.inactive]="!kh.trangThai"
+                    >
+                      {{ kh.trangThai ? 'Kích Hoạt' : 'Đã Hủy' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <label class="toggle-switch">
+                        <input
+                          type="checkbox"
+                          [checked]="kh.trangThai"
+                          (change)="toggleStatus(kh)"
+                        />
+                        <span class="toggle-slider"></span>
+                      </label>
+                      <button class="btn-edit" (click)="openEdit(kh)" title="Chỉnh sửa">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn-delete" (click)="delete(kh)" title="Xóa">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination-container">
+            <div class="pagination-left">
+              <span class="pagination-label">Hiển thị</span>
+              <input
+                type="number"
+                class="page-size-input"
+                [(ngModel)]="pageSize"
+                (change)="onPageSizeChange()"
+                min="1"
+                max="100"
+                value="5"
+              />
+              <span class="pagination-label">mục / trang</span>
             </div>
-            
-            <button (click)="openAddressAddModal()" class="add-btn">
-              <span style="font-size: 14px;">+</span> Thêm địa chỉ
-            </button>
-          </div>
 
-          <!-- Address Navigation -->
-          <div *ngIf="addresses.length > 0" class="address-navigation">
-            <div class="nav-content">
-              <button (click)="previousAddress()" 
-                      [disabled]="currentAddressIndex === 0"
-                      class="nav-btn prev">
-                < Trước
+            <div class="pagination-center">
+              <span class="pagination-info">
+                Hiển thị {{ currentPage * pageSize + 1 }} -
+                {{ Math.min((currentPage + 1) * pageSize, totalElements) }} /
+                {{ totalElements }} mục
+              </span>
+            </div>
+
+            <div class="pagination-right">
+              <button class="pagination-btn" [disabled]="currentPage === 0" (click)="goToPage(0)">
+                <i class="bi bi-chevron-double-left"></i>
               </button>
-              
-              <div class="nav-info">
-                Địa chỉ {{ currentAddressIndex + 1 }}/{{ addresses.length }}
-              </div>
-              
-              <button (click)="nextAddress()" 
-                      [disabled]="currentAddressIndex === addresses.length - 1"
-                      class="nav-btn next">
-                Tiếp >
+              <button
+                class="pagination-btn"
+                [disabled]="currentPage === 0"
+                (click)="goToPage(currentPage - 1)"
+              >
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <button
+                *ngFor="let page of getPageNumbers()"
+                class="pagination-btn page-number"
+                [class.active]="page === currentPage + 1"
+                (click)="goToPage(page - 1)"
+              >
+                {{ page }}
+              </button>
+              <button
+                class="pagination-btn"
+                [disabled]="currentPage === totalPages - 1"
+                (click)="goToPage(currentPage + 1)"
+              >
+                <i class="bi bi-chevron-right"></i>
+              </button>
+              <button
+                class="pagination-btn"
+                [disabled]="currentPage === totalPages - 1"
+                (click)="goToPage(totalPages - 1)"
+              >
+                <i class="bi bi-chevron-double-right"></i>
               </button>
             </div>
           </div>
-
-          <!-- Address Display -->
-          <div *ngIf="addresses.length === 0" class="empty-state">
-            <div class="icon">📍</div>
-            <h4 class="title">Chưa có địa chỉ nào</h4>
-            <p class="subtitle">Hãy thêm địa chỉ đầu tiên</p>
-          </div>
-
-          <div *ngIf="addresses.length > 0" class="address-display">
-            <div *ngFor="let address of addresses; let i = index" 
-                 [style.display]="i === currentAddressIndex ? 'block' : 'none'"
-                 class="address-item">
-              
-              <!-- Default Badge -->
-              <div *ngIf="address.isDefault" class="default-badge">
-                ⭐ Mặc định
-              </div>
-              
-              <!-- Address Info -->
-              <div class="address-info">
-                <div class="title">
-                  Địa chỉ {{ i + 1 }}
-                </div>
-                <div class="details">
-                  <div class="detail-item">
-                    <span class="icon">📍</span>
-                    <span class="label">Địa chỉ cụ thể:</span>
-                    <span>{{ address.specificAddress }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="icon">🏢</span>
-                    <span>{{ address.ward }}, {{ address.district }}, {{ address.province }}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Actions -->
-              <div class="actions">
-                <button (click)="setAddressAsDefault(address)" 
-                        [disabled]="address.isDefault"
-                        class="set-default">
-                  {{ address.isDefault ? 'Đã mặc định' : 'Đặt mặc định' }}
-                </button>
-                <button (click)="openAddressEditModal(address)" class="edit">
-                  ✏️ Sửa
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal Action Buttons -->
-        <div class="modal-actions">
-          <button (click)="closeModals()" class="cancel">
-            Hủy bỏ
-          </button>
-          <button (click)="saveCustomer()" class="save">
-            💾 Lưu khách hàng
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Address Add/Edit Modal -->
-  <div *ngIf="showAddressAddModal || showAddressEditModal" 
-       class="modal-overlay"
-       (click)="closeAddressModals()">
-    <div class="modal-content address-modal"
-         (click)="$event.stopPropagation()">
-      
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <div class="header-content">
-          <h2 class="title">
-            {{ showAddressEditModal ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới' }}
-          </h2>
-          <button (click)="closeAddressModals()" class="close-btn">
-            ×
-          </button>
-        </div>
-      </div>
-
-      <!-- Modal Content -->
-      <div class="modal-body">
-        <form (ngSubmit)="saveAddress()">
-          <!-- Specific Address -->
-          <div class="form-group">
-            <label>Địa chỉ cụ thể *</label>
-            <input [(ngModel)]="addressForm.specificAddress" 
-                   name="specificAddress" 
-                   required 
-                   placeholder="Nhập số nhà, tên đường..."
-                   class="form-control">
-          </div>
-
-          <!-- Province -->
-          <div class="form-group">
-            <label>Tỉnh/Thành phố *</label>
-            <select [(ngModel)]="addressForm.province" 
-                    name="province" 
-                    required 
-                    (change)="onProvinceChange()"
-                    class="form-control">
-              <option value="">Chọn tỉnh/thành phố</option>
-              <option *ngFor="let province of provinces" [value]="province.id">
-                {{ province.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- District -->
-          <div class="form-group">
-            <label>Quận/Huyện *</label>
-            <select [(ngModel)]="addressForm.district" 
-                    name="district" 
-                    required 
-                    (change)="onDistrictChange()"
-                    [disabled]="!addressForm.province"
-                    class="form-control">
-              <option value="">Chọn quận/huyện</option>
-              <option *ngFor="let district of filteredDistricts" [value]="district.id">
-                {{ district.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Ward -->
-          <div class="form-group">
-            <label>Phường/Xã *</label>
-            <select [(ngModel)]="addressForm.ward" 
-                    name="ward" 
-                    required 
-                    [disabled]="!addressForm.district"
-                    class="form-control">
-              <option value="">Chọn phường/xã</option>
-              <option *ngFor="let ward of filteredWards" [value]="ward.id">
-                {{ ward.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Default Address -->
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" 
-                     [(ngModel)]="addressForm.isDefault" 
-                     name="isDefault">
-              <span class="checkmark"></span>
-              Đặt làm địa chỉ mặc định
-            </label>
-          </div>
-        </form>
-
-        <!-- Modal Action Buttons -->
-        <div class="modal-actions">
-          <button (click)="closeAddressModals()" class="cancel">
-            Hủy bỏ
-          </button>
-          <button (click)="saveAddress()" class="save">
-            💾 {{ showAddressEditModal ? 'Cập nhật' : 'Thêm' }} địa chỉ
-          </button>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Loading Overlay -->
+<div *ngIf="loading" class="loading-overlay">
+  <div class="loading-content">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Đang tải...</span>
+    </div>
+    <p class="mt-2">Đang tải dữ liệu...</p>
+  </div>
+</div>
+
+<!-- Empty state -->
+<div *ngIf="!loading && filteredList.length === 0" class="empty-state">
+  <i class="bi bi-people display-1 text-muted"></i>
+  <h4 class="mt-3">Không có khách hàng nào</h4>
+  <p class="text-muted">Hãy thêm khách hàng đầu tiên của bạn</p>
+  <button class="btn-add" (click)="openAdd()">
+    <i class="bi bi-plus-circle"></i>
+    Thêm khách hàng mới
+  </button>
+</div>
+
+<!-- Customer Modal -->
+<div
+  class="modal fade"
+  [class.show]="showModal"
+  [style.display]="showModal ? 'block' : 'none'"
+  tabindex="-1"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-person-plus" *ngIf="!isEditMode"></i>
+          <i class="bi bi-person-gear" *ngIf="isEditMode"></i>
+          {{ isEditMode ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng mới' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <form class="needs-validation" novalidate>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="maKhachHang" class="form-label">
+                  <i class="bi bi-person-badge me-1"></i>Mã khách hàng
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="maKhachHang"
+                  [(ngModel)]="form.maKhachHang"
+                  name="maKhachHang"
+                  placeholder="Nhập mã khách hàng"
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="tenKhachHang" class="form-label">
+                  <i class="bi bi-person me-1"></i>Họ và tên <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="tenKhachHang"
+                  [(ngModel)]="form.tenKhachHang"
+                  name="tenKhachHang"
+                  placeholder="Nhập họ và tên"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="email" class="form-label">
+                  <i class="bi bi-envelope me-1"></i>Email <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="email"
+                  [(ngModel)]="form.email"
+                  name="email"
+                  placeholder="Nhập email"
+                  required
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="soDienThoai" class="form-label">
+                  <i class="bi bi-phone me-1"></i>Số điện thoại <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="tel"
+                  class="form-control"
+                  id="soDienThoai"
+                  [(ngModel)]="form.soDienThoai"
+                  name="soDienThoai"
+                  placeholder="Nhập số điện thoại"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="ngaySinh" class="form-label">
+                  <i class="bi bi-calendar me-1"></i>Ngày sinh
+                </label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="ngaySinh"
+                  [(ngModel)]="form.ngaySinh"
+                  name="ngaySinh"
+                />
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="gioiTinh" class="form-label">
+                  <i class="bi bi-gender-ambiguous me-1"></i>Giới tính
+                </label>
+                <select
+                  class="form-select"
+                  id="gioiTinh"
+                  [(ngModel)]="form.gioiTinh"
+                  name="gioiTinh"
+                >
+                  <option value="true">Nam</option>
+                  <option value="false">Nữ</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Address Management Section -->
+          <div class="mb-3">
+            <label class="form-label"> <i class="bi bi-geo-alt me-1"></i>Địa chỉ </label>
+
+            <!-- Existing Addresses (for edit mode) -->
+            <div class="address-list" *ngIf="isEditMode && addressList.length > 0">
+              <div class="address-item" *ngFor="let address of addressList; let i = index">
+                <div class="address-content">
+                  <div class="address-info">
+                    <span class="address-text">{{ getFullAddress(address) }}</span>
+                    <span class="address-default" *ngIf="address.macDinh">(Mặc định)</span>
+                  </div>
+                  <div class="address-actions">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="editAddress(address)"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="deleteAddress(address)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pending Addresses (for new customer) -->
+            <div class="address-list" *ngIf="!isEditMode && pendingAddresses.length > 0">
+              <div class="address-item" *ngFor="let address of pendingAddresses; let i = index">
+                <div class="address-content">
+                  <div class="address-info">
+                    <span class="address-text">{{ getFullAddress(address) }}</span>
+                    <span class="address-default" *ngIf="address.macDinh">(Mặc định)</span>
+                  </div>
+                  <div class="address-actions">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="editPendingAddress(i)"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="deletePendingAddress(i)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add Address Button -->
+            <div class="add-address-section">
+              <button
+                type="button"
+                class="btn btn-outline-success btn-sm"
+                (click)="openAddressModal()"
+              >
+                <i class="bi bi-plus-circle me-1"></i>Thêm địa chỉ
+              </button>
+              <span class="text-muted ms-2" *ngIf="getTotalAddressCount() === 0"
+                >Chưa có địa chỉ nào</span
+              >
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [(ngModel)]="form.trangThai"
+                name="trangThai"
+                id="trangThai"
+              />
+              <label class="form-check-label" for="trangThai"> Khách hàng đang hoạt động </label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Hủy</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="save()"
+          [disabled]="loading || !isFormValid()"
+        >
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+          {{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Customer Modal -->
+<div
+  class="modal fade"
+  [class.show]="showViewModal"
+  [style.display]="showViewModal ? 'block' : 'none'"
+  tabindex="-1"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-person-lines-fill"></i>
+          Chi tiết khách hàng
+        </h5>
+        <button type="button" class="btn-close" (click)="closeViewModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="info-item">
+              <label>Mã khách hàng:</label>
+              <span>{{ selectedKhachHang?.maKhachHang || 'Chưa có' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Họ và tên:</label>
+              <span>{{ selectedKhachHang?.tenKhachHang }}</span>
+            </div>
+            <div class="info-item">
+              <label>Email:</label>
+              <span>{{ selectedKhachHang?.email }}</span>
+            </div>
+            <div class="info-item">
+              <label>Số điện thoại:</label>
+              <span>{{ selectedKhachHang?.soDienThoai }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-item">
+              <label>Ngày sinh:</label>
+              <span>{{ selectedKhachHang?.ngaySinh | date : 'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Giới tính:</label>
+              <span>{{ getGioiTinhText(selectedKhachHang?.gioiTinh) }}</span>
+            </div>
+            <div class="info-item">
+              <label>Địa chỉ:</label>
+              <span>{{ selectedKhachHang?.diaChi || 'Chưa cập nhật' }}</span>
+            </div>
+            <div class="info-item">
+              <label>Trạng thái:</label>
+              <span
+                class="badge"
+                [class]="selectedKhachHang?.trangThai ? 'bg-success' : 'bg-danger'"
+              >
+                {{ getTrangThaiText(selectedKhachHang?.trangThai) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeViewModal()">Đóng</button>
+        <button type="button" class="btn btn-primary" (click)="editFromView()">Chỉnh sửa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Address Management Modal -->
+<div
+  class="modal fade"
+  [class.show]="showAddressList"
+  [style.display]="showAddressList ? 'block' : 'none'"
+  tabindex="-1"
+>
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-geo-alt-fill"></i>
+          Quản lý địa chỉ - {{ selectedKhachHang?.tenKhachHang }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeAddressManagement()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="address-header">
+          <button class="btn btn-primary" (click)="openAddAddress()">
+            <i class="bi bi-plus-circle"></i>
+            Thêm địa chỉ mới
+          </button>
+          <span class="address-count">
+            Tổng cộng: {{ addressList.length }} địa chỉ
+            <span *ngIf="pendingAddresses.length > 0" class="badge bg-warning ms-2">
+              Tạm thời: {{ pendingAddresses.length }}
+            </span>
+          </span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Địa chỉ</th>
+                <th>Mặc định</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let address of addressList">
+                <td>
+                  <div class="address-detail">
+                    {{ formatDiaChiFull(address) }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [class]="address.macDinh ? 'bg-primary' : 'bg-secondary'">
+                    {{ getMacDinhText(address.macDinh) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" [class]="address.trangThai ? 'bg-success' : 'bg-danger'">
+                    {{ getTrangThaiDiaChiText(address.trangThai) }}
+                  </span>
+                </td>
+                <td>{{ address.ngayTao | date : 'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <button
+                      class="btn btn-sm btn-outline-warning"
+                      (click)="openEditAddress(address)"
+                      title="Chỉnh sửa"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="deleteAddress(address)"
+                      title="Xóa"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    <button
+                      *ngIf="!address.macDinh"
+                      class="btn btn-sm btn-outline-primary"
+                      (click)="setDefaultAddress(address)"
+                      title="Đặt làm mặc định"
+                    >
+                      <i class="bi bi-star"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAddressManagement()">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Address Form Modal -->
+<div
+  class="modal fade"
+  [class.show]="showAddressModal"
+  [style.display]="showAddressModal ? 'block' : 'none'"
+  tabindex="-1"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-plus-circle" *ngIf="!isEditAddressMode"></i>
+          <i class="bi bi-pencil-square" *ngIf="isEditAddressMode"></i>
+          {{ isEditAddressMode ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeAddressModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <form class="needs-validation" novalidate>
+          <div class="row">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label for="tinhThanh" class="form-label">
+                  <i class="bi bi-building me-1"></i>Tỉnh/Thành phố
+                  <span class="text-danger">*</span>
+                </label>
+                <select
+                  class="form-select"
+                  id="tinhThanh"
+                  [(ngModel)]="addressForm.tinhThanh"
+                  name="tinhThanh"
+                  required
+                >
+                  <option value="">Chọn tỉnh/thành phố</option>
+                  <option value="Hồ Chí Minh">Hồ Chí Minh</option>
+                  <option value="Hà Nội">Hà Nội</option>
+                  <option value="Đà Nẵng">Đà Nẵng</option>
+                  <option value="Cần Thơ">Cần Thơ</option>
+                  <option value="An Giang">An Giang</option>
+                  <option value="Bà Rịa - Vũng Tàu">Bà Rịa - Vũng Tàu</option>
+                  <option value="Bắc Giang">Bắc Giang</option>
+                  <option value="Bắc Kạn">Bắc Kạn</option>
+                  <option value="Bạc Liêu">Bạc Liêu</option>
+                  <option value="Bắc Ninh">Bắc Ninh</option>
+                  <option value="Bến Tre">Bến Tre</option>
+                  <option value="Bình Định">Bình Định</option>
+                  <option value="Bình Dương">Bình Dương</option>
+                  <option value="Bình Phước">Bình Phước</option>
+                  <option value="Bình Thuận">Bình Thuận</option>
+                  <option value="Cà Mau">Cà Mau</option>
+                  <option value="Cao Bằng">Cao Bằng</option>
+                  <option value="Đắk Lắk">Đắk Lắk</option>
+                  <option value="Đắk Nông">Đắk Nông</option>
+                  <option value="Điện Biên">Điện Biên</option>
+                  <option value="Đồng Nai">Đồng Nai</option>
+                  <option value="Đồng Tháp">Đồng Tháp</option>
+                  <option value="Gia Lai">Gia Lai</option>
+                  <option value="Hà Giang">Hà Giang</option>
+                  <option value="Hà Nam">Hà Nam</option>
+                  <option value="Hà Tĩnh">Hà Tĩnh</option>
+                  <option value="Hải Dương">Hải Dương</option>
+                  <option value="Hậu Giang">Hậu Giang</option>
+                  <option value="Hòa Bình">Hòa Bình</option>
+                  <option value="Hưng Yên">Hưng Yên</option>
+                  <option value="Khánh Hòa">Khánh Hòa</option>
+                  <option value="Kiên Giang">Kiên Giang</option>
+                  <option value="Kon Tum">Kon Tum</option>
+                  <option value="Lai Châu">Lai Châu</option>
+                  <option value="Lâm Đồng">Lâm Đồng</option>
+                  <option value="Lạng Sơn">Lạng Sơn</option>
+                  <option value="Lào Cai">Lào Cai</option>
+                  <option value="Long An">Long An</option>
+                  <option value="Nam Định">Nam Định</option>
+                  <option value="Nghệ An">Nghệ An</option>
+                  <option value="Ninh Bình">Ninh Bình</option>
+                  <option value="Ninh Thuận">Ninh Thuận</option>
+                  <option value="Phú Thọ">Phú Thọ</option>
+                  <option value="Phú Yên">Phú Yên</option>
+                  <option value="Quảng Bình">Quảng Bình</option>
+                  <option value="Quảng Nam">Quảng Nam</option>
+                  <option value="Quảng Ngãi">Quảng Ngãi</option>
+                  <option value="Quảng Ninh">Quảng Ninh</option>
+                  <option value="Quảng Trị">Quảng Trị</option>
+                  <option value="Sóc Trăng">Sóc Trăng</option>
+                  <option value="Sơn La">Sơn La</option>
+                  <option value="Tây Ninh">Tây Ninh</option>
+                  <option value="Thái Bình">Thái Bình</option>
+                  <option value="Thái Nguyên">Thái Nguyên</option>
+                  <option value="Thanh Hóa">Thanh Hóa</option>
+                  <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
+                  <option value="Tiền Giang">Tiền Giang</option>
+                  <option value="Trà Vinh">Trà Vinh</option>
+                  <option value="Tuyên Quang">Tuyên Quang</option>
+                  <option value="Vĩnh Long">Vĩnh Long</option>
+                  <option value="Vĩnh Phúc">Vĩnh Phúc</option>
+                  <option value="Yên Bái">Yên Bái</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label for="quanHuyen" class="form-label">
+                  <i class="bi bi-building me-1"></i>Quận/Huyện <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="quanHuyen"
+                  [(ngModel)]="addressForm.quanHuyen"
+                  name="quanHuyen"
+                  placeholder="Nhập quận/huyện"
+                  required
+                />
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label for="phuongXa" class="form-label">
+                  <i class="bi bi-building me-1"></i>Phường/Xã <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="phuongXa"
+                  [(ngModel)]="addressForm.phuongXa"
+                  name="phuongXa"
+                  placeholder="Nhập phường/xã"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="diaChiChiTiet" class="form-label">
+              <i class="bi bi-house me-1"></i>Địa chỉ chi tiết <span class="text-danger">*</span>
+            </label>
+            <textarea
+              class="form-control"
+              id="diaChiChiTiet"
+              [(ngModel)]="addressForm.diaChiChiTiet"
+              name="diaChiChiTiet"
+              rows="3"
+              placeholder="Nhập địa chỉ chi tiết (số nhà, tên đường, tên khu vực)"
+              required
+            ></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [(ngModel)]="addressForm.macDinh"
+                    name="macDinh"
+                    id="macDinh"
+                  />
+                  <label class="form-check-label" for="macDinh"> Đặt làm địa chỉ mặc định </label>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [(ngModel)]="addressForm.trangThai"
+                    name="trangThai"
+                    id="trangThai"
+                  />
+                  <label class="form-check-label" for="trangThai"> Địa chỉ đang hoạt động </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAddressModal()">Hủy</button>
+        <button type="button" class="btn btn-primary" (click)="saveAddress()" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+          {{ isEditAddressMode ? 'Cập nhật' : 'Thêm mới' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal backdrop -->
+<div
+  *ngIf="showModal || showViewModal || showAddressList"
+  class="modal-backdrop fade show"
+  (click)="closeAllModals()"
+></div>

@@ -71,6 +71,7 @@ interface HelmetProduct {
   styleUrls: ['./helmets.component.scss', './table-styles.scss'],
 })
 export class HelmetsComponent implements OnInit {
+  Math = Math; // Expose Math object to template
   helmetProducts: HelmetProduct[] = [];
   filteredProducts: HelmetProduct[] = [];
   loaiMuList: { id: number; tenLoai: string }[] = [];
@@ -311,21 +312,94 @@ export class HelmetsComponent implements OnInit {
   // legacy demo manufacturers removed
 
   filterProducts() {
+    // Nếu searchTerm chỉ chứa dấu cách hoặc rỗng, hiển thị tất cả sản phẩm
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.filteredProducts = this.helmetProducts.filter((product) => {
+        const matchesStatus =
+          this.selectedStatus === 'all' || product.status === this.selectedStatus;
+        return matchesStatus;
+      });
+      return;
+    }
+
     this.filteredProducts = this.helmetProducts.filter((product) => {
+      const searchTerm = this.searchTerm.toLowerCase().trim();
+
+      // Tìm kiếm trong các trường: Mã SP, Tên sản phẩm, Loại mũ, Nhà sản xuất, Giá bán
       const matchesSearch =
-        product.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(this.searchTerm.toLowerCase());
+        product.code.toLowerCase().includes(searchTerm) ||
+        product.name.toLowerCase().includes(searchTerm) ||
+        (product.loaiMuBaoHiem && product.loaiMuBaoHiem.toLowerCase().includes(searchTerm)) ||
+        (product.nhaSanXuat && product.nhaSanXuat.toLowerCase().includes(searchTerm)) ||
+        product.price.toString().includes(searchTerm);
+
       const matchesStatus = this.selectedStatus === 'all' || product.status === this.selectedStatus;
       return matchesSearch && matchesStatus;
     });
   }
 
   onSearchChange() {
+    // Không tìm kiếm nếu chỉ có dấu cách
+    if (this.searchTerm && this.searchTerm.trim() === '') {
+      return;
+    }
     this.filterProducts();
   }
 
   onStatusChange() {
     this.filterProducts();
+  }
+
+  resetFilter() {
+    this.searchTerm = '';
+    this.selectedStatus = 'all';
+    this.page = 0;
+    this.fetchProducts();
+  }
+
+  toggleStatus(product: HelmetProduct) {
+    const newStatus = product.status === 'Đang bán' ? 'Ngừng bán' : 'Đang bán';
+
+    // Chỉ gửi những thông tin cần thiết
+    const payload = {
+      id: product.id,
+      name: product.name,
+      code: product.code,
+      price: product.price,
+      quantity: product.quantity,
+      status: newStatus,
+      loaiMuBaoHiemId: product.loaiMuBaoHiemId,
+      nhaSanXuatId: product.nhaSanXuatId,
+      chatLieuVoId: product.chatLieuVoId,
+      trongLuongId: product.trongLuongId,
+      xuatXuId: product.xuatXuId,
+      kieuDangMuId: product.kieuDangMuId,
+      congNgheAnToanId: product.congNgheAnToanId,
+      mauSacId: product.mauSacId,
+      description: product.description,
+      anhSanPham: product.anhSanPham,
+    };
+
+    console.log('Payload gửi lên:', payload);
+
+    this.productApi.update(product.id, payload).subscribe({
+      next: () => {
+        // Cập nhật trạng thái ngay lập tức
+        product.status = newStatus;
+        console.log(`Đã cập nhật trạng thái sản phẩm ${product.name} thành: ${newStatus}`);
+        // Refresh danh sách để đảm bảo UI được cập nhật
+        this.fetchProducts();
+      },
+      error: (error: any) => {
+        console.error('Cập nhật trạng thái thất bại:', error);
+        console.error('Chi tiết lỗi:', error.error);
+        alert(
+          `Cập nhật trạng thái thất bại: ${
+            error.error?.message || error.message || 'Lỗi không xác định'
+          }`
+        );
+      },
+    });
   }
 
   // removed manufacturer filter
@@ -625,9 +699,13 @@ export class HelmetsComponent implements OnInit {
     });
   }
 
-  deleteProduct(product: HelmetProduct) {
-    this.productToDelete = product;
-    this.showDeleteModal = true;
+  viewProduct(product: HelmetProduct) {
+    // Mở modal xem chi tiết sản phẩm
+    this.isViewMode = true;
+    this.isEditMode = false;
+    this.selectedProduct = product;
+    this.newProduct = { ...product };
+    this.showModal = true;
   }
 
   confirmDelete() {
@@ -648,14 +726,6 @@ export class HelmetsComponent implements OnInit {
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.productToDelete = null;
-  }
-
-  viewProduct(product: HelmetProduct) {
-    this.isViewMode = true;
-    this.isEditMode = false;
-    this.selectedProduct = product;
-    this.newProduct = { ...product };
-    this.showModal = true;
   }
 
   openAddModal() {
@@ -1107,5 +1177,31 @@ export class HelmetsComponent implements OnInit {
     this.showQuickAddModal = false;
     this.quickAddModalType = '';
     this.cdr.detectChanges();
+  }
+
+  // Get page numbers for pagination
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, this.page - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages - 1, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i + 1);
+    }
+
+    return pages;
+  }
+
+  // Pagination
+  goToPage(page: number): void {
+    if (page >= 0 && page < this.totalPages) {
+      this.page = page;
+      this.fetchProducts();
+    }
   }
 }

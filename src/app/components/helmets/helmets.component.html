@@ -1,230 +1,223 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-12">
-      <div class="page-header">
-        <h2>Sản phẩm mũ bảo hiểm</h2>
-        <button class="btn btn-primary" (click)="openAddModal()">
-          <i class="bi bi-plus-circle"></i>
-          Thêm sản phẩm mới
-        </button>
-      </div>
-
-      <!-- Bộ lọc -->
-      <div class="filter-section">
-        <div class="row">
-          <div class="col-md-8">
-            <div class="form-group">
-              <label>Tìm kiếm:</label>
-              <input
-                type="text"
-                class="form-control"
-                placeholder="Tìm theo tên, mã, nhà sản xuất..."
-                [(ngModel)]="searchTerm"
-                (input)="onSearchChange()"
-              />
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="form-group">
-              <label>Trạng thái:</label>
-              <select class="form-control" [(ngModel)]="selectedStatus" (change)="onStatusChange()">
-                <option value="all">Tất cả</option>
-                <option value="Đang bán">Đang bán</option>
-                <option value="Ngừng bán">Ngừng bán</option>
-              </select>
-            </div>
-          </div>
+      <!-- Bộ Lọc Tìm Kiếm Section -->
+      <div class="filter-search-section">
+        <div class="section-header">
+          <i class="bi bi-funnel"></i>
+          <h3>Bộ Lọc Tìm Kiếm</h3>
         </div>
-      </div>
 
-      <!-- Bảng sản phẩm (theo BE: maSanPham, tenSanPham, giaBan, trangThai, moTa) -->
-      <div class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead class="table-dark">
-            <tr>
-              <th (click)="changeSort('maSanPham')" style="cursor: pointer">
-                Mã SP
-                <i
-                  class="bi ms-1 text-white"
-                  [ngClass]="{
-                    'bi-caret-up-fill': sortField === 'maSanPham' && sortDir === 'asc',
-                    'bi-caret-down-fill': sortField === 'maSanPham' && sortDir === 'desc',
-                    'bi-arrow-down-up': sortField !== 'maSanPham'
-                  }"
-                  aria-hidden="true"
-                ></i>
-              </th>
-              <th>Ảnh sản phẩm</th>
-              <th (click)="changeSort('tenSanPham')" style="cursor: pointer">
-                Tên sản phẩm
-                <i
-                  class="bi ms-1 text-white"
-                  [ngClass]="{
-                    'bi-caret-up-fill': sortField === 'tenSanPham' && sortDir === 'asc',
-                    'bi-caret-down-fill': sortField === 'tenSanPham' && sortDir === 'desc',
-                    'bi-arrow-down-up': sortField !== 'tenSanPham'
-                  }"
-                  aria-hidden="true"
-                ></i>
-              </th>
-              <th>Loại mũ</th>
-              <th>Nhà sản xuất</th>
-              <th>Chất liệu vỏ</th>
-              <th>Trọng lượng</th>
-              <th>Xuất xứ</th>
-              <th>Kiểu dáng</th>
-              <th>Công nghệ an toàn</th>
-              <th>Màu sắc</th>
-              <th (click)="changeSort('giaBan')" style="cursor: pointer">
-                Giá bán
-                <i
-                  class="bi ms-1 text-white"
-                  [ngClass]="{
-                    'bi-caret-up-fill': sortField === 'giaBan' && sortDir === 'asc',
-                    'bi-caret-down-fill': sortField === 'giaBan' && sortDir === 'desc',
-                    'bi-arrow-down-up': sortField !== 'giaBan'
-                  }"
-                  aria-hidden="true"
-                ></i>
-              </th>
-              <th (click)="changeSort('soLuongTon')" style="cursor: pointer">
-                Số lượng tồn
-                <i
-                  class="bi ms-1 text-white"
-                  [ngClass]="{
-                    'bi-caret-up-fill': sortField === 'soLuongTon' && sortDir === 'asc',
-                    'bi-caret-down-fill': sortField === 'soLuongTon' && sortDir === 'desc',
-                    'bi-arrow-down-up': sortField !== 'soLuongTon'
-                  }"
-                  aria-hidden="true"
-                ></i>
-              </th>
-              <th>Trạng thái</th>
-              <th (click)="changeSort('ngayTao')" style="cursor: pointer">
-                Ngày tạo
-                <i
-                  class="bi ms-1 text-white"
-                  [ngClass]="{
-                    'bi-caret-up-fill': sortField === 'ngayTao' && sortDir === 'asc',
-                    'bi-caret-down-fill': sortField === 'ngayTao' && sortDir === 'desc',
-                    'bi-arrow-down-up': sortField !== 'ngayTao'
-                  }"
-                  aria-hidden="true"
-                ></i>
-              </th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let product of filteredProducts; trackBy: trackByProductId">
-              <td>{{ product.code }}</td>
-              <td>
-                <div *ngIf="product.anhSanPham" class="product-image-container">
-                  <img
-                    [src]="product.anhSanPham"
-                    [alt]="product.name"
-                    class="product-image"
-                    (error)="onImageError($event)"
+        <div class="filter-content">
+          <div class="filter-row">
+            <div class="search-section">
+              <label class="filter-label">Tìm kiếm</label>
+              <div class="search-input-wrapper">
+                <i class="bi bi-search search-icon"></i>
+                <input
+                  type="text"
+                  class="search-input"
+                  placeholder="Mã, tên, nhà sản xuất..."
+                  [(ngModel)]="searchTerm"
+                  (input)="onSearchChange()"
+                />
+              </div>
+            </div>
+
+            <div class="status-section">
+              <label class="filter-label">Trạng thái</label>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="all"
+                    [(ngModel)]="selectedStatus"
+                    (change)="onStatusChange()"
+                    checked
                   />
-                </div>
-                <span *ngIf="!product.anhSanPham" class="text-muted">-</span>
-              </td>
-              <td>{{ product.name }}</td>
-              <td>{{ product.loaiMuBaoHiem || '-' }}</td>
-              <td>{{ product.nhaSanXuat || '-' }}</td>
-              <td>{{ product.chatLieuVo || '-' }}</td>
-              <td>{{ product.trongLuong || '-' }}</td>
-              <td>{{ product.xuatXu || '-' }}</td>
-              <td>{{ product.kieuDangMu || '-' }}</td>
-              <td>{{ product.congNgheAnToan || '-' }}</td>
-              <td>
-                <span *ngIf="product.mauSac" class="d-flex align-items-center">
-                  <span
-                    *ngIf="product.mauSacMa"
-                    class="color-preview me-2"
-                    [style.background-color]="product.mauSacMa"
-                    [title]="product.mauSac"
-                  >
-                  </span>
-                  {{ product.mauSac }}
-                </span>
-                <span *ngIf="!product.mauSac">-</span>
-              </td>
-              <td>{{ formatPrice(product.price) }}</td>
-              <td>
-                <span class="badge bg-info">{{ product.quantity }}</span>
-              </td>
-              <td>
-                <span
-                  class="badge"
-                  [class]="product.status === 'Đang bán' ? 'bg-success' : 'bg-danger'"
-                >
-                  {{ product.status }}
-                </span>
-              </td>
-              <td class="text-truncate" style="max-width: 180px">
-                {{ product.createdAt | date : 'short' }}
-              </td>
-              <td>
-                <div class="btn-group" role="group">
-                  <button
-                    class="btn btn-sm btn-outline-info"
-                    (click)="viewProduct(product)"
-                    title="Xem chi tiết"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-warning"
-                    (click)="openEditModal(product)"
-                    title="Chỉnh sửa"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-danger"
-                    (click)="deleteProduct(product)"
-                    title="Xóa"
-                  >
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                  <span class="radio-custom"></span>
+                  <span class="radio-text">Tất cả</span>
+                </label>
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="Đang bán"
+                    [(ngModel)]="selectedStatus"
+                    (change)="onStatusChange()"
+                  />
+                  <span class="radio-custom"></span>
+                  <span class="radio-text">Đang bán</span>
+                </label>
+                <label class="radio-item">
+                  <input
+                    type="radio"
+                    name="status"
+                    value="Ngừng bán"
+                    [(ngModel)]="selectedStatus"
+                    (change)="onStatusChange()"
+                  />
+                  <span class="radio-custom"></span>
+                  <span class="radio-text">Ngừng bán</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-and-actions">
+            <div class="total-customers">Tổng số sản phẩm: {{ totalElements }}</div>
+            <div class="action-buttons">
+              <button class="btn-reset" (click)="resetFilter()">Đặt lại bộ lọc</button>
+              <button class="btn-add" (click)="openAddModal()">Thêm Chi Tiết Sản Phẩm</button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Pagination controls -->
-      <div class="d-flex justify-content-between align-items-center my-3">
-        <div>
-          <button
-            class="btn btn-outline-secondary btn-sm me-2"
-            (click)="prevPage()"
-            [disabled]="page === 0"
-          >
-            Trang trước
-          </button>
-          <button
-            class="btn btn-outline-secondary btn-sm"
-            (click)="nextPage()"
-            [disabled]="page + 1 >= totalPages"
-          >
-            Trang sau
-          </button>
+      <!-- Danh Sách Sản Phẩm Section -->
+      <div class="customer-list-section">
+        <div class="section-header">
+          <i class="bi bi-calendar3"></i>
+          <h3>Danh Sách Sản Phẩm</h3>
         </div>
-        <div>
-          <span class="me-3">Trang {{ page + 1 }}/{{ totalPages || 1 }}</span>
-          <select
-            class="form-select form-select-sm d-inline-block"
-            style="width: auto"
+
+        <div class="list-content">
+          <div class="list-header">
+            <span class="customer-count">{{ filteredProducts.length }} sản phẩm</span>
+          </div>
+
+          <!-- Product Table -->
+          <div class="table-container">
+            <table class="customer-table">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Mã SP</th>
+                  <th>Ảnh sản phẩm</th>
+                  <th>Tên sản phẩm</th>
+                  <th>Loại mũ</th>
+                  <th>Nhà sản xuất</th>
+                  <th>Giá bán</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  *ngFor="let product of filteredProducts; trackBy: trackByProductId; let i = index"
+                >
+                  <td>{{ page * size + i + 1 }}</td>
+                  <td>
+                    <span class="customer-code" *ngIf="product.code">{{ product.code }}</span>
+                    <span class="no-data" *ngIf="!product.code">-</span>
+                  </td>
+                  <td>
+                    <div *ngIf="product.anhSanPham" class="product-image-container">
+                      <img
+                        [src]="product.anhSanPham"
+                        [alt]="product.name"
+                        class="product-image"
+                        (error)="onImageError($event)"
+                      />
+                    </div>
+                    <span class="no-data" *ngIf="!product.anhSanPham">-</span>
+                  </td>
+                  <td>{{ product.name }}</td>
+                  <td>
+                    <span *ngIf="product.loaiMuBaoHiem">{{ product.loaiMuBaoHiem }}</span>
+                    <span class="no-data" *ngIf="!product.loaiMuBaoHiem">-</span>
+                  </td>
+                  <td>
+                    <span *ngIf="product.nhaSanXuat">{{ product.nhaSanXuat }}</span>
+                    <span class="no-data" *ngIf="!product.nhaSanXuat">-</span>
+                  </td>
+                  <td>{{ formatPrice(product.price) }}</td>
+                  <td>
+                    <span
+                      class="status-badge"
+                      [class.active]="product.status === 'Đang bán'"
+                      [class.inactive]="product.status === 'Ngừng bán'"
+                    >
+                      {{ product.status === 'Đang bán' ? 'Kích Hoạt' : 'Đã Hủy' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons">
+                      <label class="toggle-switch">
+                        <input
+                          type="checkbox"
+                          [checked]="product.status === 'Đang bán'"
+                          (change)="toggleStatus(product)"
+                        />
+                        <span class="toggle-slider"></span>
+                      </label>
+                      <button class="btn-edit" (click)="openEditModal(product)" title="Chỉnh sửa">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn-view" (click)="viewProduct(product)" title="Xem chi tiết">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Section -->
+      <div class="pagination-container">
+        <div class="pagination-left">
+          <span class="pagination-label">Hiển thị</span>
+          <input
+            type="number"
+            class="page-size-input"
             [(ngModel)]="size"
-            (ngModelChange)="changePageSize($event)"
+            (change)="changePageSize(+$event.target.value)"
+            min="1"
+            max="100"
+            value="5"
+          />
+          <span class="pagination-label">mục / trang</span>
+        </div>
+
+        <div class="pagination-right">
+          <div>
+            <span class="pagination-info">
+              Hiển thị {{ page * size + 1 }} - {{ Math.min((page + 1) * size, totalElements) }} /
+              {{ totalElements }} mục
+            </span>
+          </div>
+          <button class="pagination-btn" [disabled]="page === 0" (click)="goToPage(0)">
+            <i class="bi bi-chevron-double-left"></i>
+          </button>
+          <button class="pagination-btn" [disabled]="page === 0" (click)="goToPage(page - 1)">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button
+            *ngFor="let pageNum of getPageNumbers()"
+            class="pagination-btn page-number"
+            [class.active]="pageNum === page + 1"
+            (click)="goToPage(pageNum - 1)"
           >
-            <option [ngValue]="5">5</option>
-            <option [ngValue]="10">10</option>
-            <option [ngValue]="20">20</option>
-          </select>
+            {{ pageNum }}
+          </button>
+          <button
+            class="pagination-btn"
+            [disabled]="page === totalPages - 1"
+            (click)="goToPage(page + 1)"
+          >
+            <i class="bi bi-chevron-right"></i>
+          </button>
+          <button
+            class="pagination-btn"
+            [disabled]="page === totalPages - 1"
+            (click)="goToPage(totalPages - 1)"
+          >
+            <i class="bi bi-chevron-double-right"></i>
+          </button>
         </div>
       </div>
 
@@ -242,14 +235,14 @@
 <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content shadow-lg">
-      <div class="modal-header bg-primary text-white">
+      <div class="modal-header text-white">
         <h5 class="modal-title d-flex align-items-center">
           <i class="bi bi-shield-check me-2" *ngIf="isViewMode"></i>
           <i class="bi bi-pencil-square me-2" *ngIf="isEditMode"></i>
           <i class="bi bi-plus-circle me-2" *ngIf="!isViewMode && !isEditMode"></i>
           <span *ngIf="isViewMode">Xem chi tiết sản phẩm</span>
           <span *ngIf="isEditMode">Chỉnh sửa sản phẩm</span>
-          <span *ngIf="!isViewMode && !isEditMode">Thêm sản phẩm mới</span>
+          <span *ngIf="!isViewMode && !isEditMode">Thêm Chi Tiết sản phẩm mới</span>
         </h5>
         <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
       </div>
@@ -257,7 +250,7 @@
         <form>
           <!-- Thông tin cơ bản -->
           <div class="section-title mb-3">
-            <h6 class="text-primary fw-bold mb-0">
+            <h6 class="text-orange fw-bold mb-0">
               <i class="bi bi-info-circle me-2"></i>Thông tin cơ bản
             </h6>
             <hr class="mt-2" />
@@ -375,7 +368,7 @@
 
           <!-- Thuộc tính sản phẩm -->
           <div class="section-title mb-3">
-            <h6 class="text-primary fw-bold mb-0">
+            <h6 class="text-orange fw-bold mb-0">
               <i class="bi bi-sliders me-2"></i>Thuộc tính sản phẩm
             </h6>
             <hr class="mt-2" />
@@ -384,7 +377,7 @@
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-shield me-1 text-primary"></i>Loại mũ bảo hiểm
+                <i class="bi bi-shield me-1"></i>Loại mũ bảo hiểm
               </label>
               <app-searchable-dropdown
                 [options]="loaiMuOptions"
@@ -403,7 +396,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-building me-1 text-primary"></i>Nhà sản xuất
+                <i class="bi bi-building me-1"></i>Nhà sản xuất
               </label>
               <app-searchable-dropdown
                 [options]="nsxOptions"
@@ -425,7 +418,7 @@
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-layers me-1 text-primary"></i>Chất liệu vỏ
+                <i class="bi bi-layers me-1"></i>Chất liệu vỏ
               </label>
               <app-searchable-dropdown
                 [options]="chatLieuOptions"
@@ -444,7 +437,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-speedometer me-1 text-primary"></i>Trọng lượng
+                <i class="bi bi-speedometer me-1"></i>Trọng lượng
               </label>
               <app-searchable-dropdown
                 [options]="trongLuongOptions"
@@ -466,7 +459,7 @@
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-geo-alt me-1 text-primary"></i>Xuất xứ
+                <i class="bi bi-geo-alt me-1"></i>Xuất xứ
               </label>
               <app-searchable-dropdown
                 [options]="xuatXuOptions"
@@ -485,7 +478,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-box me-1 text-primary"></i>Kiểu dáng mũ
+                <i class="bi bi-box me-1"></i>Kiểu dáng mũ
               </label>
               <app-searchable-dropdown
                 [options]="kieuDangOptions"
@@ -507,7 +500,7 @@
           <div class="row g-3 mb-4">
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-shield-check me-1 text-primary"></i>Công nghệ an toàn
+                <i class="bi bi-shield-check me-1"></i>Công nghệ an toàn
               </label>
               <app-searchable-dropdown
                 [options]="congNgheOptions"
@@ -526,7 +519,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">
-                <i class="bi bi-palette me-1 text-primary"></i>Màu sắc
+                <i class="bi bi-palette me-1"></i>Màu sắc
               </label>
               <app-searchable-dropdown
                 [options]="mauSacOptions"
@@ -547,7 +540,7 @@
 
           <!-- Ảnh sản phẩm -->
           <div class="section-title mb-3">
-            <h6 class="text-primary fw-bold mb-0"><i class="bi bi-image me-2"></i>Ảnh sản phẩm</h6>
+            <h6 class="text-orange fw-bold mb-0"><i class="bi bi-image me-2"></i>Ảnh sản phẩm</h6>
             <hr class="mt-2" />
           </div>
 
@@ -582,27 +575,13 @@
                   (change)="onImageSelected($event)"
                   #fileInput
                 />
-                <div *ngIf="!isViewMode" class="mt-2">
-                  <input
-                    type="text"
-                    class="form-control"
-                    [class.is-invalid]="hasFieldError('image')"
-                    [(ngModel)]="newProduct.anhSanPham"
-                    name="anhSanPham"
-                    placeholder="Hoặc nhập URL ảnh"
-                    (blur)="markFieldTouched('image')"
-                  />
-                  <div *ngIf="hasFieldError('image')" class="invalid-feedback">
-                    {{ getImageError() }}
-                  </div>
-                </div>
               </div>
             </div>
           </div>
 
           <!-- Mô tả sản phẩm -->
           <div class="section-title mb-3">
-            <h6 class="text-primary fw-bold mb-0">
+            <h6 class="text-orange fw-bold mb-0">
               <i class="bi bi-file-text me-2"></i>Mô tả sản phẩm
             </h6>
             <hr class="mt-2" />

@@ -1,210 +1,271 @@
 <div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="page-header d-flex justify-content-between align-items-center mb-3">
-        <h2>Quản lý màu sắc</h2>
-        <button class="btn btn-primary" (click)="openAddModal()">
-          <i class="bi bi-plus-circle"></i>
-          Thêm màu mới
-        </button>
-      </div>
+  <!-- Bộ Lọc Tìm Kiếm Section -->
+  <div class="filter-section">
+    <div class="section-title">
+      <i class="bi bi-funnel"></i>
+      <h3>Bộ Lọc Tìm Kiếm</h3>
+    </div>
 
-      <!-- Bộ lọc -->
-      <div class="filter-section mb-3">
-        <div class="row">
-          <div class="col-md-12">
-            <div class="form-group">
-              <label>Tìm kiếm:</label>
+    <div class="filter-content">
+      <div class="filter-row">
+        <div class="search-section">
+          <label class="filter-label">Tìm kiếm</label>
+          <div class="search-input-wrapper">
+            <i class="bi bi-search search-icon"></i>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Mã, tên màu sắc..."
+              [(ngModel)]="searchTerm"
+              (input)="onSearchChange()"
+            />
+          </div>
+        </div>
+
+        <div class="status-section">
+          <label class="filter-label">Trạng thái</label>
+          <div class="radio-group">
+            <label class="radio-item">
               <input
-                type="text"
-                class="form-control"
-                placeholder="Tìm theo tên hoặc mã màu..."
-                [(ngModel)]="searchTerm"
-                (input)="onSearchChange()"
+                type="radio"
+                name="status"
+                value="all"
+                [(ngModel)]="selectedStatus"
+                (change)="onStatusChange()"
+                checked
               />
-            </div>
+              <span class="radio-custom"></span>
+              <span class="radio-text">Tất cả</span>
+            </label>
+            <label class="radio-item">
+              <input
+                type="radio"
+                name="status"
+                value="true"
+                [(ngModel)]="selectedStatus"
+                (change)="onStatusChange()"
+              />
+              <span class="radio-custom"></span>
+              <span class="radio-text">Đang hoạt động</span>
+            </label>
+            <label class="radio-item">
+              <input
+                type="radio"
+                name="status"
+                value="false"
+                [(ngModel)]="selectedStatus"
+                (change)="onStatusChange()"
+              />
+              <span class="radio-custom"></span>
+              <span class="radio-text">Ngừng</span>
+            </label>
           </div>
         </div>
       </div>
 
-      <!-- Bảng màu sắc -->
-      <div class="table-responsive">
-        <table class="table table-striped table-hover">
-          <thead class="table-dark">
-            <tr>
-              <th
-                class="text-start fw-semibold"
-                (click)="setSort('tenMau')"
-                style="cursor: pointer"
-              >
-                Tên màu {{ getSortSymbol('tenMau') }}
-              </th>
-              <th class="text-start fw-semibold" (click)="setSort('maMau')" style="cursor: pointer">
-                Mã màu {{ getSortSymbol('maMau') }}
-              </th>
-              <th
-                class="text-start fw-semibold"
-                (click)="setSort('trangThai')"
-                style="cursor: pointer"
-              >
-                Trạng thái {{ getSortSymbol('trangThai') }}
-              </th>
-              <th class="text-start fw-semibold">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let c of filtered">
-              <td>
-                <span class="manufacturer-name">{{ c.name }}</span>
-              </td>
-              <td>
+      <div class="info-and-actions">
+        <div class="total-customers">Tổng số màu sắc: {{ totalElements }}</div>
+        <div class="action-buttons">
+          <button class="btn-reset" (click)="resetFilter()">Đặt lại bộ lọc</button>
+          <button class="btn-add" (click)="openAddModal()">Thêm Màu Sắc</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danh Sách Màu Sắc Section -->
+  <div class="customer-list-section">
+    <div class="section-title">
+      <i class="bi bi-palette"></i>
+      <h3>Danh Sách Màu Sắc</h3>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 60px">STT</th>
+            <th>Mã màu</th>
+            <th>Tên màu</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filtered; let i = index">
+            <td class="text-center">{{ currentPage * pageSize + i + 1 }}</td>
+            <td>
+              <div class="color-display">
                 <span class="color-chip" [style.background]="c.code"></span>
-                {{ c.code || '-' }}
-              </td>
-              <td>
-                <span class="badge" [class]="c.status ? 'bg-success' : 'bg-secondary'">
-                  {{ c.status ? 'Đang hoạt động' : 'Ngừng' }}
-                </span>
-              </td>
-              <td>
-                <div class="btn-group" role="group">
-                  <button
-                    class="btn btn-sm btn-outline-info"
-                    (click)="viewColor(c)"
-                    title="Xem chi tiết"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-warning"
-                    (click)="openEditModal(c)"
-                    title="Chỉnh sửa"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger" (click)="delete(c)" title="Xóa">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                <span class="customer-code">{{ c.code || '-' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="no-data">{{ c.name || '-' }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [class.active]="c.status" [class.inactive]="!c.status">
+                {{ c.status ? 'Đang hoạt động' : 'Ngừng' }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" (click)="openEditModal(c)" title="Chỉnh sửa">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-view" (click)="viewColor(c)" title="Xem chi tiết">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-      <!-- Pagination controls -->
-      <div class="d-flex align-items-center justify-content-between mt-2">
-        <div>
-          <button
-            class="btn btn-sm btn-outline-secondary me-2"
-            (click)="prevPage()"
-            [disabled]="currentPage === 0"
-          >
-            Trang trước
-          </button>
-          <button
-            class="btn btn-sm btn-outline-secondary"
-            (click)="nextPage()"
-            [disabled]="currentPage >= totalPages - 1"
-          >
-            Trang sau
-          </button>
-        </div>
-        <div>
-          <span class="me-2">Trang {{ currentPage + 1 }}/{{ totalPages }}</span>
-          <select
-            class="form-select form-select-sm d-inline-block w-auto"
-            [ngModel]="pageSize"
-            (ngModelChange)="changePageSize($event)"
-          >
-            <option [ngValue]="5">5</option>
-            <option [ngValue]="10">10</option>
-            <option [ngValue]="20">20</option>
-          </select>
-        </div>
+      <!-- No data message -->
+      <div *ngIf="filtered.length === 0" class="no-data-message">
+        <i class="bi bi-palette"></i>
+        <h4>Không tìm thấy màu sắc nào</h4>
+        <p>Hãy thử thay đổi bộ lọc hoặc thêm màu mới</p>
       </div>
+    </div>
+  </div>
 
-      <!-- Thông báo khi không có dữ liệu -->
-      <div *ngIf="filtered.length === 0" class="text-center py-5">
-        <i class="bi bi-palette display-1 text-muted"></i>
-        <h4 class="text-muted mt-3">Không tìm thấy màu sắc nào</h4>
-        <p class="text-muted">Hãy thử thay đổi bộ lọc hoặc thêm màu mới</p>
+  <!-- Pagination Section -->
+  <div class="pagination-section">
+    <div class="pagination-left">
+      <div class="page-size-control">
+        <label>Hiển thị</label>
+        <select class="page-size-select" [ngModel]="pageSize" (change)="onPageSizeChange($event)">
+          <option [ngValue]="5">5</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="50">50</option>
+        </select>
+        <span>mục / trang</span>
       </div>
+    </div>
+
+    <div class="pagination-right">
+      <div>
+        <span>
+          Hiển thị {{ currentPage * pageSize + 1 }} -
+          {{ Math.min((currentPage + 1) * pageSize, totalElements) }} / {{ totalElements }} mục
+        </span>
+      </div>
+      <button class="pagination-btn" [disabled]="currentPage === 0" (click)="goToPage(0)">
+        <i class="bi bi-chevron-double-left"></i>
+      </button>
+      <button class="pagination-btn" [disabled]="currentPage === 0" (click)="prevPage()">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button
+        *ngFor="let pageNum of getPageNumbers()"
+        class="pagination-btn"
+        [class.active]="pageNum - 1 === currentPage"
+        (click)="goToPage(pageNum - 1)"
+      >
+        {{ pageNum }}
+      </button>
+      <button
+        class="pagination-btn"
+        [disabled]="currentPage >= totalPages - 1"
+        (click)="nextPage()"
+      >
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <button
+        class="pagination-btn"
+        [disabled]="currentPage >= totalPages - 1"
+        (click)="goToPage(totalPages - 1)"
+      >
+        <i class="bi bi-chevron-double-right"></i>
+      </button>
     </div>
   </div>
 </div>
 
 <!-- Modal thêm/sửa/xem màu sắc -->
 <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header text-white">
         <h5 class="modal-title">
-          <span *ngIf="isViewMode">Xem màu</span>
-          <span *ngIf="isEditMode">Chỉnh sửa màu</span>
-          <span *ngIf="!isViewMode && !isEditMode">Thêm màu mới</span>
+          <span *ngIf="isViewMode">Xem màu sắc</span>
+          <span *ngIf="isEditMode">Chỉnh sửa màu sắc</span>
+          <span *ngIf="!isViewMode && !isEditMode">Thêm màu sắc mới</span>
         </h5>
-        <button type="button" class="btn-close" (click)="closeModal()"></button>
+        <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
       </div>
       <div class="modal-body">
         <form>
-          <div class="form-group mb-3">
-            <label>Tên màu <span class="text-danger">*</span></label>
-            <input
-              type="text"
-              class="form-control"
-              [class.is-invalid]="hasFieldError('name')"
-              [(ngModel)]="newColor.name"
-              name="name"
-              [readonly]="isViewMode"
-              (blur)="markFieldTouched('name')"
-            />
-            <div *ngIf="hasFieldError('name')" class="invalid-feedback">
-              {{ getFieldError('name') }}
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-palette me-1"></i>Tên màu sắc
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('name')"
+                [(ngModel)]="newColor.name"
+                name="name"
+                [readonly]="isViewMode"
+                (blur)="markFieldTouched('name')"
+                placeholder="Nhập tên màu sắc"
+              />
+              <div *ngIf="hasFieldError('name')" class="invalid-feedback d-block">
+                {{ getFieldError('name') }}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"> <i class="bi bi-hash me-1"></i>Mã màu </label>
+              <div class="color-input-container">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <span
+                      class="color-preview-small"
+                      [style.background-color]="newColor.code || '#000000'"
+                      [title]="newColor.code || 'Màu mặc định'"
+                    ></span>
+                  </span>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [class.is-invalid]="hasFieldError('code')"
+                    [(ngModel)]="newColor.code"
+                    name="code"
+                    placeholder="#FF0000 hoặc #F00"
+                    [readonly]="isViewMode"
+                    (blur)="markFieldTouched('code')"
+                    (input)="markFieldTouched('code')"
+                  />
+                </div>
+                <div *ngIf="hasFieldError('code')" class="invalid-feedback d-block">
+                  {{ getFieldError('code') }}
+                </div>
+                <small class="form-text text-muted">
+                  Định dạng hex: #FF0000 (6 ký tự) hoặc #F00 (3 ký tự)
+                </small>
+              </div>
             </div>
           </div>
-          <div class="form-group mb-3">
-            <label>Mã màu <span class="text-danger">*</span></label>
-            <div class="color-input-container">
-              <div class="input-group">
-                <span class="input-group-text">
-                  <span 
-                    class="color-preview-small" 
-                    [style.background-color]="newColor.code || '#000000'"
-                    [title]="newColor.code || 'Màu mặc định'"
-                  ></span>
-                </span>
-                <input
-                  type="text"
-                  class="form-control"
-                  [class.is-invalid]="hasFieldError('code')"
-                  [(ngModel)]="newColor.code"
-                  name="code"
-                  placeholder="#FF0000 hoặc #F00"
-                  [readonly]="isViewMode"
-                  (blur)="markFieldTouched('code')"
-                  (input)="markFieldTouched('code')"
-                />
-              </div>
-              <div *ngIf="hasFieldError('code')" class="invalid-feedback">
-                {{ getFieldError('code') }}
-              </div>
-              <small class="form-text text-muted">
-                Định dạng hex: #FF0000 (6 ký tự) hoặc #F00 (3 ký tự)
-              </small>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-toggle-on me-1"></i>Trạng thái
+              </label>
+              <select
+                class="form-control"
+                [(ngModel)]="newColor.status"
+                name="status"
+                [disabled]="isViewMode"
+              >
+                <option [ngValue]="true">Đang hoạt động</option>
+                <option [ngValue]="false">Ngừng</option>
+              </select>
             </div>
-          </div>
-          <div class="form-group mb-3">
-            <label>Trạng thái</label>
-            <select
-              class="form-control"
-              [(ngModel)]="newColor.status"
-              name="status"
-              [disabled]="isViewMode"
-            >
-              <option [ngValue]="true">Đang hoạt động</option>
-              <option [ngValue]="false">Ngừng</option>
-            </select>
           </div>
         </form>
       </div>

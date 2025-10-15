@@ -172,6 +172,6 @@ export const routes: Routes = [
     component: StaffManagementComponent,
     canActivate: [AuthGuard],
   },
- 
+
   { path: '**', redirectTo: '/dashboard' },
 ];
