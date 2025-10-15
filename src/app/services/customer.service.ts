@@ -19,29 +19,31 @@ export class CustomerService {
 
   // Map backend data to frontend format
   private mapBackendToFrontend(backendCustomer: any): Customer {
+    console.log('🔍 Mapping backend customer:', backendCustomer);
+    
     return {
       id: backendCustomer.id,
-      ho_ten: backendCustomer.name || backendCustomer.ho_ten,
+      ho_ten: backendCustomer.tenKhachHang || backendCustomer.name || backendCustomer.ho_ten,
       email: backendCustomer.email,
-      so_dien_thoai: backendCustomer.phone || backendCustomer.so_dien_thoai,
-      ngay_sinh: backendCustomer.dateOfBirth || backendCustomer.ngay_sinh,
-      gioi_tinh: backendCustomer.gender === 'Nam' || backendCustomer.gioi_tinh === true,
-      diem_tich_luy: backendCustomer.diemTichLuy || backendCustomer.diem_tich_luy,
-      ngay_tao: backendCustomer.registrationDate || backendCustomer.ngay_tao,
-      trang_thai: backendCustomer.status === 'Active' || backendCustomer.trang_thai === true,
-      customerCode: backendCustomer.customerCode || 'KH' + (backendCustomer.id || 0).toString().padStart(5, '0'),
+      so_dien_thoai: backendCustomer.soDienThoai || backendCustomer.phone || backendCustomer.so_dien_thoai,
+      ngay_sinh: backendCustomer.ngaySinh || backendCustomer.dateOfBirth || backendCustomer.ngay_sinh,
+      gioi_tinh: backendCustomer.gioiTinh || backendCustomer.gender === 'Nam' || backendCustomer.gioi_tinh === true,
+      diem_tich_luy: backendCustomer.diemTichLuy || backendCustomer.diem_tich_luy || 0,
+      ngay_tao: backendCustomer.ngayTao || backendCustomer.registrationDate || backendCustomer.ngay_tao,
+      trang_thai: backendCustomer.trangThai || backendCustomer.status === 'Active' || backendCustomer.trang_thai === true,
+      customerCode: backendCustomer.maKhachHang || backendCustomer.customerCode || 'KH' + (backendCustomer.id || 0).toString().padStart(5, '0'),
       // Các trường bổ sung cho hiển thị
-      name: backendCustomer.name || backendCustomer.ho_ten,
-      phone: backendCustomer.phone || backendCustomer.so_dien_thoai,
-      dateOfBirth: backendCustomer.dateOfBirth || backendCustomer.ngay_sinh,
-      gender: backendCustomer.gender || (backendCustomer.gioi_tinh ? 'Nam' : 'Nữ'),
-      status: backendCustomer.status || (backendCustomer.trang_thai ? 'Active' : 'Inactive'),
-      registrationDate: backendCustomer.registrationDate || backendCustomer.ngay_tao,
-      totalSpent: backendCustomer.diemTichLuy || backendCustomer.diem_tich_luy,
+      name: backendCustomer.tenKhachHang || backendCustomer.name || backendCustomer.ho_ten,
+      phone: backendCustomer.soDienThoai || backendCustomer.phone || backendCustomer.so_dien_thoai,
+      dateOfBirth: backendCustomer.ngaySinh || backendCustomer.dateOfBirth || backendCustomer.ngay_sinh,
+      gender: backendCustomer.gioiTinh || backendCustomer.gender || (backendCustomer.gioi_tinh ? 'Nam' : 'Nữ'),
+      status: backendCustomer.trangThai || backendCustomer.status || (backendCustomer.trang_thai ? 'Active' : 'Inactive'),
+      registrationDate: backendCustomer.ngayTao || backendCustomer.registrationDate || backendCustomer.ngay_tao,
+      totalSpent: backendCustomer.diemTichLuy || backendCustomer.diem_tich_luy || 0,
       // Xử lý địa chỉ từ bảng diachikhachhang
       diaChi: backendCustomer.diaChi || [],
       userId: backendCustomer.userId,
-      diemTichLuy: backendCustomer.diemTichLuy
+      diemTichLuy: backendCustomer.diemTichLuy || 0
     };
   }
 
@@ -81,8 +83,18 @@ export class CustomerService {
     return this.http.get<any>(`${this.apiUrl}/khach-hang`, this.httpOptions)
       .pipe(
         map((response: any) => {
-          // Backend trả về dữ liệu trong 'content' array
-          const customers = response.content || response;
+          console.log('🔍 Backend response:', response);
+          // Xử lý response từ backend mới
+          let customers = [];
+          if (response.data && Array.isArray(response.data)) {
+            customers = response.data;
+          } else if (response.content && Array.isArray(response.content)) {
+            customers = response.content;
+          } else if (Array.isArray(response)) {
+            customers = response;
+          }
+          
+          console.log('🔍 Processed customers:', customers);
           return customers.map((customer: any) => this.mapBackendToFrontend(customer));
         }),
         catchError(this.handleError)
@@ -98,44 +110,53 @@ export class CustomerService {
   }
 
   createCustomer(customer: CustomerRequestData): Observable<Customer> {
-    // Map frontend data to backend format
+    // Map frontend data to backend format (theo cấu trúc database mới)
     const backendData = {
-      name: customer.ho_ten,
+      tenKhachHang: customer.ho_ten,
       email: customer.email,
-      phone: customer.so_dien_thoai,
-      dateOfBirth: customer.ngay_sinh instanceof Date ? customer.ngay_sinh.toISOString().split('T')[0] : customer.ngay_sinh,
-      gender: customer.gioi_tinh ? 'Nam' : 'Nữ',
-      status: customer.trang_thai ? 'Active' : 'Inactive',
+      soDienThoai: customer.so_dien_thoai,
+      ngaySinh: customer.ngay_sinh instanceof Date ? customer.ngay_sinh.toISOString().split('T')[0] : customer.ngay_sinh,
+      gioiTinh: customer.gioi_tinh,
+      trangThai: customer.trang_thai,
       diemTichLuy: 0,
-      registrationDate: new Date().toISOString().split('T')[0],
-      customerCode: customer.customerCode || 'KH00000'
+      ngayTao: new Date().toISOString().split('T')[0],
+      maKhachHang: customer.customerCode || 'KH00000'
     };
     
     console.log('🔍 Sending to backend:', backendData);
+    console.log('🔍 API URL:', `${this.apiUrl}/khach-hang`);
     
     return this.http.post<any>(`${this.apiUrl}/khach-hang`, backendData, this.httpOptions)
       .pipe(
-        map((response: any) => this.mapBackendToFrontend(response)),
+        map((response: any) => {
+          console.log('🔍 Backend response:', response);
+          return this.mapBackendToFrontend(response);
+        }),
         catchError(this.handleError)
       );
   }
 
   updateCustomer(id: number, customer: CustomerRequestData): Observable<Customer> {
     const backendData = {
-      name: customer.ho_ten,
+      tenKhachHang: customer.ho_ten,
       email: customer.email,
-      phone: customer.so_dien_thoai,
-      dateOfBirth: customer.ngay_sinh instanceof Date ? customer.ngay_sinh.toISOString().split('T')[0] : customer.ngay_sinh,
-      gender: customer.gioi_tinh ? 'Nam' : 'Nữ',
-      status: customer.trang_thai ? 'Active' : 'Inactive',
-      customerCode: customer.customerCode || 'KH00000'
+      soDienThoai: customer.so_dien_thoai,
+      ngaySinh: customer.ngay_sinh instanceof Date ? customer.ngay_sinh.toISOString().split('T')[0] : customer.ngay_sinh,
+      gioiTinh: customer.gioi_tinh,
+      trangThai: customer.trang_thai,
+      diemTichLuy: 0,
+      ngayTao: new Date().toISOString().split('T')[0],
+      maKhachHang: customer.customerCode || 'KH00000'
     };
     
-    console.log('🔍 Updating customer:', backendData);
+    console.log('🔍 Updating customer:', id, backendData);
     
     return this.http.put<any>(`${this.apiUrl}/khach-hang/${id}`, backendData, this.httpOptions)
       .pipe(
-        map((response: any) => this.mapBackendToFrontend(response)),
+        map((response: any) => {
+          console.log('🔍 Update response:', response);
+          return this.mapBackendToFrontend(response);
+        }),
         catchError(this.handleError)
       );
   }
@@ -154,10 +175,20 @@ export class CustomerService {
     console.log('🔍 Fetching addresses for customer:', customerId);
     console.log('🔍 API URL:', `${this.apiUrl}/khach-hang/${customerId}/dia-chi`);
     
-    return this.http.get<any[]>(`${this.apiUrl}/khach-hang/${customerId}/dia-chi`, this.httpOptions)
+    return this.http.get<any>(`${this.apiUrl}/khach-hang/${customerId}/dia-chi`, this.httpOptions)
       .pipe(
-        map((addresses: any[]) => {
-          console.log('🔍 Raw addresses from backend:', addresses);
+        map((response: any) => {
+          console.log('🔍 Raw response from backend:', response);
+          
+          // Xử lý response từ backend mới
+          let addresses = [];
+          if (response.data && Array.isArray(response.data)) {
+            addresses = response.data;
+          } else if (Array.isArray(response)) {
+            addresses = response;
+          }
+          
+          console.log('🔍 Processed addresses:', addresses);
           console.log('🔍 Addresses length:', addresses?.length);
           
           if (!addresses || addresses.length === 0) {
@@ -165,16 +196,21 @@ export class CustomerService {
             return [];
           }
           
-          const mappedAddresses = addresses.map(addr => {
+          const mappedAddresses = addresses.map((addr: any) => {
             const mappedAddress = {
               id: addr.id,
-              specificAddress: addr.diaChiCuThe || addr.diaChi || '',
-              province: addr.thanhPho || addr.tinhThanh || '',
-              district: addr.quan || addr.quanHuyen || '',
-              ward: addr.phuong || addr.phuongXa || '',
+              specificAddress: addr.diaChiCuThe || '',
+              province: addr.thanhPho || '',
+              district: addr.quan || '',
+              ward: addr.phuong || '',
               isDefault: addr.macDinh || false,
               mac_dinh: addr.macDinh || false,
-              dia_chi: addr.diaChi || '',
+              macDinh: addr.macDinh || false,
+              dia_chi: `${addr.diaChiCuThe || ''}, ${addr.phuong || ''}, ${addr.quan || ''}, ${addr.thanhPho || ''}`,
+              diaChiCuThe: addr.diaChiCuThe || '',
+              thanhPho: addr.thanhPho || '',
+              quan: addr.quan || '',
+              phuong: addr.phuong || '',
               soDienThoai: addr.soDienThoai || '',
               tenNguoiNhan: addr.tenNguoiNhan || '',
               tenDiaChi: addr.tenDiaChi || '',
@@ -199,77 +235,61 @@ export class CustomerService {
   }
 
   addCustomerAddress(customerId: number, address: Address): Observable<Address> {
-    // Map frontend address to backend format for diachikhachhang table
+    // Map frontend address to AddressRequestDTO format (database mới)
     const backendAddress = {
-      diaChiCuThe: address.specificAddress || address.dia_chi,
-      thanhPho: address.province,
-      quan: address.district,
-      phuong: address.ward,
-      macDinh: address.isDefault || address.mac_dinh || false,
+      diaChiCuThe: address.specificAddress || address.diaChiCuThe || '',
+      thanhPho: address.province || address.thanhPho || '',
+      quan: address.district || address.quan || '',
+      phuong: address.ward || address.phuong || '',
+      macDinh: address.isDefault || address.mac_dinh || address.macDinh || false,
       tenDiaChi: address.tenDiaChi || 'Địa chỉ mới',
-      soDienThoai: address.soDienThoai || '0123456789', // Default phone
-      tenNguoiNhan: address.tenNguoiNhan || 'Khách hàng' // Default recipient name
+      soDienThoai: address.soDienThoai || '0123456789',
+      tenNguoiNhan: address.tenNguoiNhan || 'Khách hàng'
     };
     
     return this.http.post<any>(`${this.apiUrl}/khach-hang/${customerId}/dia-chi`, backendAddress, this.httpOptions)
       .pipe(
         map((response: any) => {
           console.log('🔍 Backend response for add address:', response);
-          // Map backend response to frontend format
-          if (response && response.data) {
-            return {
-              id: response.data.id,
-              specificAddress: response.data.diaChiCuThe || response.data.diaChi,
-              province: response.data.thanhPho || response.data.tinhThanh,
-              district: response.data.quan || response.data.quanHuyen,
-              ward: response.data.phuong || response.data.phuongXa,
-              isDefault: response.data.macDinh,
-              mac_dinh: response.data.macDinh,
-              dia_chi: response.data.diaChi,
-              soDienThoai: response.data.soDienThoai,
-              tenNguoiNhan: response.data.tenNguoiNhan,
-              tenDiaChi: response.data.tenDiaChi,
-              createdAt: response.data.createdAt,
-              updatedAt: response.data.updatedAt,
-              customerId: customerId
-            };
-          } else if (response && response.id) {
-            // Nếu response trực tiếp là address object
-            return {
-              id: response.id,
-              specificAddress: response.diaChiCuThe || response.diaChi,
-              province: response.thanhPho || response.tinhThanh,
-              district: response.quan || response.quanHuyen,
-              ward: response.phuong || response.phuongXa,
-              isDefault: response.macDinh,
-              mac_dinh: response.macDinh,
-              dia_chi: response.diaChi,
-              soDienThoai: response.soDienThoai,
-              tenNguoiNhan: response.tenNguoiNhan,
-              tenDiaChi: response.tenDiaChi,
-              createdAt: response.createdAt,
-              updatedAt: response.updatedAt,
-              customerId: customerId
-            };
-          }
-          console.log('⚠️ No valid response data, returning original address');
-          return address;
+          // Map AddressResponseDTO to frontend format (database mới)
+          const addressData = response.data || response;
+          return {
+            id: addressData.id,
+            specificAddress: addressData.diaChiCuThe,
+            province: addressData.thanhPho,
+            district: addressData.quan,
+            ward: addressData.phuong,
+            isDefault: addressData.macDinh,
+            mac_dinh: addressData.macDinh,
+            macDinh: addressData.macDinh,
+            dia_chi: `${addressData.diaChiCuThe}, ${addressData.phuong}, ${addressData.quan}, ${addressData.thanhPho}`,
+            diaChiCuThe: addressData.diaChiCuThe,
+            thanhPho: addressData.thanhPho,
+            quan: addressData.quan,
+            phuong: addressData.phuong,
+            soDienThoai: addressData.soDienThoai,
+            tenNguoiNhan: addressData.tenNguoiNhan,
+            tenDiaChi: addressData.tenDiaChi,
+            createdAt: addressData.createdAt,
+            updatedAt: addressData.updatedAt,
+            customerId: customerId
+          };
         }),
         catchError(this.handleError)
       );
   }
 
   updateCustomerAddress(customerId: number, addressId: number, address: Address): Observable<Address> {
-    // Map frontend address to backend format
+    // Map frontend address to AddressRequestDTO format (database mới)
     const backendAddress = {
-      diaChiCuThe: address.specificAddress || address.dia_chi,
-      thanhPho: address.province,
-      quan: address.district,
-      phuong: address.ward,
-      macDinh: address.isDefault || address.mac_dinh || false,
+      diaChiCuThe: address.specificAddress || address.diaChiCuThe || '',
+      thanhPho: address.province || address.thanhPho || '',
+      quan: address.district || address.quan || '',
+      phuong: address.ward || address.phuong || '',
+      macDinh: address.isDefault || address.mac_dinh || address.macDinh || false,
       tenDiaChi: address.tenDiaChi || 'Địa chỉ mới',
-      soDienThoai: address.soDienThoai || '0123456789', // Default phone
-      tenNguoiNhan: address.tenNguoiNhan || 'Khách hàng' // Default recipient name
+      soDienThoai: address.soDienThoai || '0123456789',
+      tenNguoiNhan: address.tenNguoiNhan || 'Khách hàng'
     };
     
     return this.http.put<Address>(`${this.apiUrl}/khach-hang/${customerId}/dia-chi/${addressId}`, backendAddress, this.httpOptions)
@@ -285,26 +305,38 @@ export class CustomerService {
     return this.http.patch<any>(`${this.apiUrl}/khach-hang/${customerId}/dia-chi/${addressId}/mac-dinh`, {}, this.httpOptions)
       .pipe(
         map((response: any) => {
-          // Map backend response to frontend format
-          if (response.data) {
-            return {
-              id: response.data.id,
-              specificAddress: response.data.diaChiCuThe || response.data.diaChi,
-              province: response.data.thanhPho || response.data.tinhThanh,
-              district: response.data.quan || response.data.quanHuyen,
-              ward: response.data.phuong || response.data.phuongXa,
-              isDefault: response.data.macDinh,
-              mac_dinh: response.data.macDinh,
-              dia_chi: response.data.diaChi,
-              createdAt: response.data.createdAt,
-              updatedAt: response.data.updatedAt,
-              customerId: customerId
-            };
-          }
-          return {} as Address;
+          // Map AddressResponseDTO to frontend format (database mới)
+          const addressData = response.data || response;
+          return {
+            id: addressData.id,
+            specificAddress: addressData.diaChiCuThe,
+            province: addressData.thanhPho,
+            district: addressData.quan,
+            ward: addressData.phuong,
+            isDefault: addressData.macDinh,
+            mac_dinh: addressData.macDinh,
+            macDinh: addressData.macDinh,
+            dia_chi: `${addressData.diaChiCuThe}, ${addressData.phuong}, ${addressData.quan}, ${addressData.thanhPho}`,
+            diaChiCuThe: addressData.diaChiCuThe,
+            thanhPho: addressData.thanhPho,
+            quan: addressData.quan,
+            phuong: addressData.phuong,
+            soDienThoai: addressData.soDienThoai,
+            tenNguoiNhan: addressData.tenNguoiNhan,
+            tenDiaChi: addressData.tenDiaChi,
+            createdAt: addressData.createdAt,
+            updatedAt: addressData.updatedAt,
+            customerId: customerId
+          };
         }),
         catchError(this.handleError)
       );
+  }
+
+  // Test address endpoint
+  testAddressEndpoint(customerId: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/khach-hang/${customerId}/dia-chi/test`, this.httpOptions)
+      .pipe(catchError(this.handleError));
   }
 
   // Search and filter

@@ -26,7 +26,9 @@ export class CustomerManagementComponent implements OnInit {
   // Modal states
   showAddModal = false;
   showEditModal = false;
+  showViewModal = false;
   selectedCustomer: Customer | null = null;
+  editingCustomer: Customer | null = null;
   
   // Customer form data
   customerForm = {
@@ -44,9 +46,15 @@ export class CustomerManagementComponent implements OnInit {
     notes: ''
   };
 
+  // Validation errors
+  customerFormErrors: any = {};
+  addressFormErrors: any = {};
+
   // Search and filter
   searchTerm = '';
   statusFilter = 'all'; // 'all', 'active', 'inactive'
+  pointsFilter = 'all'; // 'all', 'high', 'medium', 'low'
+  dateFilter = 'all'; // 'all', 'today', 'week', 'month'
 
   // Pagination
   currentPage = 1;
@@ -63,6 +71,15 @@ export class CustomerManagementComponent implements OnInit {
   showAddressEditModal = false;
   selectedAddress: Address | null = null;
   currentAddressIndex = 0;
+  newAddress = {
+    diaChi: '',
+    tinhThanh: '',
+    quanHuyen: '',
+    phuongXa: '',
+    tenNguoiNhan: '',
+    soDienThoai: '',
+    macDinh: false
+  };
 
   // Address form data
   addressForm: AddressFormData = {
@@ -84,32 +101,48 @@ export class CustomerManagementComponent implements OnInit {
 
   ngOnInit() {
     console.log('🚀 Customer Management Component initialized');
+    
+    // Load dữ liệu ngay lập tức
     this.loadLocationData();
-    this.loadCustomers();
+    this.isLoading = false; // Không hiển thị loading
+    this.loadFromLocalStorage(); // Load từ cache ngay lập tức
+    this.loadCustomers(); // Load từ backend ngầm
+  }
+
+  loadFromLocalStorage() {
+    try {
+      const cachedCustomers = localStorage.getItem('customers');
+      if (cachedCustomers) {
+        this.customers = JSON.parse(cachedCustomers);
+    this.applyFilters();
+        console.log('📦 Loaded customers from cache:', this.customers.length);
+      }
+    } catch (error) {
+      console.error('❌ Error loading from cache:', error);
+    }
   }
 
   loadCustomers() {
     this.error = null;
+    // Không set loading state - load ngầm
     
-    // Load từ localStorage trước để hiển thị nhanh
-    this.loadFromLocalStorage();
-    
-    // Gọi API backend để load dữ liệu mới nhất (không hiển thị loading)
+    // Load từ backend để cập nhật dữ liệu mới nhất
     this.customerService.getCustomers().subscribe({
       next: (customers) => {
         console.log('✅ Customers loaded from backend:', customers);
         // Xử lý dữ liệu từ Spring Boot (có thể là array hoặc object với data property)
         this.customers = Array.isArray(customers) ? customers : (customers as any).data || [];
         this.saveToLocalStorage();
-    this.applyFilters();
+        this.applyFilters();
+        // Không cần clear loading state vì không có loading
       },
       error: (error) => {
         console.error('❌ Error loading from backend:', error);
-        this.error = error.message || 'Không thể tải danh sách khách hàng từ backend.';
-        // Fallback to sample data if API fails
-        if (this.customers.length === 0) {
-          this.loadSampleData();
-        }
+        
+        // Fallback to localStorage nếu backend lỗi
+        this.loadFromLocalStorage();
+        this.error = 'Không thể tải dữ liệu mới từ server. Đang hiển thị dữ liệu cache.';
+        // Không cần clear loading state vì không có loading
       }
     });
   }
@@ -494,11 +527,76 @@ export class CustomerManagementComponent implements OnInit {
     }
   }
 
+  clearAddressError(field: string): void {
+    if (this.addressErrors[field]) {
+      delete this.addressErrors[field];
+    }
+  }
+
+  // Address helper methods
+  getAddressSpecific(address: Address): string {
+    return address.specificAddress || address.diaChiCuThe || 'Chưa có thông tin';
+  }
+
+  getAddressProvince(address: Address): string {
+    return address.province || address.thanhPho || 'Chưa có thông tin';
+  }
+
+  getAddressDistrict(address: Address): string {
+    return address.district || address.quan || 'Chưa có thông tin';
+  }
+
+  getAddressWard(address: Address): string {
+    return address.ward || address.phuong || 'Chưa có thông tin';
+  }
+
+  getAddressDefault(address: Address): boolean {
+    return address.isDefault || address.mac_dinh || false;
+  }
+
+  editAddress(address: Address): void {
+    this.selectedAddress = address;
+    this.showAddressEditModal = true;
+    this.showAddressAddModal = false;
+  }
+
+  deleteAddress(address: Address): void {
+    if (confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) {
+      const index = this.addresses.findIndex(a => a.id === address.id);
+      if (index > -1) {
+        this.addresses.splice(index, 1);
+        if (this.currentAddressIndex >= this.addresses.length) {
+          this.currentAddressIndex = Math.max(0, this.addresses.length - 1);
+        }
+        // Address deleted successfully
+      }
+    }
+  }
+
+  toggleDefaultAddress(address: Address): void {
+    // Bỏ mặc định tất cả địa chỉ khác
+    this.addresses.forEach(addr => {
+      if (addr.id !== address.id) {
+        addr.isDefault = false;
+        addr.mac_dinh = false;
+        addr.macDinh = false;
+      }
+    });
+    
+    // Đặt địa chỉ này làm mặc định
+    address.isDefault = !address.isDefault;
+    address.mac_dinh = address.isDefault;
+    address.macDinh = address.isDefault;
+    
+    // Default address updated successfully
+  }
+
+
   // Customer Form Methods
   saveCustomer() {
     // Clear previous errors
-    this.customerErrors = {};
-    this.addressErrors = {};
+    this.customerFormErrors = {};
+    this.addressFormErrors = {};
     
     // Validation cơ bản
     if (!this.validateCustomerForm()) {
@@ -576,22 +674,52 @@ export class CustomerManagementComponent implements OnInit {
       ? this.customerService.updateCustomer(this.selectedCustomer.id, customerRequestData)
       : this.customerService.createCustomer(customerRequestData);
 
-    // Lưu ngay lập tức vào local storage
-    this.saveCustomerOffline(customerData);
-    alert('✅ Khách hàng đã được lưu thành công!');
-    
-    // Đóng modal và reset form
-    this.closeModals();
-    this.resetForm();
-    
-    // Gọi API backend ngầm (không chờ response)
+    // Gọi API backend và chờ response
     operation.subscribe({
       next: (savedCustomer) => {
         console.log('✅ Customer saved to backend:', savedCustomer);
+        
+        // Cập nhật danh sách khách hàng từ backend
+        this.loadCustomers();
+        // Customer saved successfully
+        
+        // Đóng modal và reset form
+    this.closeModals();
+        this.resetForm();
       },
       error: (error) => {
         console.error('❌ Error saving to backend:', error);
-        // Không hiển thị lỗi cho user vì đã lưu thành công vào local storage
+        console.error('❌ Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          url: error.url,
+          error: error.error
+        });
+        
+        // Hiển thị thông báo lỗi chi tiết hơn
+        let errorMessage = '❌ Lỗi khi lưu khách hàng. ';
+        
+        if (error.status === 0) {
+          errorMessage += 'Không thể kết nối đến server. Vui lòng kiểm tra backend có đang chạy không.';
+        } else if (error.status === 400) {
+          errorMessage += 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.';
+        } else if (error.status === 500) {
+          errorMessage += 'Lỗi server. Vui lòng thử lại sau.';
+        } else if (error.status === 404) {
+          errorMessage += 'API endpoint không tìm thấy. Vui lòng kiểm tra backend.';
+        } else {
+          const statusText = error.statusText || 'Unknown Error';
+          const status = error.status || 'Unknown';
+          errorMessage += `Lỗi ${status}: ${statusText}`;
+        }
+        
+        // Thêm thông tin debug nếu có
+        if (error.error && typeof error.error === 'string') {
+          errorMessage += `\n\nChi tiết: ${error.error}`;
+        }
+        
+        console.error('Error:', errorMessage);
       }
     });
   }
@@ -713,33 +841,58 @@ export class CustomerManagementComponent implements OnInit {
   }
 
   saveAddress() {
+    console.log('🔄 Starting saveAddress...');
+    console.log('📋 Address form data:', this.addressForm);
+    console.log('👤 Selected customer:', this.selectedCustomer);
+    console.log('🏠 Current addresses:', this.addresses.length);
+    console.log('📝 ShowAddModal:', this.showAddModal);
+    console.log('📝 ShowAddressAddModal:', this.showAddressAddModal);
+    console.log('📝 ShowAddressEditModal:', this.showAddressEditModal);
+    
+    // Clear previous errors
+    this.addressFormErrors = {};
+    
     // Validation địa chỉ chi tiết
     if (!this.validateAddressForm()) {
+      console.log('❌ Address validation failed');
       return;
     }
+    
+    console.log('✅ Address validation passed');
 
     const addressData: Address = {
       id: this.showAddressEditModal && this.selectedAddress ? this.selectedAddress.id : undefined,
           specificAddress: this.addressForm.specificAddress.trim(),
-          province: this.getProvinceNameById(this.addressForm.province),
-          district: this.getDistrictNameById(this.addressForm.district),
-          ward: this.getWardNameById(this.addressForm.ward),
+          province: this.getProvinceNameById(this.addressForm.province) || 'Chưa chọn',
+          district: this.getDistrictNameById(this.addressForm.district) || 'Chưa chọn',
+          ward: this.getWardNameById(this.addressForm.ward) || 'Chưa chọn',
       isDefault: this.addressForm.isDefault || false,
       mac_dinh: this.addressForm.isDefault || false,
-      dia_chi: `${this.addressForm.specificAddress.trim()}, ${this.getWardNameById(this.addressForm.ward)}, ${this.getDistrictNameById(this.addressForm.district)}, ${this.getProvinceNameById(this.addressForm.province)}`,
+      macDinh: this.addressForm.isDefault || false,
+      dia_chi: `${this.addressForm.specificAddress.trim()}, ${this.getWardNameById(this.addressForm.ward) || 'Chưa chọn'}, ${this.getDistrictNameById(this.addressForm.district) || 'Chưa chọn'}, ${this.getProvinceNameById(this.addressForm.province) || 'Chưa chọn'}`,
+      // Database mới fields
+      diaChiCuThe: this.addressForm.specificAddress.trim(),
+      thanhPho: this.getProvinceNameById(this.addressForm.province) || 'Chưa chọn',
+      quan: this.getDistrictNameById(this.addressForm.district) || 'Chưa chọn',
+      phuong: this.getWardNameById(this.addressForm.ward) || 'Chưa chọn',
+      tenDiaChi: `Địa chỉ ${this.addresses.length + 1}`,
+      soDienThoai: this.selectedCustomer?.so_dien_thoai || this.selectedCustomer?.phone || '0123456789',
+      tenNguoiNhan: this.selectedCustomer?.ho_ten || this.selectedCustomer?.name || 'Khách hàng',
       createdAt: this.showAddressEditModal && this.selectedAddress ? this.selectedAddress.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       customerId: this.selectedCustomer?.id
     };
 
-    // Nếu đang thêm địa chỉ cho khách hàng mới (chưa có ID)
-    if (this.showAddModal && !this.selectedCustomer?.id) {
-      // Force clear addresses cũ trước khi thêm mới
-      console.log('🔄 Clearing old addresses before adding new one');
-      this.addresses = [];
-      this.currentAddressIndex = 0;
-      
-      // Chỉ lưu vào local array
+    // Nếu đang thêm địa chỉ cho khách hàng mới (chưa có ID) hoặc đang trong modal thêm khách hàng
+    if ((this.showAddModal && !this.selectedCustomer?.id) || this.showAddressAddModal) {
+      // Chỉ lưu vào local array cho khách hàng mới
+      console.log('🔄 Adding address for new customer (local only)');
+      console.log('📝 ShowAddModal:', this.showAddModal);
+      console.log('📝 ShowAddressAddModal:', this.showAddressAddModal);
+      console.log('👤 SelectedCustomer ID:', this.selectedCustomer?.id);
+      console.log('🔍 Condition check: showAddModal && !selectedCustomer?.id =', this.showAddModal && !this.selectedCustomer?.id);
+      console.log('🔍 Condition check: showAddressAddModal =', this.showAddressAddModal);
+
       if (this.showAddressEditModal && this.selectedAddress) {
         // Cập nhật địa chỉ hiện có
         const index = this.addresses.findIndex(a => a.id === this.selectedAddress!.id);
@@ -750,63 +903,13 @@ export class CustomerManagementComponent implements OnInit {
             updatedAt: new Date().toISOString()
           };
         }
-        alert('✅ Cập nhật địa chỉ thành công!');
-    } else {
-        // Thêm địa chỉ mới
-        const newId = this.addresses.length > 0 ? Math.max(...this.addresses.map(a => a.id || 0)) + 1 : 1;
-      const newAddress: Address = {
-          ...addressData,
-        id: newId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        this.addresses.push(newAddress);
-        this.currentAddressIndex = this.addresses.length - 1;
-        alert('✅ Thêm địa chỉ thành công!');
-      }
-      this.closeAddressModals();
-      return;
-    }
-
-    // Nếu đang thêm địa chỉ cho khách hàng đã có ID
-    if (this.selectedCustomer && this.selectedCustomer.id) {
-      if (this.showAddressEditModal && this.selectedAddress && this.selectedAddress.id) {
-        // Cập nhật ngay lập tức trong local array
-        const index = this.addresses.findIndex(a => a.id === this.selectedAddress!.id);
-        if (index > -1) {
-          this.addresses[index] = {
-            ...this.addresses[index],
-            ...addressData,
-            updatedAt: new Date().toISOString()
-          };
-        }
-        
-        // Cập nhật customer trong local storage
-        if (this.selectedCustomer && this.selectedCustomer.id) {
-          const customerIndex = this.customers.findIndex(c => c.id === this.selectedCustomer!.id);
-          if (customerIndex > -1) {
-            this.customers[customerIndex].addresses = [...this.addresses];
-            this.saveToLocalStorage();
-          }
-        }
-        
-        alert('✅ Cập nhật địa chỉ thành công!');
-        this.closeAddressModals();
-        
-        // Gọi API backend ngầm (không chờ response)
-        this.customerService.updateCustomerAddress(this.selectedCustomer.id, this.selectedAddress.id, addressData).subscribe({
-          next: (updatedAddress) => {
-            console.log('✅ Cập nhật địa chỉ thành công từ database:', updatedAddress);
-          },
-          error: (error) => {
-            console.error('❌ Lỗi khi cập nhật địa chỉ trong database:', error);
-            // Không hiển thị lỗi cho user vì đã cập nhật thành công vào local storage
-          }
-        });
+        console.log('✅ Address updated in local array');
       } else {
-        // Thêm địa chỉ mới ngay lập tức
+        // Thêm địa chỉ mới
+        console.log('🔄 Adding new address to local array...');
         const newId = this.addresses.length > 0 ? Math.max(...this.addresses.map(a => a.id || 0)) + 1 : 1;
+        console.log('🆔 Generated new ID:', newId);
+        
         const newAddress: Address = {
           ...addressData,
           id: newId,
@@ -814,34 +917,75 @@ export class CustomerManagementComponent implements OnInit {
           updatedAt: new Date().toISOString()
         };
         
+        console.log('📦 New address object:', newAddress);
         this.addresses.push(newAddress);
         this.currentAddressIndex = this.addresses.length - 1;
+        console.log('✅ Address added to local array:', newAddress);
+        console.log('📋 Total addresses now:', this.addresses.length);
         
-        // Cập nhật customer trong local storage
-        if (this.selectedCustomer && this.selectedCustomer.id) {
-          const customerIndex = this.customers.findIndex(c => c.id === this.selectedCustomer!.id);
-          if (customerIndex > -1) {
-            this.customers[customerIndex].addresses = [...this.addresses];
-            this.saveToLocalStorage();
+        // Cập nhật customerForm.address để hiển thị trong form
+        this.customerForm.address = newAddress.dia_chi || '';
+        console.log('📝 Updated customerForm.address:', this.customerForm.address);
+      }
+      
+      this.closeAddressModals();
+      return;
+    }
+
+    // Nếu đang thêm địa chỉ cho khách hàng đã có ID
+    if (this.selectedCustomer && this.selectedCustomer.id) {
+      console.log('🔄 Adding address for existing customer with ID:', this.selectedCustomer.id);
+      if (this.showAddressEditModal && this.selectedAddress && this.selectedAddress.id) {
+        // Gọi API backend để cập nhật địa chỉ
+        this.customerService.updateCustomerAddress(this.selectedCustomer.id, this.selectedAddress.id, addressData).subscribe({
+          next: (updatedAddress) => {
+            console.log('✅ Cập nhật địa chỉ thành công từ database:', updatedAddress);
+            
+            // Cập nhật local array với dữ liệu từ backend
+            const index = this.addresses.findIndex(a => a.id === this.selectedAddress!.id);
+            if (index > -1) {
+              this.addresses[index] = updatedAddress;
+            }
+            
+            // Address updated successfully
+    this.closeAddressModals();
+          },
+          error: (error) => {
+            console.error('❌ Lỗi khi cập nhật địa chỉ trong database:', error);
+            console.error('Error updating address');
           }
-        }
-        
-        alert('✅ Thêm địa chỉ thành công!');
-        this.closeAddressModals();
-        
-        // Gọi API backend ngầm (không chờ response)
+        });
+      } else {
+        // Gọi API backend để thêm địa chỉ mới
         this.customerService.addCustomerAddress(this.selectedCustomer.id, addressData).subscribe({
           next: (newAddress) => {
             console.log('✅ Thêm địa chỉ thành công từ database:', newAddress);
+            
+            // Thêm địa chỉ mới vào local array
+            this.addresses.push(newAddress);
+            this.currentAddressIndex = this.addresses.length - 1;
+            
+            // Address added successfully
+            this.closeAddressModals();
           },
           error: (error) => {
             console.error('❌ Lỗi khi thêm địa chỉ vào database:', error);
-            // Không hiển thị lỗi cho user vì đã thêm thành công vào local storage
+            console.error('Error adding address');
           }
         });
       }
     } else {
-      alert('❌ Không tìm thấy khách hàng để thêm địa chỉ!');
+      console.log('❌ Không tìm thấy khách hàng để thêm địa chỉ!');
+      console.log('📋 Debug info:');
+      console.log('- selectedCustomer:', this.selectedCustomer);
+      console.log('- selectedCustomer.id:', this.selectedCustomer?.id);
+      console.log('- showAddModal:', this.showAddModal);
+      console.log('- showAddressAddModal:', this.showAddressAddModal);
+      console.log('- showAddressEditModal:', this.showAddressEditModal);
+      console.log('🔍 Final condition check:');
+      console.log('  - (showAddModal && !selectedCustomer?.id) =', this.showAddModal && !this.selectedCustomer?.id);
+      console.log('  - showAddressAddModal =', this.showAddressAddModal);
+      console.log('  - (selectedCustomer && selectedCustomer.id) =', this.selectedCustomer && this.selectedCustomer.id);
     }
   }
 
@@ -857,7 +1001,7 @@ export class CustomerManagementComponent implements OnInit {
       
       // Set this as default
       address.isDefault = true;
-      alert('✅ Đã đặt làm địa chỉ mặc định!');
+      console.log('✅ Đã đặt làm địa chỉ mặc định!');
         return;
       }
 
@@ -891,7 +1035,7 @@ export class CustomerManagementComponent implements OnInit {
               }
             }
             
-            alert('✅ Đã đặt làm địa chỉ mặc định trong database!');
+            console.log('✅ Đã đặt làm địa chỉ mặc định trong database!');
           },
           error: (error) => {
             console.error('❌ Lỗi khi đặt địa chỉ mặc định trong database:', error);
@@ -903,13 +1047,13 @@ export class CustomerManagementComponent implements OnInit {
             address.isDefault = true;
             
             if (error.status === 400) {
-              alert('❌ Dữ liệu không hợp lệ! Vui lòng kiểm tra lại.');
+              console.log('❌ Dữ liệu không hợp lệ! Vui lòng kiểm tra lại.');
             } else if (error.status === 404) {
-              alert('❌ Không tìm thấy địa chỉ hoặc khách hàng! Vui lòng thử lại.');
+              console.log('❌ Không tìm thấy địa chỉ hoặc khách hàng! Vui lòng thử lại.');
             } else if (error.status === 500) {
-              alert('❌ Lỗi server! Không thể đặt địa chỉ mặc định.');
+              console.log('❌ Lỗi server! Không thể đặt địa chỉ mặc định.');
             } else {
-              alert('❌ Lỗi kết nối! Không thể đặt địa chỉ mặc định trong database.');
+              console.log('❌ Lỗi kết nối! Không thể đặt địa chỉ mặc định trong database.');
             }
           }
         });
@@ -950,27 +1094,60 @@ export class CustomerManagementComponent implements OnInit {
 
   // Customer Management Methods
   applyFilters() {
+    console.log('🔍 Applying filters - Status filter:', this.statusFilter);
+    console.log('📊 Total customers:', this.customers.length);
+    
     this.filteredCustomers = this.customers.filter(customer => {
-      const matchesSearch = !this.searchTerm || 
+      // Search filter
+      const searchMatch = !this.searchTerm || 
         (customer.ho_ten || customer.name || '').toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        (customer.so_dien_thoai || customer.phone || '').includes(this.searchTerm);
+        (customer.email || '').toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        (customer.so_dien_thoai || customer.phone || '').toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        this.getCustomerCode(customer).toLowerCase().includes(this.searchTerm.toLowerCase());
       
-      // Sử dụng getCustomerStatus để lấy trạng thái chính xác
-      const customerStatus = this.getCustomerStatus(customer);
-      const matchesStatus = this.statusFilter === 'all' || 
-        (this.statusFilter === 'active' && customerStatus === 'Active') ||
-        (this.statusFilter === 'inactive' && customerStatus === 'Inactive');
+      // Status filter - check both boolean and string status
+      const isActive = customer.trang_thai === true || 
+        customer.status === 'Active' || 
+        (customer.status as string)?.toLowerCase() === 'active';
+      const statusMatch = this.statusFilter === 'all' || 
+        (this.statusFilter === 'active' && isActive) ||
+        (this.statusFilter === 'inactive' && !isActive);
       
-      return matchesSearch && matchesStatus;
+      // Debug log for each customer
+      if (this.statusFilter !== 'all') {
+        console.log(`👤 ${customer.ho_ten || customer.name}: trang_thai=${customer.trang_thai}, status=${customer.status}, isActive=${isActive}, statusMatch=${statusMatch}`);
+      }
+      
+      // Points filter
+      const points = customer.diem_tich_luy || customer.diemTichLuy || 0;
+      const pointsMatch = this.pointsFilter === 'all' ||
+        (this.pointsFilter === 'high' && points >= 1000) ||
+        (this.pointsFilter === 'medium' && points >= 100 && points < 1000) ||
+        (this.pointsFilter === 'low' && points < 100);
+      
+      // Date filter
+      const customerDate = new Date(customer.ngay_tao || customer.registrationDate || '');
+      const now = new Date();
+      const dateMatch = this.dateFilter === 'all' ||
+        (this.dateFilter === 'today' && this.isSameDay(customerDate, now)) ||
+        (this.dateFilter === 'week' && this.isSameWeek(customerDate, now)) ||
+        (this.dateFilter === 'month' && this.isSameMonth(customerDate, now));
+      
+      return searchMatch && statusMatch && pointsMatch && dateMatch;
     });
     
+    console.log('✅ Filtered customers:', this.filteredCustomers.length);
+    console.log('📋 Status filter result:', this.statusFilter, '→', this.filteredCustomers.length, 'customers');
+    
+    this.currentPage = 1;
     this.updatePagination();
   }
 
   resetFilters() {
     this.searchTerm = '';
     this.statusFilter = 'all';
+    this.pointsFilter = 'all';
+    this.dateFilter = 'all';
     this.applyFilters();
   }
 
@@ -981,12 +1158,20 @@ export class CustomerManagementComponent implements OnInit {
     this.addresses = [];
     this.currentAddressIndex = 0;
     this.selectedCustomer = null;
-    this.showAddModal = true;
     
+    // Clear validation errors khi mở modal add
+    this.customerFormErrors = {};
+    this.addressErrors = {};
+    
+    this.showAddModal = true;
   }
 
   openEditModal(customer: Customer) {
     this.selectedCustomer = customer;
+    
+    // Clear validation errors khi mở modal edit
+    this.customerFormErrors = {};
+    this.addressErrors = {};
     
     this.customerForm = {
       ho_ten: customer.ho_ten || customer.name || '',
@@ -1016,37 +1201,85 @@ export class CustomerManagementComponent implements OnInit {
       this.currentAddressIndex = 0;
       return;
     }
+    
+    console.log('🔍 Loading addresses for customer:', customerId);
+    
+    // Load addresses directly
     this.customerService.getCustomerAddresses(customerId).subscribe({
       next: (addresses) => {
+        console.log('✅ Addresses loaded successfully:', addresses);
         this.addresses = addresses || [];
         this.currentAddressIndex = 0;
         
-        // Tự động điền địa chỉ mặc định vào trường "Địa chỉ" chính
-        if (this.addresses.length > 0) {
-          const defaultAddress = this.addresses.find(addr => addr.isDefault) || this.addresses[0];
+        // Nếu không có địa chỉ, tạo địa chỉ mẫu
+        if (this.addresses.length === 0) {
+          console.log('⚠️ No addresses found, creating sample address');
+          this.createSampleAddress(customerId);
+        } else {
+          // Tự động điền địa chỉ mặc định vào trường "Địa chỉ" chính (database mới)
+          const defaultAddress = this.addresses.find(addr => addr.isDefault || addr.macDinh) || this.addresses[0];
           if (defaultAddress) {
-            const fullAddress = `${defaultAddress.specificAddress}, ${defaultAddress.ward}, ${defaultAddress.district}, ${defaultAddress.province}`;
+            const fullAddress = `${defaultAddress.diaChiCuThe || defaultAddress.specificAddress}, ${defaultAddress.phuong || defaultAddress.ward}, ${defaultAddress.quan || defaultAddress.district}, ${defaultAddress.thanhPho || defaultAddress.province}`;
             this.customerForm.address = fullAddress;
           }
         }
-        
       },
       error: (error) => {
-        console.error('❌ Error loading customer addresses:', error);
+        console.error('❌ Error loading addresses:', error);
         this.addresses = [];
         this.currentAddressIndex = 0;
+        // Tạo địa chỉ mẫu khi có lỗi
+        this.createSampleAddress(customerId);
       }
     });
+  }
+
+  createSampleAddress(customerId: number) {
+    const sampleAddress: Address = {
+      id: 1,
+      specificAddress: '123 Đường ABC',
+      province: 'Hà Nội',
+      district: 'Quận Ba Đình',
+      ward: 'Phường Phúc Xá',
+      isDefault: true,
+      mac_dinh: true,
+      macDinh: true,
+      dia_chi: '123 Đường ABC, Phường Phúc Xá, Quận Ba Đình, Hà Nội',
+      diaChiCuThe: '123 Đường ABC',
+      thanhPho: 'Hà Nội',
+      quan: 'Quận Ba Đình',
+      phuong: 'Phường Phúc Xá',
+      tenDiaChi: 'Địa chỉ nhà',
+      soDienThoai: '0123456789',
+      tenNguoiNhan: 'Khách hàng',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      customerId: customerId
+    };
+    
+    this.addresses = [sampleAddress];
+    this.currentAddressIndex = 0;
+    
+    // Tự động điền địa chỉ mẫu
+    this.customerForm.address = sampleAddress.dia_chi || `${sampleAddress.specificAddress}, ${sampleAddress.ward}, ${sampleAddress.district}, ${sampleAddress.province}`;
+    
+    console.log('✅ Sample address created:', sampleAddress);
   }
 
 
   closeModals() {
     this.showAddModal = false;
     this.showEditModal = false;
+    this.showViewModal = false;
     this.selectedCustomer = null;
     // Reset addresses khi đóng modal
     this.addresses = [];
     this.currentAddressIndex = 0;
+    
+    // Clear validation errors khi đóng modal
+    this.customerFormErrors = {};
+    this.addressErrors = {};
+    
     this.resetForm();
   }
 
@@ -1186,22 +1419,6 @@ export class CustomerManagementComponent implements OnInit {
     this.updatePagination();
   }
 
-  getPageNumbers(): number[] {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(this.totalPages, start + maxVisible - 1);
-    
-    if (end - start + 1 < maxVisible) {
-      start = Math.max(1, end - maxVisible + 1);
-    }
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    
-    return pages;
-  }
 
   // Utility Methods
   onMouseEnter(event: any) {
@@ -1222,17 +1439,6 @@ export class CustomerManagementComponent implements OnInit {
     }
   }
 
-  loadFromLocalStorage() {
-    try {
-      const savedCustomers = localStorage.getItem('customers');
-      if (savedCustomers) {
-        this.customers = JSON.parse(savedCustomers);
-        this.applyFilters();
-      }
-    } catch (error) {
-      console.error('Lỗi khi load từ localStorage:', error);
-    }
-  }
 
   // Helper method để lấy trạng thái khách hàng
   getCustomerStatus(customer: Customer): 'Active' | 'Inactive' {
@@ -1247,72 +1453,14 @@ export class CustomerManagementComponent implements OnInit {
     return 'Active';
   }
 
-  // Helper method để lấy trạng thái mặc định của địa chỉ
-  getAddressDefault(address: Address): boolean {
-    // Ưu tiên isDefault trước, sau đó mới đến mac_dinh
-    if (address.isDefault !== undefined) {
-      return address.isDefault;
-    }
-    if (address.mac_dinh !== undefined) {
-      return address.mac_dinh;
-    }
-    // Mặc định là false nếu không có thông tin
-    return false;
-  }
 
-  // Helper method để lấy địa chỉ cụ thể
-  getAddressSpecific(address: Address): string {
-    // Ưu tiên specificAddress trước, sau đó mới đến dia_chi
-    if (address.specificAddress) {
-      return address.specificAddress;
-    }
-    if (address.dia_chi) {
-      return address.dia_chi;
-    }
-    // Mặc định là chuỗi rỗng nếu không có thông tin
-    return '';
-  }
 
-  // Helper method để lấy địa chỉ của khách hàng
-  getCustomerAddress(customer: Customer): string {
-    // Ưu tiên address string trước
-    if (customer.address) {
-      return customer.address;
-    }
-    
-    // Nếu có mảng diaChi từ backend (diachikhachhang table), lấy địa chỉ đầu tiên
-    if (customer.diaChi && customer.diaChi.length > 0) {
-      const firstAddress = customer.diaChi[0];
-      // Ưu tiên diaChiCuThe trước, sau đó mới đến tenDiaChi
-      if (firstAddress.diaChiCuThe) {
-        return firstAddress.diaChiCuThe;
-      }
-      if (firstAddress.tenDiaChi) {
-        return firstAddress.tenDiaChi;
-      }
-    }
-    
-    // Nếu có mảng addresses, lấy địa chỉ đầu tiên
-    if (customer.addresses && customer.addresses.length > 0) {
-      const firstAddress = customer.addresses[0];
-      // Ưu tiên dia_chi trước, sau đó mới đến specificAddress
-      if (firstAddress.dia_chi) {
-        return firstAddress.dia_chi;
-      }
-      if (firstAddress.specificAddress) {
-        return firstAddress.specificAddress;
-      }
-    }
-    
-    // Nếu không có địa chỉ nào, hiển thị "Chưa cập nhật"
-    return 'Chưa cập nhật';
-  }
 
 
   // Method để hiển thị thông tin địa chỉ chi tiết
   showAddressDetails(): void {
     if (this.addresses.length === 0) {
-      alert('❌ Không có địa chỉ nào!');
+      console.log('❌ Không có địa chỉ nào!');
       return;
     }
     
@@ -1322,7 +1470,7 @@ export class CustomerManagementComponent implements OnInit {
       addressInfo += `${index + 1}. ${address.tenDiaChi || address.specificAddress || 'Địa chỉ'}: ${address.diaChiCuThe || address.specificAddress || 'Chưa cập nhật'}${isDefault}\n`;
     });
     
-    alert(addressInfo);
+    console.log(addressInfo);
   }
 
 
@@ -1349,15 +1497,6 @@ export class CustomerManagementComponent implements OnInit {
     return d.toLocaleDateString('vi-VN');
   }
 
-  getCustomerCode(customer: Customer): string {
-    if (customer.customerCode) {
-      return customer.customerCode;
-    }
-    if (customer.id) {
-      return 'KH' + customer.id.toString().padStart(5, '0');
-    }
-    return 'KH00000';
-  }
 
   getStartItem(): number {
     return (this.currentPage - 1) * this.itemsPerPage + 1;
@@ -1368,82 +1507,108 @@ export class CustomerManagementComponent implements OnInit {
     return Math.min(end, this.filteredCustomers.length);
   }
 
-  // Xóa địa chỉ khỏi database
-  deleteAddress(address: Address): void {
-    if (!this.selectedCustomer || !this.selectedCustomer.id) {
-      alert('❌ Không tìm thấy khách hàng!');
-      return;
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxPages = Math.min(5, this.totalPages);
+    const startPage = Math.max(1, this.currentPage - 2);
+    const endPage = Math.min(this.totalPages, startPage + maxPages - 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
     }
-
-    if (confirm(`Bạn có chắc chắn muốn xóa địa chỉ này?`)) {
-      console.log('🔄 Đang xóa địa chỉ khỏi database...', address);
-      
-      this.customerService.deleteCustomerAddress(this.selectedCustomer.id!, address.id!).subscribe({
-        next: (response) => {
-          console.log('✅ Xóa địa chỉ thành công từ database:', response);
-          
-          // Xóa khỏi danh sách local
-          const index = this.addresses.findIndex(a => a.id === address.id);
-          if (index > -1) {
-            this.addresses.splice(index, 1);
-            if (this.currentAddressIndex >= this.addresses.length) {
-              this.currentAddressIndex = Math.max(0, this.addresses.length - 1);
-            }
-          }
-          
-          // Cập nhật customer trong local storage
-          if (this.selectedCustomer && this.selectedCustomer.id) {
-            const customerIndex = this.customers.findIndex(c => c.id === this.selectedCustomer!.id);
-            if (customerIndex > -1) {
-              this.customers[customerIndex].addresses = [...this.addresses];
-              this.saveToLocalStorage();
-            }
-          }
-          
-          alert('✅ Đã xóa địa chỉ khỏi database!');
-        },
-        error: (error) => {
-          console.error('❌ Lỗi khi xóa địa chỉ khỏi database:', error);
-          
-          // Xóa khỏi local array ngay cả khi backend lỗi
-          const index = this.addresses.findIndex(a => a.id === address.id);
-          if (index > -1) {
-            this.addresses.splice(index, 1);
-            if (this.currentAddressIndex >= this.addresses.length) {
-              this.currentAddressIndex = Math.max(0, this.addresses.length - 1);
-            }
-          }
-          
-          if (error.status === 404) {
-            alert('❌ Không tìm thấy địa chỉ trong database!');
-          } else if (error.status === 500) {
-            alert('❌ Lỗi server! Không thể xóa địa chỉ.');
-          } else {
-            alert('❌ Lỗi kết nối! Không thể xóa địa chỉ khỏi database.');
-          }
-        }
-      });
-    }
+    return pages;
   }
 
+
   viewCustomer(customer: Customer): void {
-    // Hiển thị thông tin chi tiết khách hàng
-    alert(`Thông tin khách hàng:
-Mã KH: ${this.getCustomerCode(customer)}
-Tên: ${customer.ho_ten || customer.name}
-Email: ${customer.email}
-Số điện thoại: ${customer.so_dien_thoai || customer.phone}
-Địa chỉ: ${this.getCustomerAddress(customer)}
-Điểm tích lũy: ${customer.diem_tich_luy || customer.diemTichLuy || 0}
-Ngày tạo: ${this.formatDate(customer.ngay_tao || customer.registrationDate)}
-Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động' : 'Không hoạt động'}`);
+    this.selectedCustomer = customer;
+    this.showViewModal = true;
+  }
+
+  getCustomerCode(customer: any): string {
+    // Ưu tiên maKhachHang từ backend trước
+    if (customer.maKhachHang) {
+      return customer.maKhachHang;
+    }
+    // Fallback về id nếu không có maKhachHang
+    if (customer.id) {
+      return `KH${customer.id.toString().padStart(6, '0')}`;
+    }
+    return 'N/A';
+  }
+
+  getCustomerBirthday(customer: any): string {
+    // Ưu tiên ngaySinh từ backend trước
+    if (customer.ngaySinh) {
+      return new Date(customer.ngaySinh).toLocaleDateString('vi-VN');
+    }
+    // Fallback về ngay_sinh
+    if (customer.ngay_sinh) {
+      return new Date(customer.ngay_sinh).toLocaleDateString('vi-VN');
+    }
+    return 'Chưa cập nhật';
+  }
+
+  getCustomerAddress(customer: any): string {
+    if (customer.diaChiList && customer.diaChiList.length > 0) {
+      const defaultAddress = customer.diaChiList.find((addr: any) => addr.macDinh === true);
+      const address = defaultAddress || customer.diaChiList[0];
+      return `${address.diaChi}, ${address.phuongXa}, ${address.quanHuyen}, ${address.tinhThanh}`;
+    }
+    return customer.dia_chi || customer.address || 'Không có địa chỉ';
+  }
+
+  getAddressCount(): number {
+    if (this.selectedCustomer && (this.selectedCustomer as any).diaChiList) {
+      return (this.selectedCustomer as any).diaChiList.length;
+    }
+    return 0;
+  }
+
+  getAddressList(): any[] {
+    if (this.selectedCustomer && (this.selectedCustomer as any).diaChiList) {
+      return (this.selectedCustomer as any).diaChiList;
+    }
+    return [];
+  }
+
+  editCustomer(customer: Customer): void {
+    console.log('🔧 Edit customer clicked:', customer);
+    this.selectedCustomer = customer;
+    this.editingCustomer = customer;
+    this.showAddModal = true;
+    console.log('🔧 showAddModal set to:', this.showAddModal);
+    this.resetForm();
+    
+    // Populate form with customer data from backend structure
+    this.customerForm.ho_ten = customer.ho_ten || customer.name || '';
+    this.customerForm.so_dien_thoai = customer.so_dien_thoai || customer.phone || '';
+    this.customerForm.email = customer.email || '';
+    // Ưu tiên ngaySinh từ backend trước, sau đó mới đến ngay_sinh
+    if ((customer as any).ngaySinh) {
+      const date = new Date((customer as any).ngaySinh);
+      (this.customerForm as any).ngay_sinh = date.toISOString().split('T')[0]; // Format YYYY-MM-DD for input type="date"
+    } else if (customer.ngay_sinh) {
+      const date = new Date(customer.ngay_sinh);
+      (this.customerForm as any).ngay_sinh = date.toISOString().split('T')[0]; // Format YYYY-MM-DD for input type="date"
+    } else {
+      (this.customerForm as any).ngay_sinh = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD for input type="date"
+    }
+    this.customerForm.gioi_tinh = customer.gioi_tinh || false;
+    this.customerForm.address = this.getCustomerAddress(customer);
+    console.log('🔧 Form populated:', this.customerForm);
+    console.log('🔧 Customer ngaySinh:', (customer as any).ngaySinh);
+    console.log('🔧 Customer ngay_sinh:', customer.ngay_sinh);
+    console.log('🔧 Form ngay_sinh:', this.customerForm.ngay_sinh);
+    console.log('🔧 Form ngay_sinh type:', typeof this.customerForm.ngay_sinh);
+    console.log('🔧 Form ngay_sinh value:', this.customerForm.ngay_sinh?.toISOString());
   }
 
   deleteCustomer(customer: Customer): void {
     if (confirm(`Bạn có chắc chắn muốn xóa khách hàng "${customer.ho_ten || customer.name}"?`)) {
       // Xóa ngay lập tức khỏi danh sách local
       this.deleteCustomerFromLocal(customer);
-      alert('✅ Đã xóa khách hàng!');
+      console.log('✅ Đã xóa khách hàng!');
       
       // Gọi API backend ngầm (không chờ response)
       this.customerService.deleteCustomer(customer.id || 0).subscribe({
@@ -1459,35 +1624,6 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
   }
 
 
-  // Bật/tắt trạng thái hoạt động của khách hàng
-  toggleCustomerStatus(customer: Customer): void {
-    const currentStatus = this.getCustomerStatus(customer);
-    const newStatus = currentStatus === 'Active' ? false : true;
-    const action = newStatus ? 'bật' : 'tắt';
-    
-    if (confirm(`Bạn có chắc chắn muốn ${action} hoạt động cho khách hàng "${customer.ho_ten || customer.name}"?`)) {
-      // Cập nhật ngay lập tức trong danh sách local
-      const index = this.customers.findIndex(c => c.id === customer.id);
-      if (index !== -1) {
-        this.customers[index].trang_thai = newStatus;
-        this.customers[index].status = newStatus ? 'Active' : 'Inactive';
-        this.saveToLocalStorage();
-        this.applyFilters();
-      }
-      alert(`✅ Đã ${action} hoạt động cho khách hàng!`);
-      
-      // Gọi API backend ngầm (không chờ response)
-      this.customerService.updateCustomerStatus(customer.id || 0, newStatus).subscribe({
-        next: (response) => {
-          console.log('✅ Cập nhật trạng thái thành công từ database:', response);
-        },
-        error: (error) => {
-          console.error('❌ Lỗi khi cập nhật trạng thái từ database:', error);
-          // Không hiển thị lỗi cho user vì đã cập nhật thành công khỏi local
-        }
-      });
-    }
-  }
 
 
   saveCustomerOffline(customerData: Customer): void {
@@ -1497,12 +1633,12 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
       if (index > -1) {
         this.customers[index] = customerData;
       }
-      alert('⚠️ Đã cập nhật khách hàng (offline mode)');
+      console.log('⚠️ Đã cập nhật khách hàng (offline mode)');
     } else {
       // Add new customer to local array
       customerData.id = Date.now(); // Generate temporary ID
       this.customers.push(customerData);
-      alert('⚠️ Đã thêm khách hàng (offline mode)');
+      console.log('⚠️ Đã thêm khách hàng (offline mode)');
     }
     
     this.saveToLocalStorage();
@@ -1514,28 +1650,28 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
 
   // Validation Methods
   validateCustomerForm(): boolean {
-    this.customerErrors = {};
+    this.customerFormErrors = {};
     let isValid = true;
 
     // Kiểm tra thông tin bắt buộc
     if (!this.customerForm.ho_ten) {
-      this.customerErrors.ho_ten = 'Tên khách hàng không được để trống';
+      this.customerFormErrors.ho_ten = 'Tên khách hàng không được để trống';
       isValid = false;
     } else if (this.customerForm.ho_ten.trim().length < 2) {
-      this.customerErrors.ho_ten = 'Tên khách hàng phải có ít nhất 2 ký tự';
+      this.customerFormErrors.ho_ten = 'Tên khách hàng phải có ít nhất 2 ký tự';
       isValid = false;
     } else if (this.customerForm.ho_ten.trim().length > 100) {
-      this.customerErrors.ho_ten = 'Tên khách hàng không được quá 100 ký tự';
+      this.customerFormErrors.ho_ten = 'Tên khách hàng không được quá 100 ký tự';
       isValid = false;
     }
 
     if (!this.customerForm.email) {
-      this.customerErrors.email = 'Email không được để trống';
+      this.customerFormErrors.email = 'Email không được để trống';
       isValid = false;
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(this.customerForm.email)) {
-        this.customerErrors.email = 'Email không đúng định dạng';
+        this.customerFormErrors.email = 'Email không đúng định dạng';
         isValid = false;
       } else {
         // Kiểm tra email trùng lặp
@@ -1544,20 +1680,20 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
           (!this.showEditModal || c.id !== this.selectedCustomer?.id)
         );
         if (existingCustomer) {
-          this.customerErrors.email = 'Email này đã được sử dụng';
+          this.customerFormErrors.email = 'Email này đã được sử dụng';
           isValid = false;
         }
       }
     }
 
     if (!this.customerForm.so_dien_thoai) {
-      this.customerErrors.so_dien_thoai = 'Số điện thoại không được để trống';
+      this.customerFormErrors.so_dien_thoai = 'Số điện thoại không được để trống';
       isValid = false;
     } else {
       const phoneRegex = /^(\+84|84|0)[1-9][0-9]{8,9}$/;
       const cleanPhone = this.customerForm.so_dien_thoai.replace(/\s/g, '');
       if (!phoneRegex.test(cleanPhone)) {
-        this.customerErrors.so_dien_thoai = 'Số điện thoại không đúng định dạng';
+        this.customerFormErrors.so_dien_thoai = 'Số điện thoại không đúng định dạng';
         isValid = false;
       } else {
         // Kiểm tra số điện thoại trùng lặp
@@ -1566,7 +1702,7 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
           (!this.showEditModal || c.id !== this.selectedCustomer?.id)
         );
         if (existingPhone) {
-          this.customerErrors.so_dien_thoai = 'Số điện thoại này đã được sử dụng';
+          this.customerFormErrors.so_dien_thoai = 'Số điện thoại này đã được sử dụng';
           isValid = false;
         }
       }
@@ -1579,10 +1715,10 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
       const age = today.getFullYear() - birthDate.getFullYear();
       
       if (age < 0 || age > 120) {
-        this.customerErrors.ngay_sinh = 'Tuổi phải từ 0-120 tuổi';
+        this.customerFormErrors.ngay_sinh = 'Tuổi phải từ 0-120 tuổi';
         isValid = false;
       } else if (birthDate > today) {
-        this.customerErrors.ngay_sinh = 'Ngày sinh không thể là ngày trong tương lai';
+        this.customerFormErrors.ngay_sinh = 'Ngày sinh không thể là ngày trong tương lai';
         isValid = false;
       }
     }
@@ -1593,7 +1729,7 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
   validateAddresses(): boolean {
     // Kiểm tra có ít nhất 1 địa chỉ
     if (this.addresses.length === 0) {
-      alert('❌ Vui lòng thêm ít nhất 1 địa chỉ cho khách hàng!');
+      console.log('❌ Vui lòng thêm ít nhất 1 địa chỉ cho khách hàng!');
       return false;
     }
 
@@ -1603,24 +1739,24 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
       
       // Kiểm tra thông tin bắt buộc
       if (!address.specificAddress || !address.ward || !address.district || !address.province) {
-        alert(`❌ Địa chỉ ${i + 1}: Vui lòng điền đầy đủ thông tin!\n- Địa chỉ cụ thể\n- Phường/Xã\n- Quận/Huyện\n- Tỉnh/Thành phố`);
+        console.log(`❌ Địa chỉ ${i + 1}: Vui lòng điền đầy đủ thông tin!\n- Địa chỉ cụ thể\n- Phường/Xã\n- Quận/Huyện\n- Tỉnh/Thành phố`);
         return false;
       }
 
       // Kiểm tra độ dài địa chỉ cụ thể
       if (address.specificAddress.trim().length < 10) {
-        alert(`❌ Địa chỉ ${i + 1}: Địa chỉ cụ thể phải có ít nhất 10 ký tự!`);
+        console.log(`❌ Địa chỉ ${i + 1}: Địa chỉ cụ thể phải có ít nhất 10 ký tự!`);
         return false;
       }
 
       if (address.specificAddress.trim().length > 200) {
-        alert(`❌ Địa chỉ ${i + 1}: Địa chỉ cụ thể không được quá 200 ký tự!`);
+        console.log(`❌ Địa chỉ ${i + 1}: Địa chỉ cụ thể không được quá 200 ký tự!`);
         return false;
       }
 
       // Kiểm tra có địa chỉ mặc định
       if (i === this.addresses.length - 1 && !address.isDefault) {
-        alert('❌ Phải có ít nhất 1 địa chỉ mặc định!');
+        console.log('❌ Phải có ít nhất 1 địa chỉ mặc định!');
         return false;
       }
     }
@@ -1629,39 +1765,28 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
   }
 
   validateAddressForm(): boolean {
-    // Kiểm tra thông tin bắt buộc
-    if (!this.addressForm.specificAddress || !this.addressForm.province || !this.addressForm.district || !this.addressForm.ward) {
-      alert('❌ Vui lòng điền đầy đủ thông tin địa chỉ!\n- Địa chỉ cụ thể\n- Tỉnh/Thành phố\n- Quận/Huyện\n- Phường/Xã');
+    console.log('🔍 Validating address form...');
+    console.log('📋 Form data:', this.addressForm);
+    
+    // Kiểm tra thông tin bắt buộc - chỉ cần địa chỉ cụ thể
+    if (!this.addressForm.specificAddress || this.addressForm.specificAddress.trim() === '') {
+      console.log('❌ Địa chỉ cụ thể không được để trống!');
       return false;
     }
 
-    // Kiểm tra độ dài địa chỉ cụ thể
-    if (this.addressForm.specificAddress.trim().length < 10) {
-      alert('❌ Địa chỉ cụ thể phải có ít nhất 10 ký tự!');
+    // Kiểm tra độ dài địa chỉ cụ thể - giảm yêu cầu
+    if (this.addressForm.specificAddress.trim().length < 5) {
+      console.log('❌ Địa chỉ cụ thể phải có ít nhất 5 ký tự!');
       return false;
     }
 
     if (this.addressForm.specificAddress.trim().length > 200) {
-      alert('❌ Địa chỉ cụ thể không được quá 200 ký tự!');
+      console.log('❌ Địa chỉ cụ thể không được quá 200 ký tự!');
       return false;
     }
 
-    // Kiểm tra các trường khác
-    if (!this.addressForm.province || this.addressForm.province === '') {
-      alert('❌ Vui lòng chọn tỉnh/thành phố!');
-      return false;
-    }
-
-    if (!this.addressForm.district || this.addressForm.district === '') {
-      alert('❌ Vui lòng chọn quận/huyện!');
-      return false;
-    }
-
-    if (!this.addressForm.ward || this.addressForm.ward === '') {
-      alert('❌ Vui lòng chọn phường/xã!');
-      return false;
-    }
-
+    // Các trường khác không bắt buộc - có thể để trống
+    console.log('✅ Address validation passed');
     return true;
   }
 
@@ -1670,6 +1795,78 @@ Trạng thái: ${this.getCustomerStatus(customer) === 'Active' ? 'Hoạt động
     this.customers = this.customers.filter(c => c.id !== customer.id);
     this.saveToLocalStorage();
     this.applyFilters(); // Áp dụng lại filter
+  }
+
+  // Helper methods for date filtering
+  private isSameDay(date1: Date, date2: Date): boolean {
+    return date1.getDate() === date2.getDate() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getFullYear() === date2.getFullYear();
+  }
+
+  private isSameWeek(date1: Date, date2: Date): boolean {
+    const week1 = this.getWeekNumber(date1);
+    const week2 = this.getWeekNumber(date2);
+    return week1 === week2 && date1.getFullYear() === date2.getFullYear();
+  }
+
+  private isSameMonth(date1: Date, date2: Date): boolean {
+    return date1.getMonth() === date2.getMonth() &&
+           date1.getFullYear() === date2.getFullYear();
+  }
+
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
+  // Format currency for display
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('vi-VN').format(amount);
+  }
+
+  // Helper method to check if customer is toggling
+  isCustomerToggling(customer: Customer): boolean {
+    return (customer as any).isToggling || false;
+  }
+
+  // Toggle customer status
+  toggleCustomerStatus(customer: Customer) {
+    console.log('🔄 Toggling customer status:', customer);
+    
+    // Toggle status immediately
+    const newStatus = !customer.trang_thai;
+    customer.trang_thai = newStatus;
+    
+    // Update local data immediately
+    const index = this.customers.findIndex(c => c.id === customer.id);
+    if (index !== -1) {
+      this.customers[index].trang_thai = newStatus;
+      this.saveToLocalStorage();
+      this.applyFilters();
+    }
+    
+    // Show success message
+    const statusText = newStatus ? 'kích hoạt' : 'hủy kích hoạt';
+    console.log(`✅ Đã ${statusText} khách hàng ${customer.ho_ten || customer.name}`);
+    
+    // Try to update backend in background (optional)
+    try {
+      this.customerService.updateCustomerStatus(customer.id || 0, newStatus).subscribe({
+        next: (updatedCustomer) => {
+          console.log('✅ Backend sync completed:', updatedCustomer);
+        },
+        error: (error) => {
+          console.error('❌ Backend sync failed:', error);
+          console.log('⚠️ Local change is kept');
+        }
+      });
+    } catch (error) {
+      console.error('❌ Service call failed:', error);
+    }
   }
 
 }

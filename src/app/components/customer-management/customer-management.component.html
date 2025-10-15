@@ -1,536 +1,583 @@
-<div class="container">
-  
-  <!-- Filter Section -->
-  <div class="filter-section">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-content">
-        <div class="title-section">
-          <div class="icon">
-            📋
-          </div>
-          <div>
-            <h2 class="title">Quản lý khách hàng</h2>
-            <div class="subtitle">
-              Quản lý hồ sơ khách hàng, địa chỉ và trạng thái hoạt động
-            </div>
-          </div>
-        </div>
-        
-        <div class="actions">
-          <button (click)="openAddModal()" class="btn add">
-            <span style="font-size: 16px;">+</span> Thêm khách hàng
-          </button>
-        </div>
-      </div>
-    </div>
+<div class="customer-management-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Quản lý khách hàng</h1>
+  </div>
 
-    <!-- Filters -->
-    <div class="filters">
-      <div class="filter-content">
-        <!-- Search -->
-        <div class="search-input">
-          <input [(ngModel)]="searchTerm" 
-                 (input)="applyFilters()" 
-                 placeholder="🔍 Tìm kiếm theo tên, email, số điện thoại, mã khách hàng...">
-        </div>
-        
-        <!-- Status Filter -->
-        <div class="status-filter">
-          <span class="label">Trạng thái:</span>
-          <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="all" (change)="applyFilters()">
-            Tất cả
-          </label>
-          <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="active" (change)="applyFilters()">
-            Hoạt động
-          </label>
-          <label class="radio-group">
-            <input type="radio" [(ngModel)]="statusFilter" value="inactive" (change)="applyFilters()">
-            Không hoạt động
-          </label>
-        </div>
-      </div>
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-section">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Đang tải dữ liệu khách hàng...</p>
     </div>
   </div>
 
-  <!-- Customer List -->
-  <div class="customer-list">
-    <!-- Table Header -->
-    <div class="table-header">
-      <div class="header-grid">
-        <div>Mã khách hàng</div>
-        <div (click)="sortCustomers('ho_ten')" class="sortable-header">
-          Họ tên {{ getSortIcon('ho_ten') }}
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <div class="filter-header">
+      <h2 class="filter-title">Bộ Lọc Tìm Kiếm</h2>
+      <div class="customer-count">Tổng số khách hàng: {{ filteredCustomers.length }}</div>
+    </div>
+
+    <div class="filter-controls">
+      <div class="search-group">
+        <div class="search-input">
+          <span class="search-icon">🔍</span>
+          <input [(ngModel)]="searchTerm" 
+                 (input)="applyFilters()" 
+                 placeholder="Mã, tên, email, SĐT...">
         </div>
-        <div (click)="sortCustomers('email')" class="sortable-header">
-          Email {{ getSortIcon('email') }}
         </div>
-        <div (click)="sortCustomers('so_dien_thoai')" class="sortable-header">
-          Điện thoại {{ getSortIcon('so_dien_thoai') }}
+        
+      <div class="status-group">
+        <div class="radio-group">
+          <label class="radio-item">
+            <input type="radio" [(ngModel)]="statusFilter" value="all" (change)="applyFilters()">
+            <span class="radio-text">Tất cả</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" [(ngModel)]="statusFilter" value="active" (change)="applyFilters()">
+            <span class="radio-text">Kích hoạt</span>
+          </label>
+          <label class="radio-item">
+            <input type="radio" [(ngModel)]="statusFilter" value="inactive" (change)="applyFilters()">
+            <span class="radio-text">Hủy kích hoạt</span>
+          </label>
         </div>
-        <div>Địa chỉ</div>
-        <div (click)="sortCustomers('diem_tich_luy')" class="sortable-header">
-          Điểm tích lũy {{ getSortIcon('diem_tich_luy') }}
-        </div>
-        <div (click)="sortCustomers('ngay_tao')" class="sortable-header">
-          Ngày tạo {{ getSortIcon('ngay_tao') }}
-        </div>
-        <div (click)="sortCustomers('trang_thai')" class="sortable-header">
-          Trạng thái {{ getSortIcon('trang_thai') }}
-        </div>
-        <div>Thao tác</div>
       </div>
     </div>
+    
+    <div class="action-buttons">
+      <button (click)="openAddModal()" class="btn btn-primary">Tạo khách hàng mới</button>
+      <button (click)="resetFilters()" class="btn btn-gray">Đặt lại bộ lọc</button>
+      <button class="btn btn-green">Xuất Excel</button>
+      <button class="btn btn-green">Nhập từ Excel</button>
+      <button class="btn btn-green">Tải mẫu Excel</button>
+    </div>
+  </div>
 
-    <!-- Error State -->
-    <div *ngIf="error" class="error-state">
-      <div class="icon">⚠️</div>
-      <h3 class="title">Có lỗi xảy ra</h3>
-      <p class="subtitle">{{ error }}</p>
-      <button (click)="loadCustomers()" class="retry-btn">Thử lại</button>
+  <!-- Customer List Section -->
+  <div class="customer-list-section">
+    <div class="section-header">
+      <h3 class="section-title">Danh Sách Khách Hàng</h3>
+      <div class="customer-count">{{ filteredCustomers.length }} khách hàng</div>
+    </div>
+    
+    <!-- Customer Table -->
+    <div class="customer-table">
+    <div class="table-header">
+        <div class="header-row">
+          <div class="col-stt">STT</div>
+          <div class="col-code">Mã Khách Hàng</div>
+          <div class="col-name">Tên Khách Hàng</div>
+          <div class="col-phone">Số Điện Thoại</div>
+          <div class="col-email">Email</div>
+          <div class="col-birthday">Ngày Sinh</div>
+          <div class="col-address">Địa Chỉ</div>
+          <div class="col-status">Trạng Thái</div>
+          <div class="col-actions">Hành Động</div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error" class="error-state">
+        <div class="icon">⚠️</div>
+        <h3 class="title">Có lỗi xảy ra</h3>
+        <p class="subtitle">{{ error }}</p>
+        <button (click)="loadCustomers()" class="retry-btn">Thử lại</button>
     </div>
 
-    <!-- Empty State -->
-    <div *ngIf="!error && paginatedCustomers.length === 0" class="empty-state">
+      <!-- Empty State -->
+      <div *ngIf="!error && paginatedCustomers.length === 0" class="empty-state">
       <div class="icon">👥</div>
       <h3 class="title">Không có khách hàng nào</h3>
       <p class="subtitle">Hãy thêm khách hàng đầu tiên</p>
     </div>
 
-    <div class="customer-list-container">
-      <div *ngFor="let customer of paginatedCustomers; let i = index" 
-           class="customer-row">
+      <!-- Customer Rows -->
+      <div class="table-body">
+    <div *ngFor="let customer of paginatedCustomers; let i = index" 
+         class="customer-row">
       
-      <div class="customer-code">{{ getCustomerCode(customer) }}</div>
-      <div class="customer-name">{{ customer.ho_ten || customer.name }}</div>
-      <div class="email">{{ customer.email }}</div>
-      <div class="phone">{{ customer.so_dien_thoai || customer.phone }}</div>
-      <div class="address">{{ getCustomerAddress(customer) }}</div>
-      <div class="points">{{ customer.diem_tich_luy || customer.diemTichLuy || 0 }}</div>
-      <div class="date">{{ formatDate(customer.ngay_tao || customer.registrationDate) }}</div>
-      <div>
-        <span [class]="'status-badge ' + (getCustomerStatus(customer) === 'Active' ? 'active' : 'inactive')">
-          {{ getCustomerStatus(customer) === 'Active' ? 'Hoạt động' : 'Không hoạt động' }}
+          <div class="col-stt">{{ getStartItem() + i }}</div>
+          
+          <div class="col-code">
+            <span class="customer-code">{{ getCustomerCode(customer) }}</span>
+          </div>
+          
+          <div class="col-name">
+            <div class="customer-info">
+              <div class="customer-name">{{ customer.ho_ten || customer.name || 'N/A' }}</div>
+            </div>
+          </div>
+          
+          <div class="col-phone">
+            <span class="phone-text">{{ customer.so_dien_thoai || customer.phone || 'Không có số điện thoại' }}</span>
+          </div>
+          
+          <div class="col-email">
+            <span class="email-text">{{ customer.email || 'Không có email' }}</span>
+          </div>
+          
+          <div class="col-birthday">
+            <span class="birthday-text">{{ getCustomerBirthday(customer) }}</span>
+          </div>
+          
+          <div class="col-address">
+            <span class="address-text">{{ getCustomerAddress(customer) }}</span>
+          </div>
+          
+          <div class="col-status">
+            <button class="status-btn" 
+                    [class.active]="customer.trang_thai === true"
+                    [class.inactive]="customer.trang_thai === false"
+                    (click)="toggleCustomerStatus(customer)"
+                    title="🔄 Click để bật/tắt trạng thái khách hàng">
+              <span class="status-icon">
+                {{ customer.trang_thai ? '🟢' : '🔴' }}
         </span>
+              {{ customer.trang_thai ? 'Kích Hoạt' : 'Đã Hủy' }}
+            </button>
       </div>
-      <div class="actions">
-        <button (click)="viewCustomer(customer)" class="view" title="Xem chi tiết">
-          <span class="action-icon">👁️</span>
+          
+          <div class="col-actions">
+            <div class="action-buttons">
+              <button class="action-btn btn-edit" (click)="editCustomer(customer)">
+                ✏️
         </button>
-        <button (click)="openEditModal(customer)" class="edit" title="Chỉnh sửa">
-          <span class="action-icon">✏️</span>
+              <button class="action-btn btn-delete" (click)="deleteCustomer(customer)">
+                🗑️
         </button>
-        <button (click)="toggleCustomerStatus(customer)" 
-                [class]="'toggle-status ' + (getCustomerStatus(customer) === 'Active' ? 'active' : 'inactive')"
-                [title]="getCustomerStatus(customer) === 'Active' ? 'Tắt hoạt động' : 'Bật hoạt động'">
-          <span class="toggle-icon">
-            {{ getCustomerStatus(customer) === 'Active' ? '⏸️' : '▶️' }}
-          </span>
-        </button>
-        <button (click)="deleteCustomer(customer)" class="delete" title="Xóa khách hàng">
-          <span class="action-icon">🗑️</span>
-        </button>
+            </div>
+          </div>
       </div>
-    </div>
     </div>
   </div>
 
   <!-- Pagination -->
-  <div class="pagination">
-    <!-- Items per page -->
-    <div class="items-per-page">
-      <span class="label">Hiển thị:</span>
-      <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="page-select">
-        <option value="5">5</option>
-        <option value="10">10</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
+    <div class="pagination-controls">
+      <div class="page-info">
+        <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="items-per-page">
+          <option value="5">Hiển thị 5 mục / trang</option>
+          <option value="10">Hiển thị 10 mục / trang</option>
+          <option value="20">Hiển thị 20 mục / trang</option>
       </select>
-      <span class="label">mục mỗi trang</span>
+        <span class="page-range">
+          Hiển thị {{ getStartItem() }} - {{ getEndItem() }} / {{ filteredCustomers.length }} mục
+        </span>
     </div>
 
-    <!-- Page info -->
-    <div class="page-info">
-      <span>Hiển thị {{ getStartItem() }} - {{ getEndItem() }} trong tổng số {{ filteredCustomers.length }} mục</span>
-    </div>
-
-    <!-- Page navigation -->
     <div class="page-navigation">
-      <button (click)="goToFirstPage()" [disabled]="currentPage === 1" class="nav-btn first" title="Trang đầu">
-        «
-      </button>
-      <button (click)="previousPage()" [disabled]="currentPage === 1" class="nav-btn prev" title="Trang trước">
-        <
-      </button>
-      <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="nav-btn next" title="Trang sau">
-        >
-      </button>
-      <button (click)="goToLastPage()" [disabled]="currentPage === totalPages" class="nav-btn last" title="Trang cuối">
-        »
-      </button>
+        <button class="page-btn" (click)="goToPage(1)" [disabled]="currentPage === 1"><<</button>
+        <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1"><</button>
+        
+        <button *ngFor="let page of getPageNumbers()" 
+                class="page-btn" 
+                [class.active]="page === currentPage"
+                (click)="goToPage(page)">
+          {{ page }}
+        </button>
+        
+        <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">></button>
+        <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages">>></button>
+      </div>
+    </div>
     </div>
   </div>
 
   <!-- Add/Edit Customer Modal -->
-  <div *ngIf="showAddModal || showEditModal" 
-       class="modal-overlay"
-       (click)="closeModals()">
-    <div class="modal-content"
-         (click)="$event.stopPropagation()">
-      
-      <!-- Modal Header -->
+<div *ngIf="showAddModal" class="modal-overlay" (click)="closeModals()">
+  <div class="customer-form-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="header-content">
-          <h2 class="title">
-            {{ showEditModal ? 'Chỉnh sửa khách hàng' : 'Thêm Khách Hàng' }}
-          </h2>
-          <button (click)="closeModals()" class="close-btn">
-            ×
-          </button>
+        <h2 class="page-title">Thêm Khách Hàng</h2>
+        <button class="close-btn" (click)="closeModals()">×</button>
+      </div>
+      <div class="breadcrumb">
+        <span>Trang chủ</span>
+        <span>/</span>
+        <span>Khách hàng</span>
+        <span>/</span>
+        <span>Form khách hàng</span>
         </div>
       </div>
 
-      <!-- Modal Content -->
       <div class="modal-body">
-        <!-- Customer Form -->
-        <form (ngSubmit)="saveCustomer()">
+      <form class="customer-form" (ngSubmit)="saveCustomer()">
+        <!-- Customer Information Section -->
+        <div class="customer-info-section">
           <div class="form-grid">
-            <!-- Left Column -->
-            <div>
-              <!-- Customer Name -->
-              <div class="form-group">
-                <label>Tên khách hàng *</label>
+            <div class="form-column">
+              <div class="form-group" [class.has-error]="customerFormErrors.ho_ten">
+                <label class="form-label">Tên khách hàng *</label>
                 <div class="input-container">
-                  <input [(ngModel)]="customerForm.ho_ten" 
-                         name="ho_ten" 
-                         required 
+                  <input type="text" 
+                         class="form-input" 
+                         [(ngModel)]="customerForm.ho_ten"
+                         name="ho_ten"
                          placeholder="Nhập tên khách hàng"
-                         [class.error]="customerErrors.ho_ten"
-                         (input)="clearError('ho_ten')">
-                  <span *ngIf="customerErrors.ho_ten" class="error-icon">⚠️</span>
+                         [class.error]="customerFormErrors.ho_ten">
+                  <span *ngIf="customerFormErrors.ho_ten" class="warning-icon">⚠️</span>
                 </div>
-                <div *ngIf="customerErrors.ho_ten" class="error-message">
-                  {{ customerErrors.ho_ten }}
+                <div *ngIf="customerFormErrors.ho_ten" class="error-message">
+                  <span class="error-icon">⚠️</span>
+                  {{ customerFormErrors.ho_ten }}
                 </div>
               </div>
 
-              <!-- Email -->
-              <div class="form-group">
-                <label>Email *</label>
+              <div class="form-group" [class.has-error]="customerFormErrors.email">
+                <label class="form-label">Email *</label>
                 <div class="input-container">
-                  <input [(ngModel)]="customerForm.email" 
-                         name="email" 
-                         type="email" 
-                         required 
+                  <input type="email" 
+                         class="form-input" 
+                         [(ngModel)]="customerForm.email"
+                       name="email" 
                          placeholder="Nhập email"
-                         [class.error]="customerErrors.email"
-                         (input)="clearError('email')">
-                  <span *ngIf="customerErrors.email" class="error-icon">⚠️</span>
+                         [class.error]="customerFormErrors.email">
+                  <span *ngIf="customerFormErrors.email" class="warning-icon">⚠️</span>
                 </div>
-                <div *ngIf="customerErrors.email" class="error-message">
-                  {{ customerErrors.email }}
+                <div *ngIf="customerFormErrors.email" class="error-message">
+                  <span class="error-icon">⚠️</span>
+                  {{ customerFormErrors.email }}
                 </div>
               </div>
 
-              <!-- Gender -->
               <div class="form-group">
-                <label>Giới tính *</label>
+                <label class="form-label">Giới tính</label>
                 <div class="radio-group">
-                  <label>
+                  <label class="radio-item">
                     <input type="radio" 
-                           [(ngModel)]="customerForm.gioi_tinh" 
                            name="gioi_tinh" 
-                           [value]="true" 
-                           required>
-                    Nam
+                           [value]="true"
+                           [(ngModel)]="customerForm.gioi_tinh">
+                    <span class="radio-text">Nam</span>
                   </label>
-                  <label>
+                  <label class="radio-item">
                     <input type="radio" 
-                           [(ngModel)]="customerForm.gioi_tinh" 
                            name="gioi_tinh" 
-                           [value]="false" 
-                           required>
-                    Nữ
+                           [value]="false"
+                           [(ngModel)]="customerForm.gioi_tinh">
+                    <span class="radio-text">Nữ</span>
                   </label>
                 </div>
               </div>
             </div>
 
-            <!-- Right Column -->
-            <div>
-              <!-- Phone -->
-              <div class="form-group">
-                <label>Số điện thoại *</label>
+            <div class="form-column">
+              <div class="form-group" [class.has-error]="customerFormErrors.so_dien_thoai">
+                <label class="form-label">Số điện thoại *</label>
                 <div class="input-container">
-                  <input [(ngModel)]="customerForm.so_dien_thoai" 
-                         name="so_dien_thoai" 
-                         required 
+                  <input type="tel" 
+                         class="form-input" 
+                         [(ngModel)]="customerForm.so_dien_thoai"
+                         name="so_dien_thoai"
                          placeholder="Nhập số điện thoại"
-                         [class.error]="customerErrors.so_dien_thoai"
-                         (input)="clearError('so_dien_thoai')">
-                  <span *ngIf="customerErrors.so_dien_thoai" class="error-icon">⚠️</span>
+                         [class.error]="customerFormErrors.so_dien_thoai">
+                  <span *ngIf="customerFormErrors.so_dien_thoai" class="warning-icon">⚠️</span>
                 </div>
-                <div *ngIf="customerErrors.so_dien_thoai" class="error-message">
-                  {{ customerErrors.so_dien_thoai }}
-                </div>
-              </div>
-
-              <!-- Date of Birth -->
-              <div class="form-group">
-                <label>Ngày sinh *</label>
-                <div class="input-container">
-                  <input [value]="formatDateForInput(customerForm.ngay_sinh)" 
-                         (input)="onDateChange($event); clearError('ngay_sinh')"
-                         name="ngay_sinh" 
-                         type="date" 
-                         required
-                         [class.error]="customerErrors.ngay_sinh">
-                  <span *ngIf="customerErrors.ngay_sinh" class="error-icon">⚠️</span>
-                </div>
-                <div *ngIf="customerErrors.ngay_sinh" class="error-message">
-                  {{ customerErrors.ngay_sinh }}
+                <div *ngIf="customerFormErrors.so_dien_thoai" class="error-message">
+                  <span class="error-icon">⚠️</span>
+                  {{ customerFormErrors.so_dien_thoai }}
                 </div>
               </div>
 
-              <!-- Address -->
               <div class="form-group">
-                <label>Địa chỉ</label>
-                <input [(ngModel)]="customerForm.address" 
-                       name="address" 
-                       placeholder="Nhập địa chỉ">
+                <label class="form-label">Ngày sinh</label>
+                <div class="date-input-container">
+                  <input type="date" 
+                         class="form-input" 
+                         [(ngModel)]="customerForm.ngay_sinh"
+                         name="ngay_sinh"
+                         [class.error]="customerFormErrors.ngay_sinh">
+                  <span class="calendar-icon">📅</span>
+                </div>
+                <div *ngIf="customerFormErrors.ngay_sinh" class="error-message">
+                  <span class="error-icon">⚠️</span>
+                  {{ customerFormErrors.ngay_sinh }}
+              </div>
               </div>
             </div>
           </div>
-
-          <!-- Notes -->
-          <div class="form-group">
-            <label>Ghi chú</label>
-            <textarea [(ngModel)]="customerForm.notes" 
-                      name="notes" 
-                      placeholder="Nhập ghi chú (tùy chọn)"
-                      rows="3"></textarea>
           </div>
-        </form>
 
         <!-- Address Management Section -->
         <div class="address-section">
-          <!-- Address Header -->
           <div class="section-header">
             <div class="section-title">
-              <div class="icon">
-                📍
+              <span class="icon">📍</span>
+              <span class="title">Quản lý địa chỉ</span>
+              <span class="badge">{{ getAddressCount() }} địa chỉ</span>
+            </div>
+            <button type="button" class="btn-add-address" (click)="openAddressAddModal()">Thêm địa chỉ</button>
+          </div>
+          
+          <!-- Address List -->
+          <div *ngIf="getAddressCount() > 0" class="address-list">
+            <div *ngFor="let address of getAddressList(); let i = index" class="address-item">
+              <div class="address-info">
+                <div class="address-name">{{ address.tenNguoiNhan }}</div>
+                <div class="address-phone">{{ address.soDienThoai }}</div>
+                <div class="address-details">{{ address.diaChi }}, {{ address.phuongXa }}, {{ address.quanHuyen }}, {{ address.tinhThanh }}</div>
+                <div *ngIf="address.macDinh" class="default-badge">Mặc định</div>
               </div>
-              <div>
-                <h3 class="title">Quản lý địa chỉ</h3>
-                <div class="badge">
-                  {{ addresses.length }} địa chỉ
+              <div class="address-actions">
+                <button class="btn-edit-address" (click)="editAddress(address)">Sửa</button>
+                <button class="btn-delete-address" (click)="deleteAddress(address)">Xóa</button>
                 </div>
               </div>
             </div>
             
-            <div class="address-actions">
-              <button (click)="showAddressDetails()" class="btn info">
-                📋 Xem chi tiết
-              </button>
-              <button (click)="openAddressAddModal()" class="add-btn">
-                <span style="font-size: 14px;">+</span> Thêm địa chỉ
-              </button>
-            </div>
+          <!-- Empty State -->
+          <div *ngIf="getAddressCount() === 0" class="empty-address-state">
+            <div class="empty-icon">📍</div>
+            <div class="empty-title">Chưa có địa chỉ nào</div>
+          </div>
           </div>
 
-          <!-- Address Navigation -->
-          <div *ngIf="addresses.length > 0" class="address-navigation">
-            <div class="nav-content">
-              <button (click)="previousAddress()" 
-                      [disabled]="currentAddressIndex === 0"
-                      class="nav-btn prev">
-                < Trước
-              </button>
-              
-              <div class="nav-info">
-                Địa chỉ {{ currentAddressIndex + 1 }}/{{ addresses.length }}
-              </div>
-              
-              <button (click)="nextAddress()" 
-                      [disabled]="currentAddressIndex === addresses.length - 1"
-                      class="nav-btn next">
-                Tiếp >
-              </button>
-            </div>
-          </div>
-
-          <!-- Address Display -->
-          <div *ngIf="addresses.length === 0" class="empty-state">
-            <div class="icon">📍</div>
-            <h4 class="title">Chưa có địa chỉ nào</h4>
-            <p class="subtitle">Hãy thêm địa chỉ đầu tiên</p>
-          </div>
-
-          <div *ngIf="addresses.length > 0" class="address-display">
-            <div *ngFor="let address of addresses; let i = index" 
-                 [style.display]="i === currentAddressIndex ? 'block' : 'none'"
-                 class="address-item">
-              
-              <!-- Default Badge -->
-              <div *ngIf="getAddressDefault(address)" class="default-badge">
-                ⭐ Mặc định
-              </div>
-              
-              <!-- Address Info -->
-              <div class="address-info">
-                <div class="title">
-                  Địa chỉ {{ i + 1 }}
-                </div>
-                <div class="details">
-                  <div class="detail-item">
-                    <span class="icon">📍</span>
-                    <span class="label">Địa chỉ cụ thể:</span>
-                    <span>{{ getAddressSpecific(address) }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <span class="icon">🏢</span>
-                    <span>{{ address.ward }}, {{ address.district }}, {{ address.province }}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Actions -->
-              <div class="actions">
-                <button (click)="setAddressAsDefault(address)" 
-                        [disabled]="address.isDefault"
-                        class="set-default">
-                  {{ address.isDefault ? 'Đã mặc định' : 'Đặt mặc định' }}
-                </button>
-                <button (click)="openAddressEditModal(address)" class="edit">
-                  ✏️ Sửa
-                </button>
-                <button (click)="deleteAddress(address)" class="delete" title="Xóa địa chỉ">
-                  🗑️ Xóa
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal Action Buttons -->
         <div class="modal-actions">
-          <button (click)="closeModals()" class="cancel">
-            Hủy bỏ
-          </button>
-          <button (click)="saveCustomer()" class="save">
-            💾 Lưu khách hàng
-          </button>
+          <button type="button" class="btn-cancel" (click)="closeModals()">Hủy bỏ</button>
+          <button type="submit" class="btn-save">Lưu khách hàng</button>
         </div>
-      </div>
+      </form>
     </div>
-  </div>
-
-  <!-- Address Add/Edit Modal -->
-  <div *ngIf="showAddressAddModal || showAddressEditModal" 
-       class="modal-overlay"
-       (click)="closeAddressModals()">
-    <div class="modal-content address-modal"
-         (click)="$event.stopPropagation()">
-      
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <div class="header-content">
-          <h2 class="title">
-            {{ showAddressEditModal ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ mới' }}
-          </h2>
-          <button (click)="closeAddressModals()" class="close-btn">
-            ×
-          </button>
-        </div>
-      </div>
-
-      <!-- Modal Content -->
-      <div class="modal-body">
-        <form (ngSubmit)="saveAddress()">
-          <!-- Specific Address -->
-          <div class="form-group">
-            <label>Địa chỉ cụ thể *</label>
-            <input [(ngModel)]="addressForm.specificAddress" 
-                   name="specificAddress" 
-                   required 
-                   placeholder="Nhập số nhà, tên đường...">
-          </div>
-
-          <!-- Province -->
-          <div class="form-group">
-            <label>Tỉnh/Thành phố *</label>
-            <select [(ngModel)]="addressForm.province" 
-                    name="province" 
-                    required 
-                    (change)="onProvinceChange()">
-              <option value="">Chọn tỉnh/thành phố</option>
-              <option *ngFor="let province of provinces" [value]="province.id">
-                {{ province.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- District -->
-          <div class="form-group">
-            <label>Quận/Huyện *</label>
-            <select [(ngModel)]="addressForm.district" 
-                    name="district" 
-                    required 
-                    (change)="onDistrictChange()"
-                    [disabled]="!addressForm.province">
-              <option value="">Chọn quận/huyện</option>
-              <option *ngFor="let district of filteredDistricts" [value]="district.id">
-                {{ district.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Ward -->
-          <div class="form-group">
-            <label>Phường/Xã *</label>
-            <select [(ngModel)]="addressForm.ward" 
-                    name="ward" 
-                    required
-                    [disabled]="!addressForm.district">
-              <option value="">Chọn phường/xã</option>
-              <option *ngFor="let ward of filteredWards" [value]="ward.id">
-                {{ ward.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Default Address -->
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" 
-                     [(ngModel)]="addressForm.isDefault" 
-                     name="isDefault">
-              <span>Đặt làm địa chỉ mặc định</span>
-            </label>
-          </div>
-        </form>
-
-        <!-- Modal Action Buttons -->
-        <div class="modal-actions">
-          <button (click)="closeAddressModals()" class="cancel">
-            Hủy bỏ
-          </button>
-          <button (click)="saveAddress()" class="save">
-            💾 {{ showAddressEditModal ? 'Cập nhật' : 'Thêm' }} địa chỉ
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Sorting Info -->
-  <div class="sorting-info" *ngIf="sortField">
-    <span class="sort-label">Sắp xếp theo:</span>
-    <span class="sort-field">{{ getFieldDisplayName(sortField) }}</span>
-    <span class="sort-direction">{{ sortDirection === 'asc' ? 'A → Z' : 'Z → A' }}</span>
-    <button (click)="resetSorting()" class="reset-sort-btn">Reset</button>
   </div>
 </div>
 
+<!-- Add Address Modal -->
+<div *ngIf="showAddressAddModal" class="modal-overlay" (click)="closeAddressModals()">
+  <div class="address-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="header-content">
+        <div class="title-section">
+          <div class="icon">📍</div>
+          <h2 class="modal-title">Thêm địa chỉ mới</h2>
+        </div>
+        <button class="close-btn" (click)="closeAddressModals()">×</button>
+      </div>
+    </div>
+    
+    <div class="modal-body">
+      <form class="address-form" (ngSubmit)="saveAddress()">
+        <!-- Address Details Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">Thông tin địa chỉ</h3>
+            <div class="section-divider"></div>
+              </div>
+              
+          <div class="form-group">
+            <label class="form-label">
+              <span class="label-icon">🏠</span>
+              Địa chỉ cụ thể *
+            </label>
+            <input type="text" 
+                   class="form-input" 
+                   [(ngModel)]="newAddress.diaChi"
+                   name="dia_chi_cu_the"
+                   placeholder="Nhập số nhà, tên đường, tòa nhà..."
+                   [class.error]="addressFormErrors.diaChi">
+            <div class="input-hint">Ví dụ: 123 Đường ABC, Tòa nhà XYZ</div>
+            <div *ngIf="addressFormErrors.diaChi" class="error-message">
+              <span class="error-icon">⚠️</span>
+              {{ addressFormErrors.diaChi }}
+            </div>
+            </div>
+          </div>
+
+        <!-- Location Section -->
+        <div class="form-section">
+          <div class="section-header">
+            <h3 class="section-title">Vị trí địa chỉ</h3>
+            <div class="section-divider"></div>
+          </div>
+
+          <div class="location-fields">
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🏙️</span>
+                Tỉnh/Thành phố *
+              </label>
+              <select class="form-input" 
+                      [(ngModel)]="newAddress.tinhThanh"
+                      name="tinh_thanh_pho"
+                      [class.error]="addressFormErrors.tinhThanh">
+                <option value="">Chọn tỉnh/thành phố</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+                <option value="Hải Phòng">Hải Phòng</option>
+                <option value="Cần Thơ">Cần Thơ</option>
+                <option value="An Giang">An Giang</option>
+                <option value="Bà Rịa - Vũng Tàu">Bà Rịa - Vũng Tàu</option>
+                <option value="Bắc Giang">Bắc Giang</option>
+                <option value="Bắc Kạn">Bắc Kạn</option>
+                <option value="Bạc Liêu">Bạc Liêu</option>
+                <option value="Bắc Ninh">Bắc Ninh</option>
+                <option value="Bến Tre">Bến Tre</option>
+                <option value="Bình Định">Bình Định</option>
+                <option value="Bình Dương">Bình Dương</option>
+                <option value="Bình Phước">Bình Phước</option>
+                <option value="Bình Thuận">Bình Thuận</option>
+                <option value="Cà Mau">Cà Mau</option>
+                <option value="Cao Bằng">Cao Bằng</option>
+                <option value="Đắk Lắk">Đắk Lắk</option>
+                <option value="Đắk Nông">Đắk Nông</option>
+                <option value="Điện Biên">Điện Biên</option>
+                <option value="Đồng Nai">Đồng Nai</option>
+                <option value="Đồng Tháp">Đồng Tháp</option>
+                <option value="Gia Lai">Gia Lai</option>
+                <option value="Hà Giang">Hà Giang</option>
+                <option value="Hà Nam">Hà Nam</option>
+                <option value="Hà Tĩnh">Hà Tĩnh</option>
+                <option value="Hải Dương">Hải Dương</option>
+                <option value="Hậu Giang">Hậu Giang</option>
+                <option value="Hòa Bình">Hòa Bình</option>
+                <option value="Hưng Yên">Hưng Yên</option>
+                <option value="Khánh Hòa">Khánh Hòa</option>
+                <option value="Kiên Giang">Kiên Giang</option>
+                <option value="Kon Tum">Kon Tum</option>
+                <option value="Lai Châu">Lai Châu</option>
+                <option value="Lâm Đồng">Lâm Đồng</option>
+                <option value="Lạng Sơn">Lạng Sơn</option>
+                <option value="Lào Cai">Lào Cai</option>
+                <option value="Long An">Long An</option>
+                <option value="Nam Định">Nam Định</option>
+                <option value="Nghệ An">Nghệ An</option>
+                <option value="Ninh Bình">Ninh Bình</option>
+                <option value="Ninh Thuận">Ninh Thuận</option>
+                <option value="Phú Thọ">Phú Thọ</option>
+                <option value="Phú Yên">Phú Yên</option>
+                <option value="Quảng Bình">Quảng Bình</option>
+                <option value="Quảng Nam">Quảng Nam</option>
+                <option value="Quảng Ngãi">Quảng Ngãi</option>
+                <option value="Quảng Ninh">Quảng Ninh</option>
+                <option value="Quảng Trị">Quảng Trị</option>
+                <option value="Sóc Trăng">Sóc Trăng</option>
+                <option value="Sơn La">Sơn La</option>
+                <option value="Tây Ninh">Tây Ninh</option>
+                <option value="Thái Bình">Thái Bình</option>
+                <option value="Thái Nguyên">Thái Nguyên</option>
+                <option value="Thanh Hóa">Thanh Hóa</option>
+                <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
+                <option value="Tiền Giang">Tiền Giang</option>
+                <option value="Trà Vinh">Trà Vinh</option>
+                <option value="Tuyên Quang">Tuyên Quang</option>
+                <option value="Vĩnh Long">Vĩnh Long</option>
+                <option value="Vĩnh Phúc">Vĩnh Phúc</option>
+                <option value="Yên Bái">Yên Bái</option>
+              </select>
+              <div *ngIf="addressFormErrors.tinhThanh" class="error-message">
+                <span class="error-icon">⚠️</span>
+                {{ addressFormErrors.tinhThanh }}
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🏘️</span>
+                Quận/Huyện *
+              </label>
+              <select class="form-input" 
+                      [(ngModel)]="newAddress.quanHuyen"
+                      name="quan_huyen"
+                      [class.error]="addressFormErrors.quanHuyen">
+                <option value="">Chọn quận/huyện</option>
+                <option value="Quận 1">Quận 1</option>
+                <option value="Quận 2">Quận 2</option>
+                <option value="Quận 3">Quận 3</option>
+                <option value="Quận 4">Quận 4</option>
+                <option value="Quận 5">Quận 5</option>
+                <option value="Quận 6">Quận 6</option>
+                <option value="Quận 7">Quận 7</option>
+                <option value="Quận 8">Quận 8</option>
+                <option value="Quận 9">Quận 9</option>
+                <option value="Quận 10">Quận 10</option>
+                <option value="Quận 11">Quận 11</option>
+                <option value="Quận 12">Quận 12</option>
+                <option value="Thủ Đức">Thủ Đức</option>
+                <option value="Bình Thạnh">Bình Thạnh</option>
+                <option value="Gò Vấp">Gò Vấp</option>
+                <option value="Phú Nhuận">Phú Nhuận</option>
+                <option value="Tân Bình">Tân Bình</option>
+                <option value="Tân Phú">Tân Phú</option>
+                <option value="Bình Tân">Bình Tân</option>
+                <option value="Hóc Môn">Hóc Môn</option>
+                <option value="Củ Chi">Củ Chi</option>
+                <option value="Bình Chánh">Bình Chánh</option>
+                <option value="Nhà Bè">Nhà Bè</option>
+                <option value="Cần Giờ">Cần Giờ</option>
+              </select>
+              <div *ngIf="addressFormErrors.quanHuyen" class="error-message">
+                <span class="error-icon">⚠️</span>
+                {{ addressFormErrors.quanHuyen }}
+              </div>
+              </div>
+              
+            <div class="form-group">
+              <label class="form-label">
+                <span class="label-icon">🏘️</span>
+                Xã/Phường *
+              </label>
+              <select class="form-input" 
+                      [(ngModel)]="newAddress.phuongXa"
+                      name="xa_phuong">
+                <option value="">Chọn xã/phường</option>
+                <option value="Phường 1">Phường 1</option>
+                <option value="Phường 2">Phường 2</option>
+                <option value="Phường 3">Phường 3</option>
+                <option value="Phường 4">Phường 4</option>
+                <option value="Phường 5">Phường 5</option>
+                <option value="Phường 6">Phường 6</option>
+                <option value="Phường 7">Phường 7</option>
+                <option value="Phường 8">Phường 8</option>
+                <option value="Phường 9">Phường 9</option>
+                <option value="Phường 10">Phường 10</option>
+                <option value="Phường 11">Phường 11</option>
+                <option value="Phường 12">Phường 12</option>
+                <option value="Phường 13">Phường 13</option>
+                <option value="Phường 14">Phường 14</option>
+                <option value="Phường 15">Phường 15</option>
+              </select>
+              <div *ngIf="addressFormErrors.phuongXa" class="error-message">
+                <span class="error-icon">⚠️</span>
+                {{ addressFormErrors.phuongXa }}
+                  </div>
+                  </div>
+                </div>
+              </div>
+              
+              
+        <!-- Default Address Section -->
+        <div class="form-section">
+          <div class="checkbox-group">
+            <div class="checkbox-container">
+              <input type="checkbox" 
+                     class="checkbox-input" 
+                     [(ngModel)]="newAddress.macDinh"
+                     name="mac_dinh"
+                     id="default-address">
+              <label for="default-address" class="checkbox-text">
+                <span class="checkbox-icon">⭐</span>
+                Đặt làm địa chỉ mặc định
+              </label>
+              </div>
+            <div class="checkbox-hint">
+              Địa chỉ mặc định sẽ được sử dụng khi giao hàng
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" (click)="closeAddressModals()">
+            <span class="btn-icon">❌</span>
+            Hủy bỏ
+          </button>
+          <button type="submit" class="btn-save">
+            <span class="btn-icon">💾</span>
+            Lưu địa chỉ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

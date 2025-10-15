@@ -27,6 +27,8 @@ export interface Customer {
   diemTichLuy?: number; // Điểm tích lũy (backend format)
   userId?: number; // User ID
   diaChi?: Address[]; // Địa chỉ (backend format)
+  // UI state properties
+  isToggling?: boolean; // Trạng thái đang toggle status
 }
 
 export interface CustomerFormData {
