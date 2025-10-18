@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PhieuGiamGiaService } from '../../services/phieu-giam-gia.service';
-import { PhieuGiamGiaRequest, KhachHang, PhieuGiamGiaCaNhan } from '../../interfaces/phieu-giam-gia.interface';
+import { PhieuGiamGiaRequest, KhachHang } from '../../interfaces/phieu-giam-gia.interface';
 
 @Component({
   selector: 'app-phieu-giam-gia-form',
@@ -16,7 +16,6 @@ export class PhieuGiamGiaFormComponent implements OnInit {
   
   private phieuGiamGiaService = inject(PhieuGiamGiaService);
   private router = inject(Router);
-  private cdr = inject(ChangeDetectorRef);
   
   // Form data
   phieuCode = '';
@@ -28,17 +27,12 @@ export class PhieuGiamGiaFormComponent implements OnInit {
   quantity = 0;
   startDate = '';
   endDate = '';
-  trangThai = true; // Trạng thái: true = hoạt động, false = không hoạt động
+  trangThai = 'sap_dien_ra'; // Trạng thái: 'sap_dien_ra', 'dang_dien_ra', 'ket_thuc'
+  isPublic = true; // Trạng thái privacy: true = công khai, false = cá nhân
 
   // Suggested codes
   suggestedCodes: string[] = [];
   showSuggestions = false;
-  
-  // Customer selection
-  searchTerm = '';
-  selectedCustomers: KhachHang[] = [];
-  customers: KhachHang[] = [];
-  filteredCustomers: KhachHang[] = [];
   
   // Loading states
   isLoading = false;
@@ -51,13 +45,15 @@ export class PhieuGiamGiaFormComponent implements OnInit {
   // Validation errors
   validationErrors: { [key: string]: string } = {};
 
-  // Phiếu Giảm Giá Cá Nhân
-  phieuGiamGiaCaNhans: PhieuGiamGiaCaNhan[] = [];
+  // Customer selection
+  searchTerm = '';
+  selectedCustomers: KhachHang[] = [];
+  customers: KhachHang[] = [];
+  filteredCustomers: KhachHang[] = [];
 
   ngOnInit() {
     this.initializeForm();
     this.loadCustomers();
-    this.loadPhieuGiamGiaCaNhans();
   }
 
   initializeForm() {
@@ -70,6 +66,9 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     
     this.startDate = this.formatDateForInput(today);
     this.endDate = this.formatDateForInput(nextMonth);
+    
+    // Tự động tính trạng thái khi khởi tạo form
+    this.updateTrangThaiOnDateChange();
   }
 
   loadCustomers() {
@@ -113,11 +112,19 @@ export class PhieuGiamGiaFormComponent implements OnInit {
   selectCustomer(customer: KhachHang) {
     if (!this.selectedCustomers.find(c => c.id === customer.id)) {
       this.selectedCustomers.push(customer);
+      // Clear privacy validation error when selecting a customer
+      this.clearPrivacyError();
+      // Auto-update quantity for private vouchers
+      this.updateQuantityForPrivateVoucher();
     }
   }
 
   removeCustomer(customer: KhachHang) {
     this.selectedCustomers = this.selectedCustomers.filter(c => c.id !== customer.id);
+    // Clear privacy validation error when removing a customer
+    this.clearPrivacyError();
+    // Auto-update quantity for private vouchers
+    this.updateQuantityForPrivateVoucher();
   }
 
   // Helper method to check if customer is selected
@@ -130,145 +137,214 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     if (!this.validateForm()) {
       return;
     }
-    
+
     this.isSaving = true;
     this.errorMessage = '';
     this.successMessage = '';
-    
-    const phieuData: PhieuGiamGiaRequest = {
+
+    // Tự động tính toán trạng thái dựa trên thời gian thực tế
+    this.trangThai = this.calculateTrangThaiBasedOnTime();
+
+    const requestBody: PhieuGiamGiaRequest = {
       maPhieu: this.phieuCode,
       tenPhieuGiamGia: this.phieuName,
       loaiPhieuGiamGia: this.phieuType,
       giaTriGiam: this.maxDiscount,
-      giaTriToiThieu: this.minDiscount, // Sử dụng minDiscount cho giaTriToiThieu
+      giaTriToiThieu: this.minDiscount,
       soTienToiDa: this.maxDiscount,
       hoaDonToiThieu: this.minInvoice,
       soLuongDung: this.quantity,
-      ngayBatDau: this.phieuGiamGiaService.formatDateForAPI(this.startDate),
-      ngayKetThuc: this.phieuGiamGiaService.formatDateForAPI(this.endDate),
-      trangThai: this.trangThai
+      ngayBatDau: this.startDate,
+      ngayKetThuc: this.endDate,
+      trangThai: this.convertTrangThaiToBoolean(), // Convert trạng thái mới thành boolean
+      isPublic: this.isPublic
     };
-    
-    this.phieuGiamGiaService.createPhieuGiamGia(phieuData).subscribe({
-      next: (response: any) => {
-        if (response.success && response.data) {
-          this.successMessage = 'Tạo phiếu giảm giá thành công!';
-          
-          // Reset form after successful creation
-          setTimeout(() => {
-            this.initializeForm();
-            this.selectedCustomers = [];
-            this.successMessage = '';
-          }, 2000);
-        } else {
-          this.errorMessage = response.message || 'Không thể tạo phiếu giảm giá';
-        }
+
+    console.log('Saving phiếu giảm giá:', requestBody);
+
+    this.phieuGiamGiaService.createPhieuGiamGia(requestBody).subscribe({
+      next: (response) => {
+        console.log('Save success:', response);
+        this.successMessage = 'Tạo phiếu giảm giá thành công!';
+        this.resetForm();
         this.isSaving = false;
+        
+        // Navigate to phiếu giảm giá list page after 2 seconds
+        setTimeout(() => {
+          this.router.navigate(['/phieu-giam-gia']);
+        }, 2000);
       },
-      error: (error: any) => {
-        console.error('Error creating phiếu giảm giá:', error);
-        this.errorMessage = 'Lỗi khi tạo phiếu giảm giá: ' + error.message;
+      error: (error) => {
+        console.error('Save error:', error);
+        this.errorMessage = error.error?.message || 'Lỗi khi tạo phiếu giảm giá';
         this.isSaving = false;
       }
     });
   }
 
-  // Validation methods
+  // Form validation
   validateForm(): boolean {
     this.validationErrors = {};
     let isValid = true;
 
-    // Mã Phiếu validation
-    if (!this.phieuCode || this.phieuCode.trim() === '') {
+    // Validate Mã Phiếu
+    if (!this.phieuCode.trim()) {
       this.validationErrors['phieuCode'] = 'Mã phiếu không được để trống';
       isValid = false;
-    } else if (this.phieuCode.length < 3) {
+    } else if (this.phieuCode.trim().length < 3) {
       this.validationErrors['phieuCode'] = 'Mã phiếu phải có ít nhất 3 ký tự';
       isValid = false;
+    } else if (this.phieuCode.trim().length > 50) {
+      this.validationErrors['phieuCode'] = 'Mã phiếu không được vượt quá 50 ký tự';
+      isValid = false;
     }
 
-    // Tên validation
-    if (!this.phieuName || this.phieuName.trim() === '') {
+    // Validate Tên Phiếu
+    if (!this.phieuName.trim()) {
       this.validationErrors['phieuName'] = 'Tên phiếu không được để trống';
       isValid = false;
-    } else if (this.phieuName.length < 5) {
-      this.validationErrors['phieuName'] = 'Tên phiếu phải có ít nhất 5 ký tự';
+    } else if (this.phieuName.trim().length < 2) {
+      this.validationErrors['phieuName'] = 'Tên phiếu phải có ít nhất 2 ký tự';
+      isValid = false;
+    } else if (this.phieuName.trim().length > 100) {
+      this.validationErrors['phieuName'] = 'Tên phiếu không được vượt quá 100 ký tự';
       isValid = false;
     }
 
-    // Số tiền giảm tối đa validation
-    if (this.maxDiscount < 0) {
-      this.validationErrors['maxDiscount'] = 'Số tiền giảm tối đa không được âm';
+    // Validate Trạng thái Phiếu (isPublic) - Nếu chọn cá nhân thì phải chọn khách hàng
+    if (this.isPublic === false && this.selectedCustomers.length === 0) {
+      this.validationErrors['isPublic'] = 'Khi chọn trạng thái "Cá nhân", bạn phải chọn ít nhất một khách hàng';
       isValid = false;
-    } else if (this.phieuType && this.maxDiscount > 1000000) {
-      this.validationErrors['maxDiscount'] = 'Số tiền giảm tối đa không được vượt quá 1,000,000 VND';
+    }
+
+    // Validate Loại Phiếu (phieuType)
+    if (this.phieuType === null || this.phieuType === undefined) {
+      this.validationErrors['phieuType'] = 'Vui lòng chọn loại phiếu';
+      isValid = false;
+    }
+
+    // Validate Giá trị giảm (maxDiscount) - Bổ sung validation
+    if (this.maxDiscount === null || this.maxDiscount === undefined) {
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm không được để trống';
+      isValid = false;
+    } else if (this.maxDiscount <= 0) {
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm phải lớn hơn 0';
+      isValid = false;
+    } else if (this.phieuType && this.maxDiscount < 1000) {
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm tiền mặt phải từ 1,000 VND trở lên';
       isValid = false;
     } else if (!this.phieuType && this.maxDiscount > 100) {
-      this.validationErrors['maxDiscount'] = 'Phần trăm giảm không được vượt quá 100%';
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm phần trăm không được vượt quá 100%';
+      isValid = false;
+    } else if (!this.phieuType && this.maxDiscount < 1) {
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm phần trăm phải từ 1% trở lên';
+      isValid = false;
+    } else if (this.maxDiscount > 999999999) {
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm quá lớn (tối đa 999,999,999)';
+      isValid = false;
+    } else if (!Number.isFinite(this.maxDiscount)) {
+      this.validationErrors['maxDiscount'] = 'Giá trị giảm phải là số hợp lệ';
       isValid = false;
     }
 
-    // Số tiền giảm tối thiểu validation
-    if (this.minDiscount < 0) {
+    // Validate Số tiền giảm tối thiểu (minDiscount) - Bổ sung validation
+    if (this.minDiscount === null || this.minDiscount === undefined) {
+      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được để trống';
+      isValid = false;
+    } else if (this.minDiscount < 0) {
       this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được âm';
       isValid = false;
     } else if (this.minDiscount > this.maxDiscount) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được lớn hơn tối đa';
+      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được lớn hơn giá trị giảm';
+      isValid = false;
+    } else if (this.minDiscount > 999999999) {
+      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu quá lớn (tối đa 999,999,999)';
+      isValid = false;
+    } else if (!Number.isFinite(this.minDiscount)) {
+      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu phải là số hợp lệ';
+      isValid = false;
+    } else if (this.phieuType && this.minDiscount > 0 && this.minDiscount < 100) {
+      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu tiền mặt phải từ 100 VND trở lên';
+      isValid = false;
+    } else if (!this.phieuType && this.minDiscount > 0 && this.minDiscount < 1) {
+      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu phần trăm phải từ 1% trở lên';
       isValid = false;
     }
 
-    // Hóa đơn tối thiểu validation
-    if (this.minInvoice < 0) {
+    // Validate Hóa đơn tối thiểu (minInvoice)
+    if (this.minInvoice === null || this.minInvoice === undefined) {
+      this.validationErrors['minInvoice'] = 'Hóa đơn tối thiểu không được để trống';
+      isValid = false;
+    } else if (this.minInvoice < 0) {
       this.validationErrors['minInvoice'] = 'Hóa đơn tối thiểu không được âm';
       isValid = false;
-    } else if (this.minInvoice < 10000) {
-      this.validationErrors['minInvoice'] = 'Hóa đơn tối thiểu phải ít nhất 10,000 VND';
+    } else if (this.minInvoice > 999999999) {
+      this.validationErrors['minInvoice'] = 'Hóa đơn tối thiểu quá lớn';
       isValid = false;
     }
 
-    // Số lượng validation
-    if (this.quantity <= 0) {
+    // Validate Số lượng (quantity)
+    if (this.quantity === null || this.quantity === undefined) {
+      this.validationErrors['quantity'] = 'Số lượng không được để trống';
+      isValid = false;
+    } else if (this.quantity <= 0) {
       this.validationErrors['quantity'] = 'Số lượng phải lớn hơn 0';
       isValid = false;
-    } else if (this.quantity > 10000) {
-      this.validationErrors['quantity'] = 'Số lượng không được vượt quá 10,000';
+    } else if (this.quantity > 9999) {
+      this.validationErrors['quantity'] = 'Số lượng không được vượt quá 9999';
+      isValid = false;
+    } else if (!Number.isInteger(this.quantity)) {
+      this.validationErrors['quantity'] = 'Số lượng phải là số nguyên';
       isValid = false;
     }
 
-    // Ngày validation
+    // Validate Ngày bắt đầu (startDate)
     if (!this.startDate) {
       this.validationErrors['startDate'] = 'Ngày bắt đầu không được để trống';
       isValid = false;
+    } else {
+      const start = new Date(this.startDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (isNaN(start.getTime())) {
+        this.validationErrors['startDate'] = 'Ngày bắt đầu không hợp lệ';
+        isValid = false;
+      } else if (start < today) {
+        this.validationErrors['startDate'] = 'Ngày bắt đầu không được là ngày trong quá khứ';
+        isValid = false;
+      }
     }
 
+    // Validate Ngày kết thúc (endDate)
     if (!this.endDate) {
       this.validationErrors['endDate'] = 'Ngày kết thúc không được để trống';
       isValid = false;
-    }
-
-    if (this.startDate && this.endDate) {
-      const start = new Date(this.startDate);
+    } else {
       const end = new Date(this.endDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (start < today) {
-        this.validationErrors['startDate'] = 'Ngày bắt đầu không được trong quá khứ';
+      
+      if (isNaN(end.getTime())) {
+        this.validationErrors['endDate'] = 'Ngày kết thúc không hợp lệ';
         isValid = false;
-      }
+      } else if (this.startDate) {
+        const start = new Date(this.startDate);
+        
+        if (end <= start) {
+          this.validationErrors['endDate'] = 'Ngày kết thúc phải sau ngày bắt đầu';
+          isValid = false;
+        }
 
-      if (end <= start) {
-        this.validationErrors['endDate'] = 'Ngày kết thúc phải sau ngày bắt đầu';
-        isValid = false;
-      }
-
-      const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays > 365) {
-        this.validationErrors['endDate'] = 'Phiếu giảm giá không được có thời hạn quá 1 năm';
-        isValid = false;
+        const diffTime = end.getTime() - start.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays > 365) {
+          this.validationErrors['endDate'] = 'Phiếu giảm giá không được có thời hạn quá 1 năm';
+          isValid = false;
+        }
       }
     }
+
+    // Validate Trạng thái (trangThai) - Đã ẩn trường này, tự động set mặc định
+    // Không cần validation vì trường đã được ẩn và tự động set giá trị mặc định
 
     return isValid;
   }
@@ -281,6 +357,123 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     if (this.validationErrors[fieldName]) {
       delete this.validationErrors[fieldName];
     }
+  }
+
+  // Clear privacy validation error when changing privacy status or selecting customers
+  clearPrivacyError() {
+    if (this.validationErrors['isPublic']) {
+      delete this.validationErrors['isPublic'];
+    }
+    // Reset quantity to 0 when switching to private mode
+    if (!this.isPublic) {
+      this.quantity = 0;
+      // Clear any quantity validation errors
+      this.clearFieldError('quantity');
+    }
+    // Auto-update quantity when changing privacy status
+    this.updateQuantityForPrivateVoucher();
+  }
+
+  // Auto-update quantity for private vouchers based on selected customers
+  updateQuantityForPrivateVoucher() {
+    if (!this.isPublic) {
+      this.quantity = this.selectedCustomers.length;
+    }
+  }
+
+  // Method to handle privacy status change
+  onPrivacyStatusChange() {
+    this.clearPrivacyError();
+    // Force update quantity based on current mode
+    if (!this.isPublic) {
+      this.quantity = this.selectedCustomers.length;
+    }
+  }
+
+  // Handle quantity input for private vouchers
+  onQuantityInput(event: any) {
+    if (!this.isPublic) {
+      // Prevent input for private vouchers
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      event.target.value = this.quantity; // Reset to current value
+      // Force update the model
+      setTimeout(() => {
+        this.quantity = this.selectedCustomers.length;
+      }, 0);
+      return false;
+    }
+    this.clearFieldError('quantity');
+    return true;
+  }
+
+  // Handle quantity keydown for private vouchers
+  onQuantityKeydown(event: KeyboardEvent) {
+    if (!this.isPublic) {
+      // Prevent all keyboard input for private vouchers
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+    return true;
+  }
+
+  // Handle quantity click for private vouchers
+  onQuantityClick(event: any) {
+    if (!this.isPublic) {
+      // Prevent click for private vouchers
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      event.target.blur(); // Remove focus
+      return false;
+    }
+    return true;
+  }
+
+  // Handle quantity focus for private vouchers
+  onQuantityFocus(event: any) {
+    if (!this.isPublic) {
+      // Prevent focus for private vouchers
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      event.target.blur(); // Remove focus immediately
+      return false;
+    }
+    return true;
+  }
+
+  // Handle quantity change for private vouchers (ngModel change)
+  onQuantityChange() {
+    if (!this.isPublic) {
+      // Force reset to selected customers count
+      this.quantity = this.selectedCustomers.length;
+    }
+  }
+
+  // Handle quantity paste for private vouchers
+  onQuantityPaste(event: any) {
+    if (!this.isPublic) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+    return true;
+  }
+
+  // Handle quantity wheel (scroll) for private vouchers
+  onQuantityWheel(event: any) {
+    if (!this.isPublic) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return false;
+    }
+    return true;
   }
 
   // Navigation
@@ -304,6 +497,56 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     return this.phieuType ? 'Tiền mặt' : 'Phần trăm';
   }
 
+  getTrangThaiText(): string {
+    switch (this.trangThai) {
+      case 'sap_dien_ra':
+        return 'Sắp diễn ra';
+      case 'dang_dien_ra':
+        return 'Đang diễn ra';
+      case 'ket_thuc':
+        return 'Kết thúc';
+      default:
+        return 'Không xác định';
+    }
+  }
+
+  // Convert trạng thái mới thành boolean để tương thích với backend
+  convertTrangThaiToBoolean(): boolean {
+    // Chỉ "Đang diễn ra" mới là true (hoạt động), các trạng thái khác là false
+    return this.trangThai === 'dang_dien_ra';
+  }
+
+  // Tính toán trạng thái dựa trên thời gian thực tế
+  calculateTrangThaiBasedOnTime(): string {
+    const now = new Date();
+    const startDate = new Date(this.startDate);
+    const endDate = new Date(this.endDate);
+    
+    // Set thời gian về 00:00:00 để so sánh chính xác ngày
+    now.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    
+    if (now < startDate) {
+      // Ngày hiện tại < ngày bắt đầu → Sắp diễn ra
+      return 'sap_dien_ra';
+    } else if (now >= startDate && now <= endDate) {
+      // Ngày hiện tại trong khoảng từ ngày bắt đầu đến ngày kết thúc → Đang diễn ra
+      return 'dang_dien_ra';
+    } else {
+      // Ngày hiện tại > ngày kết thúc → Kết thúc
+      return 'ket_thuc';
+    }
+  }
+
+  // Cập nhật trạng thái khi thay đổi ngày
+  updateTrangThaiOnDateChange() {
+    if (this.startDate && this.endDate) {
+      this.trangThai = this.calculateTrangThaiBasedOnTime();
+      console.log('Trạng thái đã được cập nhật:', this.getTrangThaiText());
+    }
+  }
+
   getGenderText(gender: boolean): string {
     return gender ? 'Nam' : 'Nữ';
   }
@@ -325,8 +568,12 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     this.showSuggestions = false;
   }
 
-  // Toggle suggestions
+  // Toggle suggestions (chỉ hiển thị khi click nút gợi ý)
   toggleSuggestions() {
+    if (!this.showSuggestions) {
+      // Nếu chưa có gợi ý, tạo mới
+      this.generateSuggestedCodes();
+    }
     this.showSuggestions = !this.showSuggestions;
   }
 
@@ -335,219 +582,27 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     this.generateSuggestedCodes();
   }
 
-  // Handle input focus
-  onCodeInputFocus() {
-    this.showSuggestions = true;
-  }
-
-  // Handle input blur (with delay to allow clicking suggestions)
-  onCodeInputBlur() {
-    setTimeout(() => {
-      this.showSuggestions = false;
-    }, 200);
-  }
-
-  // Load Phiếu Giảm Giá Cá Nhân
-  loadPhieuGiamGiaCaNhans() {
-    console.log('Loading phiếu giảm giá cá nhân from API...');
+  // Reset form
+  resetForm() {
+    this.phieuCode = '';
+    this.phieuName = '';
+    this.phieuType = true;
+    this.maxDiscount = 0;
+    this.minDiscount = 0;
+    this.minInvoice = 0;
+    this.quantity = 0;
+    this.trangThai = 'sap_dien_ra';
+    this.isPublic = true;
     
-    this.phieuGiamGiaService.getAllPhieuGiamGiaCaNhan().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.phieuGiamGiaCaNhans = response.data;
-          console.log('Loaded phiếu giảm giá cá nhân:', this.phieuGiamGiaCaNhans);
-          this.cdr.detectChanges();
-        } else {
-          console.error('Error loading phiếu giảm giá cá nhân:', response.message);
-          this.loadMockData();
-        }
-      },
-      error: (error) => {
-        console.error('API Error loading phiếu giảm giá cá nhân:', error);
-        this.loadMockData();
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  // Fallback mock data nếu API không hoạt động
-  loadMockData() {
-    console.log('Using mock data for phiếu giảm giá cá nhân');
-    this.phieuGiamGiaCaNhans = [
-      {
-        id: 1,
-        khachHangId: 1,
-        phieuGiamGiaId: 1,
-        daSuDung: false,
-        ngayHetHan: '2024-12-31T23:59:59',
-        soLanDaDung: 0,
-        trangThai: 'Có thể sử dụng',
-        tenKhachHang: 'Nguyễn Văn A',
-        tenPhieuGiamGia: 'Giảm giá 10% cho đơn hàng từ 500k'
-      },
-      {
-        id: 2,
-        khachHangId: 2,
-        phieuGiamGiaId: 1,
-        daSuDung: true,
-        ngayHetHan: '2024-12-31T23:59:59',
-        ngaySuDung: '2024-10-10T10:30:00',
-        soLanDaDung: 1,
-        trangThai: 'Đã sử dụng',
-        tenKhachHang: 'Đinh Thế Mạnh',
-        tenPhieuGiamGia: 'Giảm giá 10% cho đơn hàng từ 500k'
-      },
-      {
-        id: 3,
-        khachHangId: 3,
-        phieuGiamGiaId: 2,
-        daSuDung: false,
-        ngayHetHan: '2024-09-30T23:59:59',
-        soLanDaDung: 0,
-        trangThai: 'Hết hạn',
-        tenKhachHang: 'Trịnh Châu Anh',
-        tenPhieuGiamGia: 'Giảm giá 50k cho đơn hàng từ 1 triệu'
-      }
-    ];
-    this.cdr.detectChanges();
-  }
-
-  // Get status class for styling
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'Có thể sử dụng':
-        return 'status-active';
-      case 'Đã sử dụng':
-        return 'status-used';
-      case 'Hết hạn':
-        return 'status-expired';
-      default:
-        return 'status-inactive';
-    }
-  }
-
-  // Action methods for Phiếu Giảm Giá Cá Nhân
-  toggleStatus(phieuCaNhan: PhieuGiamGiaCaNhan) {
-    console.log('Toggle status for:', phieuCaNhan);
-    // Logic để toggle trạng thái
-    if (phieuCaNhan.trangThai === 'Có thể sử dụng') {
-      phieuCaNhan.trangThai = 'Tạm khóa';
-    } else {
-      phieuCaNhan.trangThai = 'Có thể sử dụng';
-    }
-    this.cdr.detectChanges();
-  }
-
-  // Modal chỉnh sửa phiếu giảm giá cá nhân
-  showEditPersonalVoucherModal = false;
-  editingPersonalVoucher: PhieuGiamGiaCaNhan | null = null;
-  isUpdatingPersonalVoucher = false;
-
-  editPhieuCaNhan(phieuCaNhan: PhieuGiamGiaCaNhan) {
-    console.log('Edit phiếu cá nhân:', phieuCaNhan);
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+    this.startDate = this.formatDateForInput(today);
+    this.endDate = this.formatDateForInput(nextMonth);
     
-    // Tạo bản copy để chỉnh sửa
-    this.editingPersonalVoucher = {
-      ...phieuCaNhan,
-      ngayHetHan: this.formatDateTimeForInput(phieuCaNhan.ngayHetHan),
-      ngaySuDung: phieuCaNhan.ngaySuDung ? this.formatDateTimeForInput(phieuCaNhan.ngaySuDung) : ''
-    };
-    
-    this.showEditPersonalVoucherModal = true;
-    this.cdr.detectChanges();
-  }
-
-  closeEditPersonalVoucherModal() {
-    this.showEditPersonalVoucherModal = false;
-    this.editingPersonalVoucher = null;
-    this.isUpdatingPersonalVoucher = false;
-    this.cdr.detectChanges();
-  }
-
-  updatePersonalVoucher() {
-    if (!this.editingPersonalVoucher) {
-      return;
-    }
-
-    this.isUpdatingPersonalVoucher = true;
+    this.validationErrors = {};
     this.errorMessage = '';
     this.successMessage = '';
-
-    // Chuẩn bị dữ liệu để gửi API
-    const requestData = {
-      khachHangId: this.editingPersonalVoucher.khachHangId,
-      phieuGiamGiaId: this.editingPersonalVoucher.phieuGiamGiaId,
-      daSuDung: this.editingPersonalVoucher.daSuDung,
-      ngayHetHan: this.editingPersonalVoucher.ngayHetHan,
-      ngaySuDung: this.editingPersonalVoucher.daSuDung ? this.editingPersonalVoucher.ngaySuDung : null
-    };
-
-    console.log('Updating personal voucher:', requestData);
-
-    this.phieuGiamGiaService.updatePhieuGiamGiaCaNhan(this.editingPersonalVoucher.id!, requestData).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          console.log('Update personal voucher success:', response.data);
-          
-          // Cập nhật trong danh sách local
-          const index = this.phieuGiamGiaCaNhans.findIndex(p => p.id === this.editingPersonalVoucher!.id);
-          if (index > -1) {
-            this.phieuGiamGiaCaNhans[index] = response.data;
-          }
-          
-          this.successMessage = 'Cập nhật phiếu giảm giá cá nhân thành công!';
-          this.closeEditPersonalVoucherModal();
-          
-          // Reload danh sách để đảm bảo dữ liệu đồng bộ
-          this.loadPhieuGiamGiaCaNhans();
-          this.cdr.detectChanges();
-        } else {
-          this.errorMessage = response.message || 'Lỗi khi cập nhật phiếu giảm giá cá nhân';
-        }
-        this.isUpdatingPersonalVoucher = false;
-      },
-      error: (error) => {
-        console.error('Error updating personal voucher:', error);
-        this.errorMessage = 'Lỗi khi cập nhật phiếu giảm giá cá nhân: ' + (error.error?.message || error.message);
-        this.isUpdatingPersonalVoucher = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  // Helper method để format datetime cho input
-  private formatDateTimeForInput(dateTimeString: string): string {
-    if (!dateTimeString) return '';
     
-    try {
-      const date = new Date(dateTimeString);
-      // Format thành YYYY-MM-DDTHH:mm để input datetime-local có thể hiểu
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    } catch (error) {
-      console.error('Error formatting datetime:', error);
-      return '';
-    }
-  }
-
-  viewDetails(phieuCaNhan: PhieuGiamGiaCaNhan) {
-    console.log('View details for:', phieuCaNhan);
-    // Logic để xem chi tiết phiếu cá nhân
-  }
-
-  deletePhieuCaNhan(phieuCaNhan: PhieuGiamGiaCaNhan) {
-    console.log('Delete phiếu cá nhân:', phieuCaNhan);
-    // Logic để xóa phiếu cá nhân
-    if (confirm('Bạn có chắc chắn muốn xóa phiếu giảm giá cá nhân này?')) {
-      const index = this.phieuGiamGiaCaNhans.findIndex(p => p.id === phieuCaNhan.id);
-      if (index > -1) {
-        this.phieuGiamGiaCaNhans.splice(index, 1);
-      }
-    }
+    this.generateSuggestedCodes();
   }
 }

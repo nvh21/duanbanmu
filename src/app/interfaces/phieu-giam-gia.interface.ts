@@ -25,6 +25,7 @@ export interface PhieuGiamGiaRequest {
   ngayBatDau: string;
   ngayKetThuc: string;
   trangThai: boolean;
+  isPublic: boolean; // true = công khai, false = cá nhân
 }
 
 export interface PhieuGiamGiaResponse {
@@ -46,6 +47,8 @@ export interface PhieuGiamGiaResponse {
   isExpired: boolean;
   isNotStarted: boolean;
   isUpdating?: boolean; // Thêm property để hỗ trợ loading state
+  createdAt?: string; // Thêm thuộc tính createdAt
+  updatedAt?: string; // Thêm thuộc tính updatedAt
 }
 
 export interface ApiResponse<T> {
@@ -65,6 +68,35 @@ export interface KhachHang {
   ngayTao: string;            // Ngày tạo tài khoản (LocalDate -> string ISO)
   trangThai: boolean;         // true = hoạt động, false = không hoạt động
   userId?: number;            // Liên kết với bảng User (nếu có)
+}
+
+export interface PhieuGiamGiaCaNhanRequest {
+  maPhieu: string;
+  tenPhieu: string;
+  loaiPhieu: boolean; // true = tiền mặt, false = phần trăm
+  giaTriGiam: number;
+  ngayBatDau: string;
+  ngayHetHan: string;
+  soLuotSuDung: number;
+  khachHangIds: number[]; // Danh sách ID khách hàng
+}
+
+export interface PhieuGiamGiaCaNhanResponse {
+  id: number;
+  maPhieu: string;
+  tenPhieu: string;
+  loaiPhieu: boolean;
+  loaiPhieuText: string;
+  giaTriGiam: number;
+  ngayBatDau: string;
+  ngayHetHan: string;
+  soLuotSuDung: number;
+  soLuotDaDung: number;
+  trangThai: string;
+  khachHangId: number;
+  tenKhachHang: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PhieuGiamGiaCaNhan {

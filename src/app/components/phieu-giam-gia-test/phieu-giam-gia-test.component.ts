@@ -241,7 +241,8 @@ export class PhieuGiamGiaTestComponent implements OnInit {
       soLuongDung: 50,
       ngayBatDau: startDate.toISOString().split('T')[0],
       ngayKetThuc: endDate.toISOString().split('T')[0],
-      trangThai: true
+      trangThai: true,
+      isPublic: true // Mặc định là công khai cho test
     };
     
     this.phieuGiamGiaService.createPhieuGiamGia(request).subscribe({

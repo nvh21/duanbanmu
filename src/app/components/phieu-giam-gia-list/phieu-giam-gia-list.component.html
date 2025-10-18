@@ -1,7 +1,7 @@
 <div class="phieu-giam-gia-list-container">
   <!-- Header -->
   <div class="page-header">
-    <h1 class="page-title">Quản Lý Phiếu Giảm Giá</h1>
+    <h1 class="page-title">Phiếu Giảm Giá</h1>
     <div class="breadcrumb">
       <span>Trang chủ</span>
       <span class="separator">/</span>
@@ -71,40 +71,6 @@
         </div>
       </div>
 
-      <div class="filter-group value-range-group">
-        <label>Giá trị phiếu</label>
-        <div class="value-range">
-          <div class="value-labels">
-            <span class="min-value">0 đ</span>
-            <span class="max-value">{{ formatCurrency(maxValue) }}</span>
-          </div>
-          <div class="slider-container">
-            <div
-              class="slider-track"
-              [style.background]="
-                'linear-gradient(to right, ' +
-                getSliderColor() +
-                ' ' +
-                getSliderWidth() +
-                ', #e9ecef ' +
-                getSliderWidth() +
-                ')'
-              "
-            >
-              <input
-                type="range"
-                [(ngModel)]="maxValue"
-                (input)="applyFilters()"
-                min="0"
-                max="5000000"
-                step="100000"
-                class="range-slider"
-                [style.accent-color]="getSliderColor()"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Empty div to maintain grid layout -->
       <div class="filter-group"></div>
@@ -112,7 +78,7 @@
       <!-- Action Buttons -->
       <div class="filter-actions">
         <button class="btn-reset" (click)="resetFilters()">Đặt lại bộ lọc</button>
-        <button class="btn-export" (click)="exportExcel()">Xuất Excel</button>
+        <button class="btn-export" (click)="exportToExcel()">Xuất Excel</button>
         <button class="btn-add" (click)="addPhieuGiamGia()">Thêm Phiếu Giảm Giá</button>
       </div>
     </div>
@@ -189,7 +155,7 @@
                 <input
                   type="checkbox"
                   [checked]="phieu.trangThai"
-                  (change)="toggleStatus(phieu)"
+                  (click)="toggleStatus(phieu, $event)"
                   class="toggle-input"
                   [disabled]="phieu.isUpdating"
                 />
@@ -199,6 +165,9 @@
               </div>
               <button class="btn-edit" (click)="editPhieuGiamGia(phieu)" title="Chỉnh sửa" [disabled]="phieu.isUpdating">
                 <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn-delete" (click)="deletePhieuGiamGia(phieu)" title="Xóa" [disabled]="phieu.isUpdating">
+                <i class="bi bi-trash"></i>
               </button>
             </td>
           </tr>
@@ -223,11 +192,23 @@
         <i class="bi bi-chevron-left"></i>
       </button>
 
-      <span class="page-info"> Trang {{ currentPage }} / {{ totalPages }} </span>
+      <!-- Page Numbers -->
+      <div class="page-numbers">
+        <button 
+          *ngFor="let page of getPageNumbers()" 
+          class="page-number-btn"
+          [class.active]="page === currentPage"
+          [disabled]="page === '...'"
+          (click)="onPageNumberClick(page)">
+          {{ page }}
+        </button>
+      </div>
 
       <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
         <i class="bi bi-chevron-right"></i>
       </button>
+
+      <span class="page-info">Trang {{ currentPage }} / {{ totalPages }} ({{ totalItems }} phiếu)</span>
     </div>
   </div>
 

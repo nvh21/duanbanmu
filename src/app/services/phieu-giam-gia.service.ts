@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PhieuGiamGia, PhieuGiamGiaRequest, PhieuGiamGiaResponse, ApiResponse, KhachHangResponse, PhieuGiamGiaCaNhan } from '../interfaces/phieu-giam-gia.interface';
+import { PhieuGiamGia, PhieuGiamGiaRequest, PhieuGiamGiaResponse, ApiResponse, KhachHangResponse } from '../interfaces/phieu-giam-gia.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -144,53 +144,12 @@ export class PhieuGiamGiaService {
     return this.getActivePhieuGiamGia();
   }
 
-  // API cho phiếu giảm giá cá nhân - Đầy đủ CRUD operations
-  getAllPhieuGiamGiaCaNhan(): Observable<ApiResponse<PhieuGiamGiaCaNhan[]>> {
-    return this.http.get<ApiResponse<PhieuGiamGiaCaNhan[]>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan`);
+  // Export to Excel
+  exportToExcel(data: any[]): Observable<ApiResponse<string>> {
+    return this.http.post<ApiResponse<string>>(
+      `${this.API_BASE_URL}/phieu-giam-gia/export-excel`,
+      { data },
+      { headers: this.getHeaders() }
+    );
   }
-
-  getAllPhieuGiamGiaCaNhanWithPagination(page: number = 0, size: number = 10): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/pagination?page=${page}&size=${size}`);
-  }
-
-  getPhieuGiamGiaCaNhanById(id: number): Observable<ApiResponse<PhieuGiamGiaCaNhan>> {
-    return this.http.get<ApiResponse<PhieuGiamGiaCaNhan>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/${id}`);
-  }
-
-  getPhieuGiamGiaCaNhanByKhachHang(khachHangId: number): Observable<ApiResponse<PhieuGiamGiaCaNhan[]>> {
-    return this.http.get<ApiResponse<PhieuGiamGiaCaNhan[]>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/khach-hang/${khachHangId}`);
-  }
-
-  getPhieuGiamGiaCaNhanByKhachHangWithPagination(khachHangId: number, page: number = 0, size: number = 10): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/khach-hang/${khachHangId}/pagination?page=${page}&size=${size}`);
-  }
-
-  getAvailableVouchers(): Observable<ApiResponse<PhieuGiamGiaCaNhan[]>> {
-    return this.http.get<ApiResponse<PhieuGiamGiaCaNhan[]>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/available`);
-  }
-
-  getAvailableVouchersByKhachHang(khachHangId: number): Observable<ApiResponse<PhieuGiamGiaCaNhan[]>> {
-    return this.http.get<ApiResponse<PhieuGiamGiaCaNhan[]>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/available/khach-hang/${khachHangId}`);
-  }
-
-  createPhieuGiamGiaCaNhan(request: any): Observable<ApiResponse<PhieuGiamGiaCaNhan>> {
-    return this.http.post<ApiResponse<PhieuGiamGiaCaNhan>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan`, request);
-  }
-
-  updatePhieuGiamGiaCaNhan(id: number, request: any): Observable<ApiResponse<PhieuGiamGiaCaNhan>> {
-    return this.http.put<ApiResponse<PhieuGiamGiaCaNhan>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/${id}`, request);
-  }
-
-  deletePhieuGiamGiaCaNhan(id: number): Observable<ApiResponse<any>> {
-    return this.http.delete<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/${id}`);
-  }
-
-  markPhieuGiamGiaCaNhanAsUsed(id: number): Observable<ApiResponse<PhieuGiamGiaCaNhan>> {
-    return this.http.put<ApiResponse<PhieuGiamGiaCaNhan>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/${id}/mark-used`, {});
-  }
-
-  getStatisticsByKhachHang(khachHangId: number): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.API_BASE_URL}/phieu-giam-gia-ca-nhan/statistics/khach-hang/${khachHangId}`);
-  }
-
 }

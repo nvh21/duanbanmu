@@ -23,8 +23,6 @@ export class PhieuGiamGiaListComponent implements OnInit {
   selectedStatus = 'all';
   startDate = '';
   endDate = '';
-  minValue = 0;
-  maxValue = 5000000; // Mặc định là giá trị cao nhất
 
   // Data
   phieuGiamGiaList: PhieuGiamGiaResponse[] = [];
@@ -56,7 +54,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
 
   // Pagination
   currentPage = 1;
-  itemsPerPage = 10;
+  itemsPerPage = 6; // Thay đổi từ 10 thành 6 hàng mỗi trang
   totalItems = 0;
 
   ngOnInit() {
@@ -139,11 +137,6 @@ export class PhieuGiamGiaListComponent implements OnInit {
         }
       }
 
-      // Value range filter - chỉ filter theo maxValue
-      if (phieu.giaTriGiam > this.maxValue) {
-        return false;
-      }
-
       return true;
     });
 
@@ -158,8 +151,6 @@ export class PhieuGiamGiaListComponent implements OnInit {
     this.selectedStatus = 'all';
     this.startDate = '';
     this.endDate = '';
-    this.minValue = 0;
-    this.maxValue = 5000000; // Reset về giá trị cao nhất
     this.filteredList = [...this.phieuGiamGiaList];
     this.totalItems = this.filteredList.length;
     this.currentPage = 1;
@@ -199,50 +190,73 @@ export class PhieuGiamGiaListComponent implements OnInit {
     this.showEditModal = true;
   }
 
-  toggleStatus(phieu: PhieuGiamGiaResponse) {
+  toggleStatus(phieu: PhieuGiamGiaResponse, event?: Event) {
+    console.log('=== TOGGLE STATUS CLICKED ===');
+    console.log('Phieu clicked:', phieu);
+    console.log('Current trangThai:', phieu.trangThai);
+    console.log('isUpdating:', phieu.isUpdating);
+    
+    // Ngăn chặn default behavior của checkbox
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    if (phieu.isUpdating) {
+      console.log('Phieu is already updating, returning.');
+      return;
+    }
+
     if (!phieu.id) {
       console.error('Không có ID cho phiếu giảm giá');
       return;
     }
 
-    // Hiển thị loading state
+    console.log('Setting isUpdating to true for phieu:', phieu.maPhieu);
     phieu.isUpdating = true;
 
-    // Toggle trạng thái ngay lập tức để test UI
-    phieu.trangThai = !phieu.trangThai;
-    phieu.trangThaiText = phieu.trangThai ? 'Đang diễn ra' : 'Không hoạt động';
-    phieu.isActive = phieu.trangThai;
-
-    // Cập nhật trong danh sách
-    const index = this.phieuGiamGiaList.findIndex(p => p.id === phieu.id);
-    if (index !== -1) {
-      this.phieuGiamGiaList[index].trangThai = phieu.trangThai;
-      this.phieuGiamGiaList[index].trangThaiText = phieu.trangThaiText;
-      this.phieuGiamGiaList[index].isActive = phieu.isActive;
-    }
-    
-    // Cập nhật filtered list
-    this.applyFilters();
-    
-    console.log('Toggle status thành công (local):', phieu);
-    
-    // Reset loading state
-    phieu.isUpdating = false;
-    this.cdr.detectChanges();
-
-    // Gọi API để cập nhật database (nếu backend hoạt động)
+    console.log('Calling API togglePhieuGiamGiaStatus...');
     this.phieuGiamGiaService.togglePhieuGiamGiaStatus(phieu).subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          console.log('Toggle status thành công (server):', response.data);
+        console.log('=== API RESPONSE ===');
+        console.log('Response:', response);
+        
+        if (response.success) {
+          console.log('API call successful, updating UI...');
+          // Cập nhật trạng thái thành công
+          phieu.trangThai = !phieu.trangThai;
+          phieu.trangThaiText = phieu.trangThai ? 'Đang diễn ra' : 'Không hoạt động';
+          
+          console.log('New trangThai:', phieu.trangThai);
+          console.log('New trangThaiText:', phieu.trangThaiText);
+          
+          // Cập nhật trong danh sách
+          const index = this.phieuGiamGiaList.findIndex(p => p.id === phieu.id);
+          if (index !== -1) {
+            this.phieuGiamGiaList[index].trangThai = phieu.trangThai;
+            this.phieuGiamGiaList[index].trangThaiText = phieu.trangThaiText;
+            console.log('Updated in phieuGiamGiaList at index:', index);
+          }
+          
+          // Cập nhật filtered list
+          this.applyFilters();
+          
+          console.log('Toggle status thành công:', phieu);
         } else {
-          console.error('Lỗi khi toggle status:', response.message);
+          console.error('API returned success=false:', response.message);
           this.error = response.message || 'Lỗi khi cập nhật trạng thái';
         }
+        phieu.isUpdating = false;
+        console.log('Setting isUpdating to false (success) for phieu:', phieu.maPhieu);
+        this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('Lỗi API khi toggle status:', error);
+        console.error('=== API ERROR ===');
+        console.error('Error toggling status:', error);
         this.error = 'Lỗi khi cập nhật trạng thái phiếu giảm giá: ' + (error.error?.message || error.message);
+        phieu.isUpdating = false;
+        console.log('Setting isUpdating to false (error) for phieu:', phieu.maPhieu);
+        this.cdr.detectChanges();
       }
     });
   }
@@ -305,20 +319,53 @@ export class PhieuGiamGiaListComponent implements OnInit {
     }
   }
 
-  // Tính toán màu sắc cho slider dựa trên giá trị
-  getSliderColor(): string {
-    const percentage = (this.maxValue / 5000000) * 100;
-    if (percentage <= 20) return '#dc3545'; // Đỏ
-    if (percentage <= 40) return '#fd7e14'; // Cam
-    if (percentage <= 60) return '#ffc107'; // Vàng
-    if (percentage <= 80) return '#20c997'; // Xanh lá nhạt
-    return '#28a745'; // Xanh lá đậm
+  getPageNumbers(): (number | string)[] {
+    const pages: (number | string)[] = [];
+    const totalPages = this.totalPages;
+    const currentPage = this.currentPage;
+
+    if (totalPages <= 7) {
+      // Nếu tổng số trang <= 7, hiển thị tất cả
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Logic hiển thị trang với dấu "..."
+      if (currentPage <= 4) {
+        // Trang hiện tại ở đầu
+        for (let i = 1; i <= 5; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        // Trang hiện tại ở cuối
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Trang hiện tại ở giữa
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+
+    return pages;
   }
 
-  // Tính toán độ dài thanh slider
-  getSliderWidth(): string {
-    return `${(this.maxValue / 5000000) * 100}%`;
+  onPageNumberClick(page: number | string) {
+    if (typeof page === 'number') {
+      this.goToPage(page);
+    }
   }
+
 
   // Modal methods
   closeEditModal() {
@@ -560,6 +607,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
       ngayBatDau: this.editForm.ngayBatDau,
       ngayKetThuc: this.editForm.ngayKetThuc,
       trangThai: this.editForm.trangThai,
+      isPublic: true, // Mặc định là công khai cho các phiếu cũ
     };
 
     console.log('Submitting update data:', updateData);
@@ -582,6 +630,104 @@ export class PhieuGiamGiaListComponent implements OnInit {
         // Parse HTTP error và map về các trường cụ thể
         this.parseHttpError(error);
         this.isUpdating = false;
+      },
+    });
+  }
+
+  // Export to Excel
+  exportToExcel() {
+    console.log('=== EXPORT TO EXCEL ===');
+    console.log('Filtered list:', this.filteredList);
+    
+    if (this.filteredList.length === 0) {
+      alert('Không có dữ liệu để xuất Excel!');
+      return;
+    }
+
+    // Tạo dữ liệu Excel
+    const excelData = this.filteredList.map((phieu, index) => ({
+      'STT': index + 1,
+      'Mã Phiếu': phieu.maPhieu,
+      'Tên Phiếu': phieu.tenPhieuGiamGia,
+      'Loại Phiếu': phieu.loaiPhieuGiamGia ? 'Tiền mặt' : 'Phần trăm',
+      'Giá Trị Giảm': phieu.giaTriGiam,
+      'Giá Trị Tối Thiểu': phieu.giaTriToiThieu,
+      'Số Tiền Tối Đa': phieu.soTienToiDa,
+      'Hóa Đơn Tối Thiểu': phieu.hoaDonToiThieu,
+      'Số Lượng': phieu.soLuongDung,
+      'Trạng Thái': phieu.trangThai ? 'Hoạt động' : 'Không hoạt động',
+      'Ngày Bắt Đầu': this.formatDate(phieu.ngayBatDau),
+      'Ngày Kết Thúc': this.formatDate(phieu.ngayKetThuc),
+      'Ngày Tạo': phieu.createdAt ? this.formatDate(phieu.createdAt) : 'N/A',
+      'Ngày Cập Nhật': phieu.updatedAt ? this.formatDate(phieu.updatedAt) : 'N/A'
+    }));
+
+    // Gọi API để xuất Excel
+    this.phieuGiamGiaService.exportToExcel(excelData).subscribe({
+      next: (response: any) => {
+        console.log('Excel export response:', response);
+        
+        if (response.success && response.data) {
+          // Tạo blob từ base64 data
+          const byteCharacters = atob(response.data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { 
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+          });
+
+          // Tạo link download
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `phieu-giam-gia-${new Date().toISOString().split('T')[0]}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+
+          console.log('Excel file downloaded successfully');
+        } else {
+          console.error('Excel export failed:', response.message);
+          alert('Lỗi khi xuất Excel: ' + (response.message || 'Không xác định'));
+        }
+      },
+      error: (error: any) => {
+        console.error('Excel export error:', error);
+        alert('Lỗi khi xuất Excel: ' + (error.error?.message || error.message));
+      }
+    });
+  }
+
+  // Delete phiếu giảm giá
+  deletePhieuGiamGia(phieu: PhieuGiamGiaResponse) {
+    if (phieu.isUpdating) return; // Ngăn chặn click khi đang cập nhật
+
+    // Xác nhận trước khi xóa
+    const confirmMessage = `Bạn có chắc chắn muốn xóa phiếu giảm giá "${phieu.tenPhieuGiamGia}" (${phieu.maPhieu})?`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    phieu.isUpdating = true; // Đặt cờ đang cập nhật
+    this.phieuGiamGiaService.deletePhieuGiamGia(phieu.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Xóa thành công, reload danh sách
+          this.loadPhieuGiamGiaList();
+        } else {
+          console.error('Failed to delete phiếu giảm giá:', response.message);
+          this.error = response.message || 'Lỗi khi xóa phiếu giảm giá';
+        }
+        phieu.isUpdating = false; // Xóa cờ đang cập nhật
+      },
+      error: (err) => {
+        console.error('Error deleting phiếu giảm giá:', err);
+        this.error = err.error?.message || 'Lỗi khi xóa phiếu giảm giá';
+        phieu.isUpdating = false; // Xóa cờ đang cập nhật
       },
     });
   }

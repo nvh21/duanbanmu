@@ -453,7 +453,8 @@ export class VoucherForm implements OnInit {
       soLuongDung: this.voucherForm.quantity,
       ngayBatDau: this.voucherForm.startDate,
       ngayKetThuc: this.voucherForm.endDate,
-      trangThai: true
+      trangThai: true,
+      isPublic: true // Mặc định là công khai cho voucher form
     };
 
     this.phieuGiamGiaService.createPhieuGiamGia(request).subscribe({
