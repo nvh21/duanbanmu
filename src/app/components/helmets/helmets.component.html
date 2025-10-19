@@ -158,6 +158,13 @@
                       <button class="btn-view" (click)="viewProduct(product)" title="Xem chi tiết">
                         <i class="bi bi-eye"></i>
                       </button>
+                      <button
+                        class="btn-imei"
+                        (click)="openImeiModal(product)"
+                        title="Quản lý IMEI"
+                      >
+                        <i class="bi bi-phone"></i>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -646,3 +653,14 @@
   (close)="onQuickAddClose()"
   (save)="onQuickAddSave($event)"
 ></app-quick-add-modal>
+
+<!-- IMEI Modal - Chế độ chỉ xem từ danh sách sản phẩm -->
+<app-imei-modal
+  [isVisible]="showImeiModal"
+  [sanPhamId]="currentProductForImei?.id || null"
+  [sanPhamTen]="currentProductForImei?.name || ''"
+  [sanPhamMa]="currentProductForImei?.code || ''"
+  [isViewOnly]="true"
+  (close)="onImeiModalClose()"
+  (save)="onImeiModalSave($event)"
+></app-imei-modal>

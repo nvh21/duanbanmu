@@ -23,6 +23,9 @@ import { TrongLuongApiService } from '../../services/trong-luong-api.service';
 import { OriginApiService } from '../../services/origin-api.service';
 import { HelmetStyleApiService } from '../../services/helmet-style-api.service';
 import { CongNgheAnToanApiService } from '../../services/cong-nghe-an-toan-api.service';
+import { ImeiModalComponent } from '../imei-modal/imei-modal.component';
+import { ImeiResponse } from '../../interfaces/imei.interface';
+import { ImeiApiService } from '../../services/imei-api.service';
 
 interface HelmetProduct {
   id: number;
@@ -64,6 +67,7 @@ interface HelmetProduct {
     RouterModule,
     QuickAddModalComponent,
     SearchableDropdownComponent,
+    ImeiModalComponent,
   ],
   templateUrl: './helmet-form.component.html',
   styleUrls: ['./helmet-form.component.scss'],
@@ -115,6 +119,11 @@ export class HelmetFormComponent implements OnInit {
   showQuickAddModal: boolean = false;
   quickAddModalType: string = '';
 
+  // IMEI Modal state
+  showImeiModal: boolean = false;
+  currentProductId: number | null = null;
+  tempImeis: ImeiResponse[] = []; // Lưu trữ IMEI tạm thời
+
   // Loading state
   isLoading: boolean = false;
 
@@ -129,7 +138,8 @@ export class HelmetFormComponent implements OnInit {
     private trongLuongApi: TrongLuongApiService,
     private originApi: OriginApiService,
     private helmetStyleApi: HelmetStyleApiService,
-    private congNgheAnToanApi: CongNgheAnToanApiService
+    private congNgheAnToanApi: CongNgheAnToanApiService,
+    private imeiApi: ImeiApiService
   ) {}
 
   ngOnInit() {
@@ -635,8 +645,14 @@ export class HelmetFormComponent implements OnInit {
     this.productApi.create(payload).subscribe({
       next: (response) => {
         console.log('Tạo sản phẩm thành công:', response);
-        alert('Thêm sản phẩm thành công!');
-        this.router.navigate(['/products/helmets']);
+
+        // Lưu IMEI tạm thời nếu có
+        if (this.tempImeis.length > 0) {
+          this.saveTempImeis(response.id);
+        } else {
+          alert('Thêm sản phẩm thành công!');
+          this.router.navigate(['/products/helmets']);
+        }
       },
       error: (error) => {
         console.error('Lỗi khi tạo sản phẩm:', error);
@@ -655,5 +671,62 @@ export class HelmetFormComponent implements OnInit {
 
   onCancel() {
     this.router.navigate(['/products/helmets']);
+  }
+
+  // Lưu IMEI tạm thời sau khi tạo sản phẩm thành công
+  saveTempImeis(productId: number) {
+    const imeiRequests = this.tempImeis.map((imei) => ({
+      soImei: imei.soImei,
+      sanPhamId: productId,
+      trangThai: imei.trangThai,
+    }));
+
+    this.imeiApi.createMultiple(imeiRequests).subscribe({
+      next: (responses) => {
+        console.log('Lưu IMEI tạm thời thành công:', responses);
+        alert(`Thêm sản phẩm thành công! Đã lưu ${responses.length} IMEI.`);
+        this.tempImeis = []; // Xóa IMEI tạm thời
+        this.router.navigate(['/products/helmets']);
+      },
+      error: (error) => {
+        console.error('Lỗi khi lưu IMEI tạm thời:', error);
+        alert(
+          `Sản phẩm đã được tạo thành công, nhưng có lỗi khi lưu IMEI: ${
+            error.error?.message || error.message
+          }`
+        );
+        this.tempImeis = []; // Xóa IMEI tạm thời dù có lỗi
+        this.router.navigate(['/products/helmets']);
+      },
+    });
+  }
+
+  // IMEI Modal methods
+  openImeiModal() {
+    // Cho phép mở IMEI modal ngay cả khi chưa lưu sản phẩm
+    // Sử dụng ID tạm thời nếu chưa có ID thật
+    this.currentProductId = this.newProduct.id || -1; // -1 là ID tạm thời
+    this.showImeiModal = true;
+  }
+
+  onImeiModalClose() {
+    this.showImeiModal = false;
+    this.currentProductId = null;
+  }
+
+  onImeiModalSave(imeis: ImeiResponse[]) {
+    console.log('IMEI saved:', imeis);
+
+    if (this.newProduct.id) {
+      // Nếu sản phẩm đã có ID, IMEI đã được lưu vào DB
+      alert(`Đã lưu thành công ${imeis.length} IMEI vào database`);
+    } else {
+      // Nếu sản phẩm chưa có ID, lưu IMEI tạm thời
+      this.tempImeis = imeis;
+      alert(`Đã thêm ${imeis.length} IMEI tạm thời. IMEI sẽ được lưu khi bạn lưu sản phẩm.`);
+    }
+
+    this.showImeiModal = false;
+    this.currentProductId = null;
   }
 }
