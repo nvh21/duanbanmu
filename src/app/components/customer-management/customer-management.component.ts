@@ -574,12 +574,33 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
       next: (response) => {
         this.loading = false;
 
-        // Nếu là thêm khách hàng mới và có địa chỉ tạm thời
-        if (!this.isEditMode && this.pendingAddresses.length > 0 && response.id) {
-          // Lưu tất cả địa chỉ tạm thời
-          this.savePendingAddresses(response.id);
+        // Nếu là thêm khách hàng mới và có địa chỉ cần lưu
+        if (!this.isEditMode && response.id) {
+          let hasAddressToSave = false;
+
+          // Kiểm tra nếu có địa chỉ từ trường diaChi
+          if (khachHangData.diaChi && khachHangData.diaChi.trim()) {
+            hasAddressToSave = true;
+            // Tạo địa chỉ mặc định từ trường diaChi
+            this.createDefaultAddressFromDiaChi(response.id, khachHangData.diaChi);
+          }
+
+          // Kiểm tra nếu có địa chỉ tạm thời từ phần quản lý địa chỉ
+          if (this.pendingAddresses.length > 0) {
+            hasAddressToSave = true;
+            // Lưu tất cả địa chỉ tạm thời
+            this.savePendingAddresses(response.id);
+          }
+
+          if (!hasAddressToSave) {
+            // Không có địa chỉ nào để lưu
+            const successMessage = 'Thêm khách hàng thành công! (0/0 địa chỉ được lưu)';
+            alert(successMessage);
+            this.closeModal();
+            this.refreshAfterSave();
+          }
         } else {
-          // Show success message
+          // Show success message cho edit mode
           const successMessage = this.isEditMode
             ? 'Cập nhật khách hàng thành công!'
             : 'Thêm khách hàng thành công!';
@@ -1170,7 +1191,7 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
             completedCount++;
             if (completedCount === totalCount) {
               // Tất cả địa chỉ đã được lưu
-              const successMessage = `Thêm khách hàng và ${totalCount} địa chỉ thành công!`;
+              const successMessage = `Thêm khách hàng thành công! (${totalCount}/${totalCount} địa chỉ được lưu)`;
               alert(successMessage);
               this.closeModal();
               this.refreshAfterSave();
@@ -1184,6 +1205,124 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
               const successMessage = `Thêm khách hàng thành công! (${
                 totalCount - 1
               }/${totalCount} địa chỉ được lưu)`;
+              alert(successMessage);
+              this.closeModal();
+              this.refreshAfterSave();
+            }
+          },
+        });
+    });
+  }
+
+  // Tạo địa chỉ mặc định từ trường diaChi
+  createDefaultAddressFromDiaChi(khachHangId: number, diaChi: string): void {
+    // Parse địa chỉ từ trường diaChi (format: "số nhà, phường/xã, quận/huyện, tỉnh/thành")
+    const addressParts = diaChi.split(',').map((part) => part.trim());
+
+    let diaChiChiTiet = '';
+    let phuongXa = '';
+    let quanHuyen = '';
+    let tinhThanh = '';
+
+    if (addressParts.length >= 1) diaChiChiTiet = addressParts[0];
+    if (addressParts.length >= 2) phuongXa = addressParts[1];
+    if (addressParts.length >= 3) quanHuyen = addressParts[2];
+    if (addressParts.length >= 4) tinhThanh = addressParts[3];
+
+    const defaultAddress: DiaChiKhachHang = {
+      khachHangId: khachHangId,
+      diaChiChiTiet: diaChiChiTiet,
+      phuongXa: phuongXa,
+      quanHuyen: quanHuyen,
+      tinhThanh: tinhThanh,
+      macDinh: true, // Đặt làm địa chỉ mặc định
+      trangThai: true,
+    };
+
+    this.diaChiKhachHangService
+      .createDiaChi(defaultAddress)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('Default address created successfully:', response);
+
+          // Kiểm tra nếu cũng có pendingAddresses
+          if (this.pendingAddresses.length > 0) {
+            // Có cả địa chỉ mặc định và địa chỉ chi tiết
+            this.savePendingAddressesWithDefault(khachHangId, 1); // 1 địa chỉ mặc định đã được lưu
+          } else {
+            // Chỉ có địa chỉ mặc định
+            const successMessage = 'Thêm khách hàng thành công! (1/1 địa chỉ được lưu)';
+            alert(successMessage);
+            this.closeModal();
+            this.refreshAfterSave();
+          }
+        },
+        error: (error) => {
+          console.error('Error creating default address:', error);
+
+          // Kiểm tra nếu cũng có pendingAddresses
+          if (this.pendingAddresses.length > 0) {
+            // Có địa chỉ chi tiết, lưu chúng (địa chỉ mặc định lỗi)
+            this.savePendingAddressesWithDefault(khachHangId, 0); // 0 địa chỉ mặc định được lưu
+          } else {
+            // Không có địa chỉ nào được lưu
+            const successMessage = 'Thêm khách hàng thành công! (0/1 địa chỉ được lưu)';
+            alert(successMessage);
+            this.closeModal();
+            this.refreshAfterSave();
+          }
+        },
+      });
+  }
+
+  // Lưu địa chỉ tạm thời khi đã có địa chỉ mặc định
+  savePendingAddressesWithDefault(khachHangId: number, defaultAddressCount: number): void {
+    if (this.pendingAddresses.length === 0) {
+      // Không có địa chỉ tạm thời, đóng modal
+      const totalAddresses = defaultAddressCount;
+      const successMessage = `Thêm khách hàng thành công! (${defaultAddressCount}/${totalAddresses} địa chỉ được lưu)`;
+      alert(successMessage);
+      this.closeModal();
+      this.refreshAfterSave();
+      return;
+    }
+
+    // Lưu từng địa chỉ
+    let completedCount = 0;
+    const totalCount = this.pendingAddresses.length;
+    const totalAddresses = defaultAddressCount + totalCount;
+
+    this.pendingAddresses.forEach((addressData, index) => {
+      const addressToSave: DiaChiKhachHang = {
+        ...addressData,
+        khachHangId: khachHangId,
+      };
+
+      this.diaChiKhachHangService
+        .createDiaChi(addressToSave)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            completedCount++;
+            if (completedCount === totalCount) {
+              // Tất cả địa chỉ đã được lưu
+              const successMessage = `Thêm khách hàng thành công! (${
+                defaultAddressCount + totalCount
+              }/${totalAddresses} địa chỉ được lưu)`;
+              alert(successMessage);
+              this.closeModal();
+              this.refreshAfterSave();
+            }
+          },
+          error: (error) => {
+            console.error('Error saving address:', error);
+            completedCount++;
+            if (completedCount === totalCount) {
+              // Vẫn đóng modal dù có lỗi
+              const successMessage = `Thêm khách hàng thành công! (${
+                defaultAddressCount + totalCount - 1
+              }/${totalAddresses} địa chỉ được lưu)`;
               alert(successMessage);
               this.closeModal();
               this.refreshAfterSave();
@@ -1359,7 +1498,18 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
 
   // Get customer's primary address for table display
   getCustomerAddress(khachHang: KhachHang): string {
-    // Check if we have addresses loaded for this customer
+    // Ưu tiên địa chỉ từ backend (địa chỉ mặc định)
+    if (khachHang.coDiaChiMacDinh && khachHang.diaChiMacDinh) {
+      const parts = [];
+      if (khachHang.diaChiMacDinh) parts.push(khachHang.diaChiMacDinh);
+      if (khachHang.phuongXaMacDinh) parts.push(khachHang.phuongXaMacDinh);
+      if (khachHang.quanHuyenMacDinh) parts.push(khachHang.quanHuyenMacDinh);
+      if (khachHang.tinhThanhMacDinh) parts.push(khachHang.tinhThanhMacDinh);
+
+      return parts.length > 0 ? parts.join(' / ') : 'Chưa có địa chỉ chi tiết';
+    }
+
+    // Fallback: Check if we have addresses loaded for this customer (legacy support)
     const customerAddresses = this.allAddresses.filter((addr) => addr.khachHangId === khachHang.id);
     if (customerAddresses.length > 0) {
       const defaultAddress = customerAddresses.find((addr) => addr.macDinh) || customerAddresses[0];
@@ -1369,10 +1519,10 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
       if (defaultAddress.quanHuyen) parts.push(defaultAddress.quanHuyen);
       if (defaultAddress.tinhThanh) parts.push(defaultAddress.tinhThanh);
 
-      return parts.length > 0 ? parts.join(' / ') : 'Không có địa chỉ';
+      return parts.length > 0 ? parts.join(' / ') : 'Chưa có địa chỉ chi tiết';
     }
 
-    // Fallback to old diaChi field
+    // Final fallback to old diaChi field
     if (khachHang.diaChi) {
       const addressParts = khachHang.diaChi.split(',').map((part) => part.trim());
       if (addressParts.length > 1) {
