@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import {
   ProductApiService,
   SanPhamResponse,
@@ -23,6 +23,8 @@ import { TrongLuongApiService } from '../../services/trong-luong-api.service';
 import { OriginApiService } from '../../services/origin-api.service';
 import { HelmetStyleApiService } from '../../services/helmet-style-api.service';
 import { CongNgheAnToanApiService } from '../../services/cong-nghe-an-toan-api.service';
+import { ImeiModalComponent } from '../imei-modal/imei-modal.component';
+import { ImeiResponse } from '../../interfaces/imei.interface';
 
 interface HelmetProduct {
   id: number;
@@ -66,11 +68,13 @@ interface HelmetProduct {
     RouterModule,
     QuickAddModalComponent,
     SearchableDropdownComponent,
+    ImeiModalComponent,
   ],
   templateUrl: './helmets.component.html',
   styleUrls: ['./helmets.component.scss', './table-styles.scss'],
 })
 export class HelmetsComponent implements OnInit {
+  Math = Math; // Expose Math object to template
   helmetProducts: HelmetProduct[] = [];
   filteredProducts: HelmetProduct[] = [];
   loaiMuList: { id: number; tenLoai: string }[] = [];
@@ -125,9 +129,14 @@ export class HelmetsComponent implements OnInit {
   showQuickAddModal: boolean = false;
   quickAddModalType: string = '';
 
+  // IMEI Modal state
+  showImeiModal: boolean = false;
+  currentProductForImei: HelmetProduct | null = null;
+
   constructor(
     private productApi: ProductApiService,
     private cdr: ChangeDetectorRef,
+    private router: Router,
     private loaiMuBaoHiemApi: LoaiMuBaoHiemApiService,
     private colorApi: ColorApiService,
     private manufacturerApi: ManufacturerApiService,
@@ -311,21 +320,49 @@ export class HelmetsComponent implements OnInit {
   // legacy demo manufacturers removed
 
   filterProducts() {
+    // Nếu searchTerm chỉ chứa dấu cách hoặc rỗng, hiển thị tất cả sản phẩm
+    if (!this.searchTerm || this.searchTerm.trim() === '') {
+      this.filteredProducts = this.helmetProducts.filter((product) => {
+        const matchesStatus =
+          this.selectedStatus === 'all' || product.status === this.selectedStatus;
+        return matchesStatus;
+      });
+      return;
+    }
+
     this.filteredProducts = this.helmetProducts.filter((product) => {
+      const searchTerm = this.searchTerm.toLowerCase().trim();
+
+      // Tìm kiếm trong các trường: Mã SP, Tên sản phẩm, Loại mũ, Nhà sản xuất, Giá bán
       const matchesSearch =
-        product.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(this.searchTerm.toLowerCase());
+        product.code.toLowerCase().includes(searchTerm) ||
+        product.name.toLowerCase().includes(searchTerm) ||
+        (product.loaiMuBaoHiem && product.loaiMuBaoHiem.toLowerCase().includes(searchTerm)) ||
+        (product.nhaSanXuat && product.nhaSanXuat.toLowerCase().includes(searchTerm)) ||
+        product.price.toString().includes(searchTerm);
+
       const matchesStatus = this.selectedStatus === 'all' || product.status === this.selectedStatus;
       return matchesSearch && matchesStatus;
     });
   }
 
   onSearchChange() {
+    // Không tìm kiếm nếu chỉ có dấu cách
+    if (this.searchTerm && this.searchTerm.trim() === '') {
+      return;
+    }
     this.filterProducts();
   }
 
   onStatusChange() {
     this.filterProducts();
+  }
+
+  resetFilter() {
+    this.searchTerm = '';
+    this.selectedStatus = 'all';
+    this.page = 0;
+    this.fetchProducts();
   }
 
   // removed manufacturer filter
@@ -607,7 +644,7 @@ export class HelmetsComponent implements OnInit {
       error: (err) => {
         console.error(err);
         if (err?.status === 409) {
-          alert('Mã sản phẩm đã tồn tại. Vui lòng dùng mã khác.');
+          // Xóa thông báo lỗi mã sản phẩm trùng lặp
           return;
         }
         if (err?.status === 400) {
@@ -625,9 +662,13 @@ export class HelmetsComponent implements OnInit {
     });
   }
 
-  deleteProduct(product: HelmetProduct) {
-    this.productToDelete = product;
-    this.showDeleteModal = true;
+  viewProduct(product: HelmetProduct) {
+    // Mở modal xem chi tiết sản phẩm
+    this.isViewMode = true;
+    this.isEditMode = false;
+    this.selectedProduct = product;
+    this.newProduct = { ...product };
+    this.showModal = true;
   }
 
   confirmDelete() {
@@ -648,14 +689,6 @@ export class HelmetsComponent implements OnInit {
   closeDeleteModal() {
     this.showDeleteModal = false;
     this.productToDelete = null;
-  }
-
-  viewProduct(product: HelmetProduct) {
-    this.isViewMode = true;
-    this.isEditMode = false;
-    this.selectedProduct = product;
-    this.newProduct = { ...product };
-    this.showModal = true;
   }
 
   openAddModal() {
@@ -683,6 +716,10 @@ export class HelmetsComponent implements OnInit {
     }
 
     this.showModal = true;
+  }
+
+  navigateToAddForm() {
+    this.router.navigate(['/products/helmets/new']);
   }
 
   loadHelmetTypes() {
@@ -1107,5 +1144,52 @@ export class HelmetsComponent implements OnInit {
     this.showQuickAddModal = false;
     this.quickAddModalType = '';
     this.cdr.detectChanges();
+  }
+
+  // IMEI Modal methods
+  openImeiModal(product: HelmetProduct) {
+    console.log('Mở IMEI modal cho sản phẩm:', product);
+    console.log('Product ID:', product.id);
+    this.currentProductForImei = product;
+    this.showImeiModal = true;
+  }
+
+  onImeiModalClose() {
+    this.showImeiModal = false;
+    this.currentProductForImei = null;
+  }
+
+  onImeiModalSave(imeis: ImeiResponse[]) {
+    const productName = this.currentProductForImei?.name || 'sản phẩm';
+    console.log('IMEI saved for product:', productName, imeis);
+    this.showImeiModal = false;
+    alert(`Đã lưu thành công ${imeis.length} IMEI cho sản phẩm ${productName}`);
+    this.currentProductForImei = null;
+  }
+
+  // Get page numbers for pagination
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, this.page - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages - 1, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i + 1);
+    }
+
+    return pages;
+  }
+
+  // Pagination
+  goToPage(page: number): void {
+    if (page >= 0 && page < this.totalPages) {
+      this.page = page;
+      this.fetchProducts();
+    }
   }
 }

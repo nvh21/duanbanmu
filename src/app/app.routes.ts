@@ -16,10 +16,10 @@ import { OrdersComponent } from './components/orders/orders.component';
 import { PaymentsComponent } from './components/payments/payments.component';
 import { DeliveryComponent } from './components/delivery/delivery.component';
 import { HelmetsComponent } from './components/helmets/helmets.component';
+import { HelmetFormComponent } from './components/helmet-form/helmet-form.component';
 import { ManufacturersComponent } from './components/manufacturers/manufacturers.component';
 // import { ProductDetailsComponent } from './components/product-details/product-details.component';
 import { LoginComponent } from './components/login/login';
-import { ApiTestComponent } from './components/api-test/api-test.component';
 import { AuthGuard } from './guards/auth-guard';
 import { ColorsComponent } from './components/colors/colors.component';
 import { HelmetStylesComponent } from './components/helmet-styles/helmet-styles.component';
@@ -103,6 +103,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'products/helmets/new',
+    component: HelmetFormComponent,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'products/manufacturers',
     component: ManufacturersComponent,
     canActivate: [AuthGuard],
@@ -173,10 +178,6 @@ export const routes: Routes = [
     component: StaffManagementComponent,
     canActivate: [AuthGuard],
   },
-  {
-    path: 'api-test',
-    component: ApiTestComponent,
-    // canActivate: [AuthGuard], // Tạm thời bỏ AuthGuard để test
-  },
+
   { path: '**', redirectTo: '/dashboard' },
 ];

@@ -1,16 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Staff {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  department: 'Bán hàng' | 'Kho' | 'Kế toán' | 'Marketing' | 'CSKH';
-  status: 'Hoạt động' | 'Nghỉ việc' | 'Tạm nghỉ';
-  joinDate: Date;
-}
+import { Subject, takeUntil } from 'rxjs';
+import { NhanVienService } from '../../services/nhan-vien.service';
+import {
+  NhanVien,
+  NhanVienSearchParams,
+  PageResponse,
+  getTrangThaiText,
+  getGioiTinhText,
+} from '../../interfaces/nhan-vien.interface';
 
 @Component({
   selector: 'app-staff-management',
@@ -19,162 +18,364 @@ interface Staff {
   templateUrl: './staff-management.component.html',
   styleUrls: ['./staff-management.component.scss'],
 })
-export class StaffManagementComponent {
+export class StaffManagementComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
+  // Search and filter properties
   searchTerm = '';
-  selectedDept = 'all';
   selectedStatus = 'all';
 
-  staffList: Staff[] = [];
-  filtered: Staff[] = [];
+  // Data properties
+  nhanVienList: NhanVien[] = [];
+  filteredList: NhanVien[] = [];
+  currentPage = 0;
+  pageSize = 10;
+  totalElements = 0;
+  totalPages = 0;
+  loading = false;
 
+  // Modal properties
   showModal = false;
   isEditMode = false;
   isViewMode = false;
-  selected: Staff | null = null;
-  form: Staff = {
-    id: 0,
-    name: '',
+  selectedNhanVien: NhanVien | null = null;
+
+  // Form properties
+  form: NhanVien = {
+    hoTen: '',
     email: '',
-    phone: '',
-    department: 'Bán hàng',
-    status: 'Hoạt động',
-    joinDate: new Date(),
+    soDienThoai: '',
+    diaChi: '',
+    gioiTinh: true,
+    ngaySinh: '',
+    ngayVaoLam: '',
+    trangThai: true,
   };
 
-  constructor() {
-    this.seed();
-    this.filtered = [...this.staffList];
+  // Error handling
+  errorMessage = '';
+  fieldErrors: { [key: string]: string } = {};
+
+  constructor(private nhanVienService: NhanVienService, private cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
+    this.loadNhanVienList();
   }
 
-  seed() {
-    this.staffList = [
-      {
-        id: 1,
-        name: 'Nguyễn Minh Quân',
-        email: 'quan@tdk.vn',
-        phone: '0901234567',
-        department: 'Bán hàng',
-        status: 'Hoạt động',
-        joinDate: new Date('2023-10-01'),
-      },
-      {
-        id: 2,
-        name: 'Trần Thu Hà',
-        email: 'ha@tdk.vn',
-        phone: '0912345678',
-        department: 'Kho',
-        status: 'Hoạt động',
-        joinDate: new Date('2024-02-12'),
-      },
-      {
-        id: 3,
-        name: 'Phạm Đức Long',
-        email: 'long@tdk.vn',
-        phone: '0923456789',
-        department: 'Kế toán',
-        status: 'Tạm nghỉ',
-        joinDate: new Date('2022-07-05'),
-      },
-      {
-        id: 4,
-        name: 'Lê Mai Anh',
-        email: 'anh@tdk.vn',
-        phone: '0934567890',
-        department: 'CSKH',
-        status: 'Hoạt động',
-        joinDate: new Date('2024-04-22'),
-      },
-    ];
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  filter() {
-    const term = this.searchTerm.toLowerCase();
-    this.filtered = this.staffList.filter((s) => {
-      const matchTerm = [s.name, s.email, s.phone].some((v) => v.toLowerCase().includes(term));
-      const matchDept = this.selectedDept === 'all' || s.department === (this.selectedDept as any);
-      const matchStatus =
-        this.selectedStatus === 'all' || s.status === (this.selectedStatus as any);
-      return matchTerm && matchDept && matchStatus;
-    });
+  // Load nhân viên list from backend
+  loadNhanVienList(): void {
+    this.loading = true;
+    this.errorMessage = '';
+
+    const searchParams: NhanVienSearchParams = {
+      page: this.currentPage,
+      size: this.pageSize,
+      sortBy: 'id',
+      sortDir: 'desc',
+    };
+
+    this.nhanVienService
+      .searchNhanVien(searchParams)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: PageResponse<NhanVien>) => {
+          this.nhanVienList = response.content;
+          this.filteredList = [...this.nhanVienList];
+          this.totalElements = response.totalElements;
+          this.totalPages = response.totalPages;
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading nhân viên:', error);
+          this.errorMessage = error.message || 'Có lỗi xảy ra khi tải danh sách nhân viên';
+          this.loading = false;
+          // Clear data on error
+          this.nhanVienList = [];
+          this.filteredList = [];
+          this.totalElements = 0;
+          this.totalPages = 0;
+          this.cdr.detectChanges();
+        },
+      });
   }
 
-  onSearchChange() {
-    this.filter();
-  }
-  onDeptChange() {
-    this.filter();
-  }
-  onStatusChange() {
-    this.filter();
+  // Retry connection method
+  retryConnection(): void {
+    this.loadNhanVienList();
+    this.cdr.detectChanges();
   }
 
-  openAdd() {
+  // Search and filter methods
+  onFilterChange(): void {
+    this.currentPage = 0;
+    this.performSearch();
+  }
+
+  performSearch(): void {
+    this.loading = true;
+    this.errorMessage = '';
+
+    const searchParams: NhanVienSearchParams = {
+      page: this.currentPage,
+      size: this.pageSize,
+      sortBy: 'id',
+      sortDir: 'desc',
+    };
+
+    // Add search filters
+    if (this.searchTerm.trim()) {
+      searchParams.hoTen = this.searchTerm.trim();
+    }
+
+    if (this.selectedStatus !== 'all') {
+      searchParams.trangThai = this.selectedStatus === 'Hoạt động';
+    }
+
+    this.nhanVienService
+      .searchNhanVien(searchParams)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: PageResponse<NhanVien>) => {
+          this.nhanVienList = response.content;
+          this.filteredList = [...this.nhanVienList];
+          this.totalElements = response.totalElements;
+          this.totalPages = response.totalPages;
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error searching nhân viên:', error);
+          this.errorMessage = error.message || 'Có lỗi xảy ra khi tìm kiếm';
+          this.loading = false;
+          // Clear data on error
+          this.nhanVienList = [];
+          this.filteredList = [];
+          this.totalElements = 0;
+          this.totalPages = 0;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  // Pagination
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.performSearch();
+  }
+
+  onPageSizeChange(newSize: number): void {
+    this.pageSize = newSize;
+    this.currentPage = 0;
+    this.performSearch();
+  }
+
+  // Modal methods
+  openAdd(): void {
     this.isEditMode = false;
     this.isViewMode = false;
-    this.selected = null;
-    this.form = {
-      id: 0,
-      name: '',
-      email: '',
-      phone: '',
-      department: 'Bán hàng',
-      status: 'Hoạt động',
-      joinDate: new Date(),
-    };
+    this.selectedNhanVien = null;
+    this.resetForm();
     this.showModal = true;
   }
 
-  openEdit(item: Staff) {
+  openEdit(nhanVien: NhanVien): void {
     this.isEditMode = true;
     this.isViewMode = false;
-    this.selected = item;
-    this.form = { ...item };
+    this.selectedNhanVien = nhanVien;
+    this.form = { ...nhanVien };
     this.showModal = true;
   }
 
-  view(item: Staff) {
+  view(nhanVien: NhanVien): void {
     this.isEditMode = false;
     this.isViewMode = true;
-    this.selected = item;
-    this.form = { ...item };
+    this.selectedNhanVien = nhanVien;
+    this.form = { ...nhanVien };
     this.showModal = true;
   }
 
-  close() {
+  close(): void {
     this.showModal = false;
     this.isEditMode = false;
     this.isViewMode = false;
-    this.selected = null;
+    this.selectedNhanVien = null;
+    this.errorMessage = '';
+    this.clearFieldErrors();
   }
 
-  save() {
-    if (!this.form.name || !this.form.email) return;
-    if (this.isEditMode && this.selected) {
-      const idx = this.staffList.findIndex((s) => s.id === this.selected!.id);
-      if (idx !== -1) this.staffList[idx] = { ...this.form };
-    } else {
-      const newId = Math.max(...this.staffList.map((s) => s.id), 0) + 1;
-      this.staffList.unshift({ ...this.form, id: newId, joinDate: new Date() });
+  // Form methods
+  resetForm(): void {
+    this.form = {
+      hoTen: '',
+      email: '',
+      soDienThoai: '',
+      diaChi: '',
+      gioiTinh: true,
+      ngaySinh: '',
+      ngayVaoLam: '',
+      trangThai: true,
+    };
+  }
+
+  save(): void {
+    // Clear previous errors
+    this.clearFieldErrors();
+    this.errorMessage = '';
+
+    // Validate all fields
+    if (!this.isFormValid()) {
+      this.errorMessage = 'Vui lòng kiểm tra lại thông tin đã nhập';
+      return;
     }
-    this.filter();
-    this.close();
+
+    this.loading = true;
+
+    const saveOperation =
+      this.isEditMode && this.selectedNhanVien?.id
+        ? this.nhanVienService.updateNhanVien(this.selectedNhanVien.id, this.form)
+        : this.nhanVienService.createNhanVien(this.form);
+
+    saveOperation.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (nhanVien) => {
+        this.loadNhanVienList();
+        this.close();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        this.errorMessage = error.message || 'Có lỗi xảy ra khi lưu nhân viên';
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+    });
   }
 
-  remove(item: Staff) {
-    this.staffList = this.staffList.filter((s) => s.id !== item.id);
-    this.filter();
+  remove(nhanVien: NhanVien): void {
+    if (!nhanVien.id) return;
+
+    if (
+      confirm(
+        `Bạn có chắc chắn muốn xóa vĩnh viễn nhân viên ${nhanVien.hoTen}?\n\nHành động này không thể hoàn tác!`
+      )
+    ) {
+      this.loading = true;
+      this.errorMessage = '';
+
+      this.nhanVienService
+        .permanentlyDeleteNhanVien(nhanVien.id)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loadNhanVienList();
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            this.errorMessage = error.message || 'Có lỗi xảy ra khi xóa nhân viên';
+            this.loading = false;
+            this.cdr.detectChanges();
+          },
+        });
+    }
   }
 
-  statusClass(status: string): string {
-    return status === 'Hoạt động'
-      ? 'badge-active'
-      : status === 'Tạm nghỉ'
-      ? 'badge-pending'
-      : 'badge-locked';
+  // Utility methods
+  statusClass(trangThai: boolean | undefined): string {
+    if (trangThai === undefined) return 'badge-locked';
+    return trangThai ? 'badge-active' : 'badge-locked';
   }
 
-  // Template helper for parsing date string (yyyy-MM-dd)
-  dateFrom(value: string): Date {
-    return new Date(value);
+  getTrangThaiText(trangThai: boolean | undefined): string {
+    return getTrangThaiText(trangThai);
+  }
+
+  getGioiTinhText(gioiTinh: boolean | undefined): string {
+    return getGioiTinhText(gioiTinh);
+  }
+
+  // Helper function to format date for display
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) return 'Chưa có';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN');
+    } catch {
+      return 'Chưa có';
+    }
+  }
+
+  // Helper function to truncate text for display
+  truncateText(text: string | undefined, maxLength: number = 50): string {
+    if (!text) return 'Chưa có';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  }
+
+  // Validation methods
+  validateField(fieldName: string): void {
+    this.fieldErrors[fieldName] = '';
+
+    switch (fieldName) {
+      case 'hoTen':
+        if (!this.form.hoTen || this.form.hoTen.trim() === '') {
+          this.fieldErrors[fieldName] = 'Vui lòng nhập họ tên.';
+        } else if (this.form.hoTen.trim().length < 2) {
+          this.fieldErrors[fieldName] = 'Họ tên phải có ít nhất 2 ký tự.';
+        }
+        break;
+
+      case 'maNhanVien':
+        if (this.form.maNhanVien && this.form.maNhanVien.trim() !== '') {
+          const maNhanVienPattern = /^NV\d{3,}$/;
+          if (!maNhanVienPattern.test(this.form.maNhanVien.trim())) {
+            this.fieldErrors[fieldName] = 'Mã nhân viên phải có định dạng NV001, NV002...';
+          }
+        }
+        break;
+
+      case 'email':
+        if (!this.form.email || this.form.email.trim() === '') {
+          this.fieldErrors[fieldName] = 'Vui lòng nhập email.';
+        } else {
+          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailPattern.test(this.form.email.trim())) {
+            this.fieldErrors[fieldName] = 'Vui lòng nhập email hợp lệ.';
+          }
+        }
+        break;
+
+      case 'soDienThoai':
+        if (!this.form.soDienThoai || this.form.soDienThoai.trim() === '') {
+          this.fieldErrors[fieldName] = 'Vui lòng nhập số điện thoại.';
+        } else {
+          const phonePattern = /^[0-9]{10,11}$/;
+          if (!phonePattern.test(this.form.soDienThoai.trim())) {
+            this.fieldErrors[fieldName] = 'Số điện thoại phải có 10-11 chữ số.';
+          }
+        }
+        break;
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  // Clear all field errors
+  clearFieldErrors(): void {
+    this.fieldErrors = {};
+  }
+
+  // Check if form is valid
+  isFormValid(): boolean {
+    this.validateField('hoTen');
+    this.validateField('email');
+    this.validateField('soDienThoai');
+    if (this.form.maNhanVien && this.form.maNhanVien.trim() !== '') {
+      this.validateField('maNhanVien');
+    }
+    return Object.keys(this.fieldErrors).every((key) => !this.fieldErrors[key]);
   }
 }
