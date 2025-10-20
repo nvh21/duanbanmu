@@ -26,6 +26,7 @@ export interface PhieuGiamGiaRequest {
   ngayKetThuc: string;
   trangThai: boolean;
   isPublic: boolean; // true = công khai, false = cá nhân
+  selectedCustomerIds?: number[]; // Danh sách ID khách hàng được chọn (chỉ dùng cho chế độ Cá nhân)
 }
 
 export interface PhieuGiamGiaResponse {
@@ -59,6 +60,7 @@ export interface ApiResponse<T> {
 
 export interface KhachHang {
   id: number;                 // Khóa chính
+  maKhachHang: string;        // Mã khách hàng
   tenKhachHang: string;       // Tên khách hàng
   email: string;              // Email duy nhất
   soDienThoai: string;        // Số điện thoại
@@ -67,6 +69,8 @@ export interface KhachHang {
   diemTichLuy: number;        // Điểm tích lũy
   ngayTao: string;            // Ngày tạo tài khoản (LocalDate -> string ISO)
   trangThai: boolean;         // true = hoạt động, false = không hoạt động
+  soLanMua: number;           // Số lần mua hàng
+  lanMuaGanNhat: string;      // Lần mua gần nhất (LocalDate -> string ISO)
   userId?: number;            // Liên kết với bảng User (nếu có)
 }
 

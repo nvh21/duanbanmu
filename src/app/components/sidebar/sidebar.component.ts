@@ -22,6 +22,7 @@ export class SidebarComponent implements OnInit {
       route: '/dashboard',
       active: true,
       hasSubmenu: false,
+      isExpanded: false,
       submenu: [],
     },
     {
@@ -30,6 +31,7 @@ export class SidebarComponent implements OnInit {
       route: '/invoices',
       active: false,
       hasSubmenu: false,
+      isExpanded: false,
       submenu: [],
     },
     {
@@ -38,6 +40,7 @@ export class SidebarComponent implements OnInit {
       route: '/counter-sales',
       active: false,
       hasSubmenu: false,
+      isExpanded: false,
       submenu: [],
     },
     {
@@ -115,6 +118,7 @@ export class SidebarComponent implements OnInit {
       route: '/management',
       active: false,
       hasSubmenu: false,
+      isExpanded: false,
       submenu: [],
     },
     {
@@ -123,6 +127,7 @@ export class SidebarComponent implements OnInit {
       route: '/staff',
       active: false,
       hasSubmenu: false,
+      isExpanded: false,
       submenu: [],
     },
     {
@@ -131,6 +136,7 @@ export class SidebarComponent implements OnInit {
       route: '/customers',
       active: false,
       hasSubmenu: false,
+      isExpanded: false,
       submenu: [],
     },
     {
@@ -147,6 +153,7 @@ export class SidebarComponent implements OnInit {
           route: '/promotions',
           active: false,
           hasSubmenu: false,
+          isExpanded: false,
           submenu: [],
         },
         {
@@ -155,6 +162,7 @@ export class SidebarComponent implements OnInit {
           route: '/phieu-giam-gia',
           active: false,
           hasSubmenu: false,
+          isExpanded: false,
           submenu: [],
         },
       ],

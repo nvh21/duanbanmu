@@ -102,6 +102,7 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     } else {
       const searchLower = this.searchTerm.toLowerCase();
       this.filteredCustomers = this.customers.filter(customer =>
+        customer.maKhachHang?.toLowerCase().includes(searchLower) ||
         customer.tenKhachHang.toLowerCase().includes(searchLower) ||
         customer.email.toLowerCase().includes(searchLower) ||
         customer.soDienThoai.includes(this.searchTerm)
@@ -157,7 +158,8 @@ export class PhieuGiamGiaFormComponent implements OnInit {
       ngayBatDau: this.startDate,
       ngayKetThuc: this.endDate,
       trangThai: this.convertTrangThaiToBoolean(), // Convert trạng thái mới thành boolean
-      isPublic: this.isPublic
+      isPublic: this.isPublic,
+      selectedCustomerIds: this.isPublic ? undefined : this.selectedCustomers.map(c => c.id) // Chỉ gửi khi chế độ Cá nhân
     };
 
     console.log('Saving phiếu giảm giá:', requestBody);
@@ -165,7 +167,14 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     this.phieuGiamGiaService.createPhieuGiamGia(requestBody).subscribe({
       next: (response) => {
         console.log('Save success:', response);
-        this.successMessage = 'Tạo phiếu giảm giá thành công!';
+        
+        // Hiển thị message phù hợp với chế độ
+        if (this.isPublic) {
+          this.successMessage = 'Tạo phiếu giảm giá công khai thành công!';
+        } else {
+          this.successMessage = `Tạo phiếu giảm giá cá nhân thành công cho ${this.selectedCustomers.length} khách hàng!`;
+        }
+        
         this.resetForm();
         this.isSaving = false;
         
@@ -223,52 +232,54 @@ export class PhieuGiamGiaFormComponent implements OnInit {
       isValid = false;
     }
 
-    // Validate Giá trị giảm (maxDiscount) - Bổ sung validation
+    // Validate Giá trị giảm (maxDiscount) theo loại phiếu
     if (this.maxDiscount === null || this.maxDiscount === undefined) {
       this.validationErrors['maxDiscount'] = 'Giá trị giảm không được để trống';
-      isValid = false;
-    } else if (this.maxDiscount <= 0) {
-      this.validationErrors['maxDiscount'] = 'Giá trị giảm phải lớn hơn 0';
-      isValid = false;
-    } else if (this.phieuType && this.maxDiscount < 1000) {
-      this.validationErrors['maxDiscount'] = 'Giá trị giảm tiền mặt phải từ 1,000 VND trở lên';
-      isValid = false;
-    } else if (!this.phieuType && this.maxDiscount > 100) {
-      this.validationErrors['maxDiscount'] = 'Giá trị giảm phần trăm không được vượt quá 100%';
-      isValid = false;
-    } else if (!this.phieuType && this.maxDiscount < 1) {
-      this.validationErrors['maxDiscount'] = 'Giá trị giảm phần trăm phải từ 1% trở lên';
-      isValid = false;
-    } else if (this.maxDiscount > 999999999) {
-      this.validationErrors['maxDiscount'] = 'Giá trị giảm quá lớn (tối đa 999,999,999)';
       isValid = false;
     } else if (!Number.isFinite(this.maxDiscount)) {
       this.validationErrors['maxDiscount'] = 'Giá trị giảm phải là số hợp lệ';
       isValid = false;
+    } else if (this.phieuType) {
+      // Tiền mặt
+      if (this.maxDiscount <= 0) {
+        this.validationErrors['maxDiscount'] = 'Giá trị giảm phải lớn hơn 0';
+        isValid = false;
+      } else if (this.maxDiscount < 1000) {
+        this.validationErrors['maxDiscount'] = 'Giá trị giảm tiền mặt phải từ 1,000 VND trở lên';
+        isValid = false;
+      } else if (this.maxDiscount > 999999999) {
+        this.validationErrors['maxDiscount'] = 'Giá trị giảm quá lớn (tối đa 999,999,999)';
+        isValid = false;
+      }
+    } else {
+      // Phần trăm
+      if (this.maxDiscount < 1 || this.maxDiscount > 100) {
+        this.validationErrors['maxDiscount'] = 'Giá trị giảm phần trăm phải từ 1% đến 100%';
+        isValid = false;
+      }
     }
 
-    // Validate Số tiền giảm tối thiểu (minDiscount) - Bổ sung validation
-    if (this.minDiscount === null || this.minDiscount === undefined) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được để trống';
-      isValid = false;
-    } else if (this.minDiscount < 0) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được âm';
-      isValid = false;
-    } else if (this.minDiscount > this.maxDiscount) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được lớn hơn giá trị giảm';
-      isValid = false;
-    } else if (this.minDiscount > 999999999) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu quá lớn (tối đa 999,999,999)';
-      isValid = false;
-    } else if (!Number.isFinite(this.minDiscount)) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu phải là số hợp lệ';
-      isValid = false;
-    } else if (this.phieuType && this.minDiscount > 0 && this.minDiscount < 100) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu tiền mặt phải từ 100 VND trở lên';
-      isValid = false;
-    } else if (!this.phieuType && this.minDiscount > 0 && this.minDiscount < 1) {
-      this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu phần trăm phải từ 1% trở lên';
-      isValid = false;
+    // Validate Số tiền giảm tối thiểu (chỉ áp dụng cho Tiền mặt)
+    if (this.phieuType) {
+      if (this.minDiscount === null || this.minDiscount === undefined) {
+        this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được để trống';
+        isValid = false;
+      } else if (!Number.isFinite(this.minDiscount)) {
+        this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu phải là số hợp lệ';
+        isValid = false;
+      } else if (this.minDiscount < 0) {
+        this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được âm';
+        isValid = false;
+      } else if (this.minDiscount > this.maxDiscount) {
+        this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu không được lớn hơn giá trị giảm';
+        isValid = false;
+      } else if (this.minDiscount > 999999999) {
+        this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu quá lớn (tối đa 999,999,999)';
+        isValid = false;
+      } else if (this.minDiscount > 0 && this.minDiscount < 100) {
+        this.validationErrors['minDiscount'] = 'Số tiền giảm tối thiểu tiền mặt phải từ 100 VND trở lên';
+        isValid = false;
+      }
     }
 
     // Validate Hóa đơn tối thiểu (minInvoice)
@@ -343,8 +354,13 @@ export class PhieuGiamGiaFormComponent implements OnInit {
       }
     }
 
-    // Validate Trạng thái (trangThai) - Đã ẩn trường này, tự động set mặc định
-    // Không cần validation vì trường đã được ẩn và tự động set giá trị mặc định
+    // Validate cho chế độ Cá nhân
+    if (!this.isPublic) {
+      if (!this.selectedCustomers || this.selectedCustomers.length === 0) {
+        this.validationErrors['customers'] = 'Chế độ Cá nhân yêu cầu phải chọn ít nhất một khách hàng';
+        isValid = false;
+      }
+    }
 
     return isValid;
   }
@@ -549,6 +565,26 @@ export class PhieuGiamGiaFormComponent implements OnInit {
 
   getGenderText(gender: boolean): string {
     return gender ? 'Nam' : 'Nữ';
+  }
+
+  onPhieuTypeChange() {
+    // Xóa lỗi liên quan khi đổi loại
+    this.clearFieldError('maxDiscount');
+    this.clearFieldError('minDiscount');
+    // Nếu chuyển sang phần trăm thì ẩn và reset minDiscount
+    if (!this.phieuType) {
+      this.minDiscount = 0;
+    }
+  }
+
+  formatDate(dateString: string): string {
+    if (!dateString) return 'Chưa có';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN');
+    } catch (error) {
+      return 'Chưa có';
+    }
   }
 
   // Generate suggested codes

@@ -166,9 +166,6 @@
               <button class="btn-edit" (click)="editPhieuGiamGia(phieu)" title="Chỉnh sửa" [disabled]="phieu.isUpdating">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn-delete" (click)="deletePhieuGiamGia(phieu)" title="Xóa" [disabled]="phieu.isUpdating">
-                <i class="bi bi-trash"></i>
-              </button>
             </td>
           </tr>
         </tbody>
@@ -279,8 +276,9 @@
             <div class="form-group">
               <label>Trạng thái</label>
               <select [(ngModel)]="editForm.trangThai" class="form-control" name="trangThai">
-                <option [ngValue]="true">Hoạt động</option>
-                <option [ngValue]="false">Không hoạt động</option>
+                <option value="sap_dien_ra">Sắp diễn ra</option>
+                <option value="dang_dien_ra">Đang diễn ra</option>
+                <option value="ket_thuc">Kết thúc</option>
               </select>
             </div>
           </div>
@@ -391,6 +389,7 @@
                 [class.is-invalid]="hasEditFieldError('ngayBatDau')"
                 name="ngayBatDau"
                 (blur)="onEditFieldBlur('ngayBatDau')"
+                (change)="onEditDateChange()"
               />
               <div *ngIf="hasEditFieldError('ngayBatDau')" class="invalid-feedback">
                 {{ getEditFieldError('ngayBatDau') }}
@@ -405,6 +404,7 @@
                 [class.is-invalid]="hasEditFieldError('ngayKetThuc')"
                 name="ngayKetThuc"
                 (blur)="onEditFieldBlur('ngayKetThuc')"
+                (change)="onEditDateChange()"
               />
               <div *ngIf="hasEditFieldError('ngayKetThuc')" class="invalid-feedback">
                 {{ getEditFieldError('ngayKetThuc') }}

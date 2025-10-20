@@ -44,7 +44,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
     soLuongDung: 0,
     ngayBatDau: '',
     ngayKetThuc: '',
-    trangThai: true,
+    trangThai: 'sap_dien_ra', // Thay đổi từ boolean thành string
   };
   isUpdating = false;
   
@@ -61,9 +61,70 @@ export class PhieuGiamGiaListComponent implements OnInit {
     this.loadPhieuGiamGiaList();
   }
 
-  // Method để refresh dữ liệu khi cần thiết
-  refreshData() {
-    this.loadPhieuGiamGiaList();
+  // Tính toán trạng thái dựa trên thời gian thực tế
+  calculateTrangThaiBasedOnTime(ngayBatDau: string, ngayKetThuc: string): string {
+    console.log('=== CALCULATING STATUS ===');
+    console.log('ngayBatDau:', ngayBatDau);
+    console.log('ngayKetThuc:', ngayKetThuc);
+    
+    const now = new Date();
+    const startDate = new Date(ngayBatDau);
+    const endDate = new Date(ngayKetThuc);
+    
+    console.log('now:', now);
+    console.log('startDate:', startDate);
+    console.log('endDate:', endDate);
+    
+    // Set thời gian về 00:00:00 để so sánh chính xác ngày
+    now.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    
+    console.log('After setting hours:');
+    console.log('now:', now);
+    console.log('startDate:', startDate);
+    console.log('endDate:', endDate);
+    
+    let status: string;
+    if (now < startDate) {
+      // Ngày hiện tại < ngày bắt đầu → Sắp diễn ra
+      status = 'sap_dien_ra';
+      console.log('Status: Sắp diễn ra');
+    } else if (now >= startDate && now <= endDate) {
+      // Ngày hiện tại trong khoảng từ ngày bắt đầu đến ngày kết thúc → Đang diễn ra
+      status = 'dang_dien_ra';
+      console.log('Status: Đang diễn ra');
+    } else {
+      // Ngày hiện tại > ngày kết thúc → Kết thúc
+      status = 'ket_thuc';
+      console.log('Status: Kết thúc');
+    }
+    
+    console.log('Final status:', status);
+    console.log('=== END CALCULATING STATUS ===');
+    
+    return status;
+  }
+
+  // Lấy text hiển thị của trạng thái
+  getTrangThaiText(trangThai: string): string {
+    switch (trangThai) {
+      case 'sap_dien_ra':
+        return 'Sắp diễn ra';
+      case 'dang_dien_ra':
+        return 'Đang diễn ra';
+      case 'ket_thuc':
+        return 'Kết thúc';
+      default:
+        return 'Không xác định';
+    }
+  }
+
+  // Cập nhật trạng thái khi thay đổi ngày trong modal
+  onEditDateChange() {
+    if (this.editForm.ngayBatDau && this.editForm.ngayKetThuc) {
+      this.editForm.trangThai = this.calculateTrangThaiBasedOnTime(this.editForm.ngayBatDau, this.editForm.ngayKetThuc);
+    }
   }
 
   loadPhieuGiamGiaList() {
@@ -167,7 +228,15 @@ export class PhieuGiamGiaListComponent implements OnInit {
   }
 
   editPhieuGiamGia(phieu: PhieuGiamGiaResponse) {
+    console.log('=== EDIT PHIEU GIAM GIA ===');
+    console.log('phieu:', phieu);
+    
     this.editingPhieu = phieu;
+    
+    // Tính toán trạng thái dựa trên thời gian thực tế
+    const calculatedStatus = this.calculateTrangThaiBasedOnTime(phieu.ngayBatDau, phieu.ngayKetThuc);
+    console.log('calculatedStatus:', calculatedStatus);
+    
     this.editForm = {
       maPhieu: phieu.maPhieu,
       tenPhieuGiamGia: phieu.tenPhieuGiamGia,
@@ -179,8 +248,10 @@ export class PhieuGiamGiaListComponent implements OnInit {
       soLuongDung: phieu.soLuongDung,
       ngayBatDau: phieu.ngayBatDau,
       ngayKetThuc: phieu.ngayKetThuc,
-      trangThai: phieu.trangThai,
+      trangThai: calculatedStatus, // Sử dụng trạng thái được tính toán
     };
+    
+    console.log('editForm after setting:', this.editForm);
     
     // Reset validation state khi mở modal
     this.editValidationErrors = {};
@@ -188,6 +259,12 @@ export class PhieuGiamGiaListComponent implements OnInit {
     this.isUpdating = false;
     
     this.showEditModal = true;
+    console.log('=== END EDIT PHIEU GIAM GIA ===');
+    
+    // Force change detection để đảm bảo dropdown được cập nhật
+    setTimeout(() => {
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   toggleStatus(phieu: PhieuGiamGiaResponse, event?: Event) {
@@ -606,7 +683,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
       soLuongDung: this.editForm.soLuongDung,
       ngayBatDau: this.editForm.ngayBatDau,
       ngayKetThuc: this.editForm.ngayKetThuc,
-      trangThai: this.editForm.trangThai,
+      trangThai: this.convertTrangThaiToBoolean(this.editForm.trangThai), // Convert trạng thái mới thành boolean
       isPublic: true, // Mặc định là công khai cho các phiếu cũ
     };
 
@@ -702,33 +779,15 @@ export class PhieuGiamGiaListComponent implements OnInit {
     });
   }
 
-  // Delete phiếu giảm giá
-  deletePhieuGiamGia(phieu: PhieuGiamGiaResponse) {
-    if (phieu.isUpdating) return; // Ngăn chặn click khi đang cập nhật
+  // Method để refresh dữ liệu khi cần thiết
+  refreshData() {
+    this.loadPhieuGiamGiaList();
+  }
 
-    // Xác nhận trước khi xóa
-    const confirmMessage = `Bạn có chắc chắn muốn xóa phiếu giảm giá "${phieu.tenPhieuGiamGia}" (${phieu.maPhieu})?`;
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
-    phieu.isUpdating = true; // Đặt cờ đang cập nhật
-    this.phieuGiamGiaService.deletePhieuGiamGia(phieu.id).subscribe({
-      next: (response) => {
-        if (response.success) {
-          // Xóa thành công, reload danh sách
-          this.loadPhieuGiamGiaList();
-        } else {
-          console.error('Failed to delete phiếu giảm giá:', response.message);
-          this.error = response.message || 'Lỗi khi xóa phiếu giảm giá';
-        }
-        phieu.isUpdating = false; // Xóa cờ đang cập nhật
-      },
-      error: (err) => {
-        console.error('Error deleting phiếu giảm giá:', err);
-        this.error = err.error?.message || 'Lỗi khi xóa phiếu giảm giá';
-        phieu.isUpdating = false; // Xóa cờ đang cập nhật
-      },
-    });
+  // Method để convert trạng thái string thành boolean
+  convertTrangThaiToBoolean(trangThai: string): boolean {
+    // Chuyển đổi trạng thái string thành boolean
+    // Có thể tùy chỉnh logic này dựa trên yêu cầu business
+    return trangThai === 'dang_dien_ra' || trangThai === 'active' || trangThai === 'true';
   }
 }
