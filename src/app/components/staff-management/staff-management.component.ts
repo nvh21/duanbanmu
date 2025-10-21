@@ -21,6 +21,9 @@ import {
 export class StaffManagementComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
+  // Expose Math to template
+  Math = Math;
+
   // Search and filter properties
   searchTerm = '';
   selectedStatus = 'all';
@@ -165,14 +168,55 @@ export class StaffManagementComponent implements OnInit, OnDestroy {
 
   // Pagination
   onPageChange(page: number): void {
-    this.currentPage = page;
+    if (page >= 0 && page < this.totalPages) {
+      this.currentPage = page;
+      this.performSearch();
+    }
+  }
+
+  onPageSizeChange(event: any): void {
+    this.pageSize = parseInt(event.target.value);
+    this.currentPage = 0;
     this.performSearch();
   }
 
-  onPageSizeChange(newSize: number): void {
-    this.pageSize = newSize;
+  getPageNumbers(): number[] {
+    const maxPagesToShow = 5;
+    const pages: number[] = [];
+
+    if (this.totalPages <= maxPagesToShow) {
+      // Show all pages if total is less than max
+      for (let i = 1; i <= this.totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show current page and surrounding pages
+      let startPage = Math.max(1, this.currentPage - 1);
+      let endPage = Math.min(this.totalPages, this.currentPage + 3);
+
+      // Adjust if we're near the beginning
+      if (this.currentPage <= 2) {
+        endPage = Math.min(this.totalPages, maxPagesToShow);
+      }
+
+      // Adjust if we're near the end
+      if (this.currentPage >= this.totalPages - 2) {
+        startPage = Math.max(1, this.totalPages - maxPagesToShow + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+    }
+
+    return pages;
+  }
+
+  resetFilter(): void {
+    this.searchTerm = '';
+    this.selectedStatus = 'all';
     this.currentPage = 0;
-    this.performSearch();
+    this.loadNhanVienList();
   }
 
   // Modal methods
