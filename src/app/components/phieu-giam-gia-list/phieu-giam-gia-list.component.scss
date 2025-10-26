@@ -585,6 +585,21 @@
       background-color: #f8d7da;
       color: #721c24;
     }
+
+    &.status-upcoming {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    &.status-ended {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    &.status-unknown {
+      background-color: #e2e3e5;
+      color: #383d41;
+    }
   }
 
   // Loading State
@@ -723,10 +738,11 @@
         align-items: center;
         padding: 20px 25px;
         border-bottom: 1px solid #dee2e6;
+        background-color: #febc49;
 
         h4 {
           margin: 0;
-          color: #febc49;
+          color: white;
           font-size: 20px;
           font-weight: 600;
         }
@@ -735,7 +751,7 @@
           background: none;
           border: none;
           font-size: 24px;
-          color: #febc49;
+          color: white;
           cursor: pointer;
           padding: 0;
           width: 30px;
@@ -887,11 +903,11 @@
           }
 
           &.btn-primary {
-            background-color: #007bff;
+            background-color: #febc49;
             color: white;
 
             &:hover:not(:disabled) {
-              background-color: #0056b3;
+              background-color: #e0a800;
             }
           }
 
@@ -992,6 +1008,17 @@
         }
       }
     }
+  }
+
+  // Section titles and icons with orange color
+  .section-title {
+    color: #febc49 !important;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .section-icon {
+    color: #febc49 !important;
   }
 }
 

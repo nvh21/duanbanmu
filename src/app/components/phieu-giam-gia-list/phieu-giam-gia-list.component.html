@@ -1,19 +1,9 @@
 <div class="phieu-giam-gia-list-container">
-  <!-- Header -->
-  <div class="page-header">
-    <h1 class="page-title">Phiếu Giảm Giá</h1>
-    <div class="breadcrumb">
-      <span>Trang chủ</span>
-      <span class="separator">/</span>
-      <span>Phiếu giảm giá</span>
-    </div>
-  </div>
-
   <!-- Search Filter Section -->
   <div class="filter-card">
     <div class="filter-header">
-      <i class="bi bi-funnel"></i>
-      <h3>Bộ Lọc Tìm Kiếm</h3>
+      <i class="bi bi-funnel section-icon"></i>
+      <h3 class="section-title">Bộ Lọc Tìm Kiếm</h3>
     </div>
 
     <div class="filter-content">
@@ -45,8 +35,9 @@
         <label>Trạng thái</label>
         <select [(ngModel)]="selectedStatus" (change)="applyFilters()" class="filter-select">
           <option value="all">Tất cả trạng thái</option>
-          <option value="active">Đang hoạt động</option>
-          <option value="inactive">Không hoạt động</option>
+          <option value="sap_dien_ra">Sắp diễn ra</option>
+          <option value="dang_dien_ra">Đang diễn ra</option>
+          <option value="ket_thuc">Kết thúc</option>
         </select>
       </div>
 
@@ -61,12 +52,12 @@
               (change)="applyFilters()"
               class="date-input"
             />
-            <i class="bi bi-calendar3 calendar-icon"></i>
+            <i class="bi bi-calendar-date calendar-icon"></i>
           </div>
           <span class="date-separator">đến</span>
           <div class="date-input-group">
             <input type="date" [(ngModel)]="endDate" (change)="applyFilters()" class="date-input" />
-            <i class="bi bi-calendar3 calendar-icon"></i>
+            <i class="bi bi-calendar-date calendar-icon"></i>
           </div>
         </div>
       </div>
@@ -87,8 +78,8 @@
   <!-- List Section -->
   <div class="list-card">
     <div class="list-header">
-      <i class="bi bi-table"></i>
-      <h3>Danh Sách Phiếu Giảm Giá</h3>
+      <i class="bi bi-table section-icon"></i>
+      <h3 class="section-title">Danh Sách Phiếu Giảm Giá</h3>
       <div class="header-actions">
         <button
           class="btn-refresh"
@@ -144,8 +135,8 @@
               </span>
             </td>
             <td>
-              <span class="status-badge" [ngClass]="getStatusClass(phieu.trangThai)">
-                {{ getStatusText(phieu.trangThai) }}
+              <span class="status-badge" [ngClass]="getStatusClass(phieu)">
+                {{ getStatusText(phieu) }}
               </span>
             </td>
             <td>{{ formatDate(phieu.ngayBatDau) }}</td>
