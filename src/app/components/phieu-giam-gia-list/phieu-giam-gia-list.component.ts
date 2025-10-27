@@ -54,7 +54,7 @@ export class PhieuGiamGiaListComponent implements OnInit {
 
   // Pagination
   currentPage = 1;
-  itemsPerPage = 6; // Thay đổi từ 10 thành 6 hàng mỗi trang
+  itemsPerPage = 5; // Hiển thị 5 dòng mỗi trang
   totalItems = 0;
 
   ngOnInit() {
@@ -157,6 +157,21 @@ export class PhieuGiamGiaListComponent implements OnInit {
   }
 
   // Filter methods
+  // Method to calculate status based on current time
+  calculateStatus(phieu: PhieuGiamGiaResponse): string {
+    const now = new Date();
+    const startDate = new Date(phieu.ngayBatDau);
+    const endDate = new Date(phieu.ngayKetThuc);
+
+    if (now < startDate) {
+      return 'sap_dien_ra';
+    } else if (now >= startDate && now <= endDate) {
+      return 'dang_dien_ra';
+    } else {
+      return 'ket_thuc';
+    }
+  }
+
   applyFilters() {
     this.filteredList = this.phieuGiamGiaList.filter((phieu) => {
       // Search filter
@@ -178,10 +193,10 @@ export class PhieuGiamGiaListComponent implements OnInit {
         }
       }
 
-      // Status filter
+      // Status filter - based on time calculation
       if (this.selectedStatus !== 'all') {
-        const isActive = this.selectedStatus === 'active';
-        if (phieu.trangThai !== isActive) {
+        const calculatedStatus = this.calculateStatus(phieu);
+        if (calculatedStatus !== this.selectedStatus) {
           return false;
         }
       }
@@ -351,12 +366,32 @@ export class PhieuGiamGiaListComponent implements OnInit {
     return date.toLocaleDateString('vi-VN');
   }
 
-  getStatusText(status: boolean): string {
-    return status ? 'Đang diễn ra' : 'Không hoạt động';
+  getStatusText(phieu: PhieuGiamGiaResponse): string {
+    const status = this.calculateStatus(phieu);
+    switch (status) {
+      case 'sap_dien_ra':
+        return 'Sắp diễn ra';
+      case 'dang_dien_ra':
+        return 'Đang diễn ra';
+      case 'ket_thuc':
+        return 'Kết thúc';
+      default:
+        return 'Không xác định';
+    }
   }
 
-  getStatusClass(status: boolean): string {
-    return status ? 'status-active' : 'status-inactive';
+  getStatusClass(phieu: PhieuGiamGiaResponse): string {
+    const status = this.calculateStatus(phieu);
+    switch (status) {
+      case 'sap_dien_ra':
+        return 'status-upcoming';
+      case 'dang_dien_ra':
+        return 'status-active';
+      case 'ket_thuc':
+        return 'status-ended';
+      default:
+        return 'status-unknown';
+    }
   }
 
   getTypeText(type: boolean): string {

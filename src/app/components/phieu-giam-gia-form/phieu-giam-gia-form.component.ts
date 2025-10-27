@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,6 +16,7 @@ export class PhieuGiamGiaFormComponent implements OnInit {
   
   private phieuGiamGiaService = inject(PhieuGiamGiaService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
   
   // Form data
   phieuCode = '';
@@ -76,21 +77,41 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     
     this.phieuGiamGiaService.getAllCustomers().subscribe({
       next: (response: any) => {
-        // Response trực tiếp là array, không có wrapper
-        if (Array.isArray(response)) {
-          this.customers = response;
-          this.filteredCustomers = this.customers;
-        } else if (response.success && response.data) {
-          // Fallback cho format cũ
-          this.customers = response.data;
-          this.filteredCustomers = this.customers;
+        try {
+          // Response trực tiếp là array, không có wrapper
+          if (Array.isArray(response)) {
+            this.customers = [...response]; // Tạo shallow copy để trigger change detection
+            this.filteredCustomers = [...this.customers];
+          } else if (response.success && response.data) {
+            // Fallback cho format cũ
+            this.customers = [...response.data];
+            this.filteredCustomers = [...this.customers];
+          } else {
+            // Fallback nếu không có data
+            this.customers = [];
+            this.filteredCustomers = [];
+          }
+          
+          // Trigger change detection một cách an toàn
+          this.cdr.markForCheck();
+        } catch (error) {
+          console.error('Error processing customer data:', error);
+          this.customers = [];
+          this.filteredCustomers = [];
+        } finally {
+          this.isLoading = false;
+          // Trigger change detection sau khi cập nhật loading state
+          this.cdr.markForCheck();
         }
-        this.isLoading = false;
       },
       error: (error: any) => {
         console.error('Error loading customers:', error);
         this.errorMessage = 'Không thể tải danh sách khách hàng';
+        this.customers = [];
+        this.filteredCustomers = [];
         this.isLoading = false;
+        // Trigger change detection để hiển thị error message
+        this.cdr.markForCheck();
       }
     });
   }
@@ -98,7 +119,7 @@ export class PhieuGiamGiaFormComponent implements OnInit {
   // Customer search and selection
   filterCustomers() {
     if (!this.searchTerm.trim()) {
-      this.filteredCustomers = this.customers;
+      this.filteredCustomers = [...this.customers];
     } else {
       const searchLower = this.searchTerm.toLowerCase();
       this.filteredCustomers = this.customers.filter(customer =>
@@ -108,15 +129,19 @@ export class PhieuGiamGiaFormComponent implements OnInit {
         customer.soDienThoai.includes(this.searchTerm)
       );
     }
+    // Trigger change detection để cập nhật UI
+    this.cdr.markForCheck();
   }
 
   selectCustomer(customer: KhachHang) {
     if (!this.selectedCustomers.find(c => c.id === customer.id)) {
-      this.selectedCustomers.push(customer);
+      this.selectedCustomers = [...this.selectedCustomers, customer]; // Tạo new array để trigger change detection
       // Clear privacy validation error when selecting a customer
       this.clearPrivacyError();
       // Auto-update quantity for private vouchers
       this.updateQuantityForPrivateVoucher();
+      // Trigger change detection
+      this.cdr.markForCheck();
     }
   }
 
@@ -126,6 +151,8 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     this.clearPrivacyError();
     // Auto-update quantity for private vouchers
     this.updateQuantityForPrivateVoucher();
+    // Trigger change detection
+    this.cdr.markForCheck();
   }
 
   // Helper method to check if customer is selected
@@ -639,6 +666,14 @@ export class PhieuGiamGiaFormComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
     
+    // Reset customer data
+    this.selectedCustomers = [];
+    this.searchTerm = '';
+    this.filteredCustomers = [...this.customers]; // Reset filtered customers to show all
+    
     this.generateSuggestedCodes();
+    
+    // Trigger change detection để cập nhật UI
+    this.cdr.markForCheck();
   }
 }

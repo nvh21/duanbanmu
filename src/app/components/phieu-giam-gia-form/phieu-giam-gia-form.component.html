@@ -2,18 +2,10 @@
   <!-- Header Section -->
   <div class="header-section">
     <div class="header-content">
-      <div class="breadcrumb">
-        <span class="breadcrumb-item" (click)="navigateToHome()">Trang chủ</span>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-item" (click)="goBack()">Phiếu giảm giá</span>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-item active">Form phiếu giảm giá</span>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary" (click)="goBack()">
-          Quay lại
-        </button>
-      </div>
+      <button class="btn btn-back" (click)="goBack()" title="Quay lại">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <h1 class="page-title">Thêm Phiếu Giảm Giá</h1>
     </div>
   </div>
 
@@ -21,11 +13,15 @@
   <div class="two-column-layout">
     <!-- Left Column: Thêm Phiếu Giảm Giá -->
     <div class="left-column">
-      <div class="section-header">
-        <h3>Thêm Phiếu Giảm Giá</h3>
-      </div>
-
       <div class="form-container">
+        <!-- Basic Information Section -->
+        <div class="basic-info-section">
+          <div class="info-header">
+            <i class="bi bi-percent info-icon"></i>
+            <span class="info-text">Thông tin cơ bản</span>
+          </div>
+        </div>
+
         <!-- Privacy Selection Row - Moved above Tên field -->
         <div class="form-row">
           <div class="form-group privacy-group">
@@ -282,7 +278,7 @@
     <!-- Right Column: Customer Selection -->
     <div class="right-column">
       <div class="section-header">
-        <h3>Chọn Khách Hàng</h3>
+        <h3 class="section-title">Chọn Khách Hàng</h3>
       </div>
 
       <!-- Search -->
@@ -339,7 +335,7 @@
 
       <!-- Selected Customers -->
       <div class="selected-customers-container">
-        <h4>Khách Hàng Đã Chọn</h4>
+        <h4 class="section-title">Khách Hàng Đã Chọn</h4>
         <div class="selected-table-container">
           <table class="selected-table">
             <thead>

@@ -11,48 +11,63 @@
 
 // Header section
 .header-section {
-  background: white;
+  background: #febc49;
   border-radius: clamp(6px, 1vw, 8px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   padding: clamp(15px, 2vw, 20px);
   margin-bottom: clamp(15px, 2vw, 20px);
+  margin-top: 20px; // Thêm margin-top để tránh đè logo
+  z-index: 10; // Đảm bảo header ở trên cùng
+  position: relative; // Đảm bảo z-index hoạt động
   
   .header-content {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: clamp(10px, 2vw, 15px);
     
-    .breadcrumb {
+    .page-title {
+      font-size: clamp(18px, 3vw, 22px);
+      font-weight: 600;
+      color: white;
+      margin: 0;
+      text-align: left;
+      letter-spacing: -0.3px;
+      
+      @media (max-width: 768px) {
+        font-size: clamp(16px, 4vw, 18px);
+      }
+    }
+    
+    .btn-back {
+      background-color: #febc49;
+      border: 1px solid white;
+      border-radius: 50%;
+      padding: 8px 12px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      gap: clamp(6px, 1vw, 8px);
-      font-size: clamp(12px, 2vw, 14px);
-      color: #6c757d;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
       
-      .breadcrumb-item {
-        cursor: pointer;
-        transition: color 0.2s ease;
-        
-        &:hover {
-          color: #febc49;
-        }
-        
-        &.active {
-          color: #495057;
-          font-weight: 500;
-          cursor: default;
-          
-          &:hover {
-            color: #495057;
-          }
-        }
+      &:hover {
+        background-color: white;
+        border-color: white;
+        color: #febc49;
+        transform: translateY(-1px);
       }
       
-      .breadcrumb-separator {
-        color: #6c757d;
-        font-weight: normal;
+      &:active {
+        transform: translateY(0);
+      }
+      
+      i {
+        font-size: 16px;
+        font-weight: bold;
+        color: white;
       }
     }
     
@@ -96,7 +111,54 @@
   }
 }
 
-// Form styles
+// Section titles with orange color
+.section-title {
+  color: #febc49 !important;
+  font-weight: 600;
+  margin: 0;
+}
+
+// Basic Information Section
+.basic-info-section {
+  margin-bottom: clamp(15px, 2vw, 20px);
+  margin-top: 10px; // Thêm margin-top để tránh đè logo
+  
+  .info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    
+    .info-icon {
+      color: #febc49;
+      font-size: 16px;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff8e1;
+      border-radius: 50%;
+      border: 1px solid #febc49;
+    }
+    
+    .info-text {
+      color: #febc49;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+  }
+  
+  &::after {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 1px;
+    background-color: #e0e0e0;
+    margin-top: 8px;
+  }
+}
 .form-container {
   .form-group {
     margin-bottom: clamp(15px, 2vw, 20px);
