@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -18,6 +18,8 @@ interface StatCard {
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
+  constructor(private cdr: ChangeDetectorRef) {}
+
   statCards: StatCard[] = [
     {
       icon: 'bi-shield',
@@ -84,6 +86,7 @@ export class DashboardComponent implements OnInit {
     this.generateFakeData();
     this.generateLineChart();
     this.generateDonutSegments();
+    this.cdr.markForCheck();
   }
 
   getChangeClass(changeType: string): string {

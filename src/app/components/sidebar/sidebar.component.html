@@ -17,16 +17,24 @@
     <ul class="nav-list">
       <li *ngFor="let item of menuItems" class="nav-item" [class.has-submenu]="item.hasSubmenu">
         <a
-          [routerLink]="item.hasSubmenu ? null : item.route"
+          *ngIf="!item.hasSubmenu"
+          [routerLink]="item.route"
+          [routerLinkActive]="'active'"
           class="nav-link"
           [class.active]="item.active"
-          [class.has-submenu]="item.hasSubmenu"
-          (click)="item.hasSubmenu ? toggleSubmenu(item) : null"
+        >
+          <i class="bi" [ngClass]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+        <a
+          *ngIf="item.hasSubmenu"
+          (click)="toggleSubmenu($event, item)"
+          class="nav-link has-submenu"
+          [class.active]="item.active"
         >
           <i class="bi" [ngClass]="item.icon"></i>
           <span>{{ item.label }}</span>
           <i
-            *ngIf="item.hasSubmenu"
             class="bi bi-chevron-down"
             [class.rotated]="item.isExpanded"
           ></i>

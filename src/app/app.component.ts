@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
@@ -19,7 +19,11 @@ export class AppComponent implements OnInit, OnDestroy {
   isLoginPage = false;
   private routerSubscription: Subscription = new Subscription();
 
-  constructor(public router: Router, private authService: AuthService) {}
+  constructor(
+    public router: Router, 
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     // Kiểm tra route hiện tại để xác định có phải trang login không
@@ -27,12 +31,14 @@ export class AppComponent implements OnInit, OnDestroy {
       this.router.events
         .pipe(filter((event) => event instanceof NavigationEnd))
         .subscribe((event: NavigationEnd) => {
-          this.isLoginPage = event.url === '/login';
+          this.isLoginPage = event.url === '/login' || event.url === '';
+          this.cdr.markForCheck();
         })
     );
 
     // Kiểm tra route ban đầu
-    this.isLoginPage = this.router.url === '/login';
+    this.isLoginPage = this.router.url === '/login' || this.router.url === '';
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy() {
@@ -40,8 +46,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleSidebar() {
-    console.log('Toggle sidebar called, current state:', this.sidebarHidden);
     this.sidebarHidden = !this.sidebarHidden;
-    console.log('New state:', this.sidebarHidden);
+    this.cdr.markForCheck();
   }
 }

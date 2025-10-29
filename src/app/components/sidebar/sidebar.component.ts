@@ -139,11 +139,14 @@ export class SidebarComponent implements OnInit {
     });
   }
 
-  toggleSubmenu(item: any) {
+  toggleSubmenu(event: Event, item: any) {
+    event.preventDefault();
+    event.stopPropagation();
     if (item.hasSubmenu) {
       item.isExpanded = !item.isExpanded;
     }
   }
+
 
   onLogout() {
     this.authService.logout();
