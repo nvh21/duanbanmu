@@ -55,6 +55,8 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
   showAddressModal = false;
   showAddressList = false;
   isEditAddressMode = false;
+  // Blur the customer modal when address modal is open
+  blurCustomerModal = false;
   selectedAddress: DiaChiKhachHang | null = null;
   addressList: DiaChiKhachHang[] = [];
   pendingAddresses: DiaChiKhachHangFormData[] = []; // Địa chỉ tạm thời khi thêm khách hàng mới
@@ -103,6 +105,41 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
         this.loadSampleData();
       }
     }, 2000);
+  }
+
+  // Generate next customer code (e.g., KH0001, KH0002, ...)
+  private generateCustomerCode(): void {
+    // Default visible immediately
+    this.form.maKhachHang = 'KH001';
+
+    const params: KhachHangSearchParams = {
+      page: 0,
+      size: 1,
+      sortBy: 'id',
+      sortDir: 'desc',
+    } as any;
+
+    this.khachHangService
+      .searchKhachHang(params)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: PageResponse<KhachHang>) => {
+          let nextNumber = 1;
+          const last =
+            response?.content && response.content.length > 0 ? response.content[0] : null;
+          const lastCode = last?.maKhachHang || '';
+          if (lastCode && lastCode.startsWith('KH')) {
+            const num = parseInt(lastCode.substring(2), 10);
+            if (!isNaN(num)) nextNumber = num + 1;
+          }
+          this.form.maKhachHang = `KH${nextNumber.toString().padStart(3, '0')}`;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          // keep default KH001
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   // Load sample data for testing
@@ -325,6 +362,34 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
   // Filter change handler
   onFilterChange(): void {
     this.currentPage = 0; // Reset to first page when filtering
+
+    // If we already have data loaded (e.g., sample data or first page from API),
+    // perform a fast client-side filter for instant UX. We still support
+    // server-side search when needed via loadKhachHangList().
+    if (this.khachHangList && this.khachHangList.length > 0) {
+      const term = (this.searchTerm || '').trim().toLowerCase();
+      const statusFilter = this.selectedStatus === '' ? undefined : this.selectedStatus === 'true';
+
+      this.filteredList = this.khachHangList.filter((kh) => {
+        const matchesTerm =
+          !term ||
+          (kh.maKhachHang || '').toLowerCase().includes(term) ||
+          (kh.tenKhachHang || '').toLowerCase().includes(term) ||
+          (kh.email || '').toLowerCase().includes(term) ||
+          (kh.soDienThoai || '').toLowerCase().includes(term);
+        const matchesStatus = statusFilter === undefined ? true : kh.trangThai === statusFilter;
+        return matchesTerm && matchesStatus;
+      });
+
+      // Update totals and paginated list (client-side)
+      this.totalElements = this.filteredList.length;
+      this.totalPages = Math.max(1, Math.ceil(this.totalElements / this.pageSize));
+      this.paginatedList = [...this.filteredList].slice(0, this.pageSize);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Fallback to server-side search when no data is loaded yet
     this.loadKhachHangList();
     this.cdr.detectChanges();
   }
@@ -367,8 +432,13 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
 
   // Update paginated list (for client-side filtering only)
   updatePaginatedList(): void {
-    // For server-side pagination, paginatedList is set directly in loadKhachHangList
-    // This method is kept for compatibility but doesn't slice data
+    // For server-side pagination, paginatedList is set directly in loadKhachHangList.
+    // For client-side filtering, slice from filteredList based on currentPage/pageSize.
+    if (this.filteredList && this.filteredList.length > 0) {
+      const start = this.currentPage * this.pageSize;
+      const end = start + this.pageSize;
+      this.paginatedList = this.filteredList.slice(start, end);
+    }
     this.cdr.detectChanges();
   }
 
@@ -456,6 +526,8 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
     this.isViewMode = false;
     this.selectedKhachHang = null;
     this.resetForm();
+    // Auto-generate code for new customer
+    this.generateCustomerCode();
     this.fieldErrors = {};
     this.addressList = []; // Reset address list for new customer
     this.pendingAddresses = []; // Reset pending addresses
@@ -682,8 +754,17 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
   goToPage(page: number): void {
     if (page >= 0 && page < this.totalPages) {
       this.currentPage = page;
-      // Load data from API for the new page
-      this.loadKhachHangList();
+      // If we are filtering client-side, just update the slice; otherwise, hit API
+      if (
+        this.filteredList &&
+        this.filteredList.length > 0 &&
+        this.filteredList.length !== this.khachHangList.length
+      ) {
+        this.updatePaginatedList();
+      } else {
+        // Load data from API for the new page
+        this.loadKhachHangList();
+      }
     }
   }
 
@@ -889,6 +970,8 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
     this.isEditAddressMode = false;
     this.selectedAddress = null;
     this.resetAddressForm();
+    // Remove blur from customer modal if applied
+    this.blurCustomerModal = false;
     this.cdr.detectChanges();
   }
 
@@ -1458,6 +1541,11 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
       showAddressModal: this.showAddressModal,
     });
 
+    // If customer modal is open, blur it (keep visible)
+    if (this.showModal) {
+      this.blurCustomerModal = true;
+    }
+
     this.showAddressModal = true;
     this.isEditAddressMode = false;
     this.resetAddressForm();
@@ -1497,7 +1585,8 @@ export class CustomerManagementComponent implements OnInit, OnDestroy {
   }
 
   // Get customer's primary address for table display
-  getCustomerAddress(khachHang: KhachHang): string {
+  getCustomerAddress(khachHang?: KhachHang | null): string {
+    if (!khachHang) return 'Không có địa chỉ';
     // Ưu tiên địa chỉ từ backend (địa chỉ mặc định)
     if (khachHang.coDiaChiMacDinh && khachHang.diaChiMacDinh) {
       const parts = [];

@@ -278,19 +278,22 @@
 }
 
 .status-badge {
-  padding: 4px 12px;
+  padding: 6px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 0.8rem;
   font-weight: 500;
-  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .status-badge.active {
-  background-color: #28a745;
+  background-color: #d4edda; /* match @colors */
+  color: #155724;
 }
 
 .status-badge.inactive {
-  background-color: #dc3545;
+  background-color: #f8d7da; /* match @colors */
+  color: #721c24;
 }
 
 .action-buttons {
