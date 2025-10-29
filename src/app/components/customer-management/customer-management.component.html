@@ -217,7 +217,12 @@
 </div>
 
 <!-- Customer Modal -->
-<div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'">
+<div
+  class="modal fade"
+  [class.show]="showModal"
+  [class.blurred]="blurCustomerModal"
+  [style.display]="showModal ? 'block' : 'none'"
+>
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header text-white">
@@ -243,7 +248,8 @@
                   id="maKhachHang"
                   [(ngModel)]="form.maKhachHang"
                   name="maKhachHang"
-                  placeholder="Nhập mã khách hàng"
+                  placeholder="Mã tự sinh"
+                  readonly
                 />
               </div>
             </div>
@@ -337,74 +343,86 @@
           <div class="mb-3">
             <label class="form-label"> <i class="bi bi-geo-alt me-1"></i>Địa chỉ </label>
 
-            <!-- Existing Addresses (for edit mode) -->
-            <div class="address-list" *ngIf="isEditMode && addressList.length > 0">
-              <div class="address-item" *ngFor="let address of addressList; let i = index">
-                <div class="address-content">
-                  <div class="address-info">
-                    <span class="address-text">{{ getFullAddress(address) }}</span>
-                    <span class="address-default" *ngIf="address.macDinh">(Mặc định)</span>
-                  </div>
-                  <div class="address-actions">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-primary"
-                      (click)="editAddress(address)"
-                    >
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-danger"
-                      (click)="deleteAddress(address)"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Pending Addresses (for new customer) -->
-            <div class="address-list" *ngIf="!isEditMode && pendingAddresses.length > 0">
-              <div class="address-item" *ngFor="let address of pendingAddresses; let i = index">
-                <div class="address-content">
-                  <div class="address-info">
-                    <span class="address-text">{{ getFullAddress(address) }}</span>
-                    <span class="address-default" *ngIf="address.macDinh">(Mặc định)</span>
-                  </div>
-                  <div class="address-actions">
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-primary"
-                      (click)="editPendingAddress(i)"
-                    >
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-outline-danger"
-                      (click)="deletePendingAddress(i)"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
+            <div class="address-section">
+              <!-- Existing Addresses (for edit mode) -->
+              <div class="address-list" *ngIf="isEditMode && addressList.length > 0">
+                <div class="address-item" *ngFor="let address of addressList; let i = index">
+                  <div class="address-content">
+                    <div class="address-info">
+                      <i class="bi bi-geo-alt address-icon"></i>
+                      <span class="address-text">{{ getFullAddress(address) }}</span>
+                      <span class="address-default badge bg-primary ms-2" *ngIf="address.macDinh"
+                        >Mặc định</span
+                      >
+                    </div>
+                    <div class="address-actions">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        (click)="editAddress(address)"
+                        title="Chỉnh sửa"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        (click)="deleteAddress(address)"
+                        title="Xóa"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Add Address Button -->
-            <div class="add-address-section">
-              <button
-                type="button"
-                class="btn btn-outline-success btn-sm"
-                (click)="openAddressModal()"
-              >
-                <i class="bi bi-plus-circle me-1"></i>Thêm địa chỉ
-              </button>
-              <span class="text-muted ms-2" *ngIf="getTotalAddressCount() === 0"
-                >Chưa có địa chỉ nào</span
-              >
+              <!-- Pending Addresses (for new customer) -->
+              <div class="address-list" *ngIf="!isEditMode && pendingAddresses.length > 0">
+                <div class="address-item" *ngFor="let address of pendingAddresses; let i = index">
+                  <div class="address-content">
+                    <div class="address-info">
+                      <i class="bi bi-geo-alt address-icon"></i>
+                      <span class="address-text">{{ getFullAddress(address) }}</span>
+                      <span class="address-default badge bg-primary ms-2" *ngIf="address.macDinh"
+                        >Mặc định</span
+                      >
+                    </div>
+                    <div class="address-actions">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary"
+                        (click)="editPendingAddress(i)"
+                        title="Chỉnh sửa"
+                      >
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        (click)="deletePendingAddress(i)"
+                        title="Xóa"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Add Address Button -->
+              <div class="add-address-section">
+                <button
+                  type="button"
+                  class="btn btn-outline-success btn-sm"
+                  (click)="openAddressModal()"
+                >
+                  <i class="bi bi-plus-circle me-1"></i>Thêm địa chỉ
+                </button>
+                <span class="address-empty" *ngIf="getTotalAddressCount() === 0">
+                  <i class="bi bi-inbox me-1"></i> Chưa có địa chỉ nào
+                </span>
+              </div>
             </div>
           </div>
 
@@ -536,7 +554,7 @@
             </div>
             <div class="detail-content">
               <label>Địa chỉ</label>
-              <span>{{ selectedKhachHang?.diaChi || 'Chưa cập nhật' }}</span>
+              <span>{{ getCustomerAddress(selectedKhachHang) }}</span>
             </div>
           </div>
         </div>

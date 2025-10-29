@@ -219,40 +219,6 @@ app-searchable-dropdown {
   }
 }
 
-// IMEI Management Section
-.imei-management-section {
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  display: flex;
-  justify-content: flex-start; // Căn trái nút
-
-  .btn {
-    padding: 0.5rem 1rem; // Làm nút nhỏ hơn
-    font-weight: 500;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    font-size: 0.9rem; // Font size nhỏ hơn
-    background-color: #ff8f00; // Màu cam
-    border-color: #ff8f00;
-    color: white;
-
-    &:hover {
-      background-color: #e67e00; // Màu cam đậm hơn khi hover
-      border-color: #e67e00;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(255, 143, 0, 0.3);
-    }
-
-    &:focus {
-      background-color: #e67e00;
-      border-color: #e67e00;
-      box-shadow: 0 0 0 0.2rem rgba(255, 143, 0, 0.25);
-    }
-  }
-}
-
 .form-actions {
   display: flex;
   justify-content: flex-end;

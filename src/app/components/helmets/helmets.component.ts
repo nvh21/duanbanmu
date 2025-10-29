@@ -23,8 +23,6 @@ import { TrongLuongApiService } from '../../services/trong-luong-api.service';
 import { OriginApiService } from '../../services/origin-api.service';
 import { HelmetStyleApiService } from '../../services/helmet-style-api.service';
 import { CongNgheAnToanApiService } from '../../services/cong-nghe-an-toan-api.service';
-import { ImeiModalComponent } from '../imei-modal/imei-modal.component';
-import { ImeiResponse } from '../../interfaces/imei.interface';
 
 interface HelmetProduct {
   id: number;
@@ -68,7 +66,6 @@ interface HelmetProduct {
     RouterModule,
     QuickAddModalComponent,
     SearchableDropdownComponent,
-    ImeiModalComponent,
   ],
   templateUrl: './helmets.component.html',
   styleUrls: ['./helmets.component.scss', './table-styles.scss'],
@@ -128,10 +125,6 @@ export class HelmetsComponent implements OnInit {
   // Quick Add Modal state
   showQuickAddModal: boolean = false;
   quickAddModalType: string = '';
-
-  // IMEI Modal state
-  showImeiModal: boolean = false;
-  currentProductForImei: HelmetProduct | null = null;
 
   constructor(
     private productApi: ProductApiService,
@@ -1144,27 +1137,6 @@ export class HelmetsComponent implements OnInit {
     this.showQuickAddModal = false;
     this.quickAddModalType = '';
     this.cdr.detectChanges();
-  }
-
-  // IMEI Modal methods
-  openImeiModal(product: HelmetProduct) {
-    console.log('Mở IMEI modal cho sản phẩm:', product);
-    console.log('Product ID:', product.id);
-    this.currentProductForImei = product;
-    this.showImeiModal = true;
-  }
-
-  onImeiModalClose() {
-    this.showImeiModal = false;
-    this.currentProductForImei = null;
-  }
-
-  onImeiModalSave(imeis: ImeiResponse[]) {
-    const productName = this.currentProductForImei?.name || 'sản phẩm';
-    console.log('IMEI saved for product:', productName, imeis);
-    this.showImeiModal = false;
-    alert(`Đã lưu thành công ${imeis.length} IMEI cho sản phẩm ${productName}`);
-    this.currentProductForImei = null;
   }
 
   // Get page numbers for pagination

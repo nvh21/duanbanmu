@@ -94,11 +94,12 @@
                 <tr>
                   <th>STT</th>
                   <th>Mã SP</th>
-                  <th>Ảnh sản phẩm</th>
+                  <!-- <th>Ảnh sản phẩm</th> -->
                   <th>Tên sản phẩm</th>
                   <th>Loại mũ</th>
                   <th>Nhà sản xuất</th>
                   <th>Giá bán</th>
+                  <th>Số lượng</th>
                   <th>Trạng thái</th>
                   <th>Hành động</th>
                 </tr>
@@ -112,7 +113,7 @@
                     <span class="customer-code" *ngIf="product.code">{{ product.code }}</span>
                     <span class="no-data" *ngIf="!product.code">-</span>
                   </td>
-                  <td>
+                  <!-- <td>
                     <div *ngIf="product.anhSanPham" class="product-image-container">
                       <img
                         [src]="product.anhSanPham"
@@ -122,7 +123,7 @@
                       />
                     </div>
                     <span class="no-data" *ngIf="!product.anhSanPham">-</span>
-                  </td>
+                  </td> -->
                   <td>{{ product.name }}</td>
                   <td>
                     <span *ngIf="product.loaiMuBaoHiem">{{ product.loaiMuBaoHiem }}</span>
@@ -133,6 +134,9 @@
                     <span class="no-data" *ngIf="!product.nhaSanXuat">-</span>
                   </td>
                   <td>{{ formatPrice(product.price) }}</td>
+                  <td>
+                    <span class="quantity-badge">{{ product.quantity }}</span>
+                  </td>
                   <td>
                     <span
                       class="status-badge"
@@ -157,13 +161,6 @@
                       </button>
                       <button class="btn-view" (click)="viewProduct(product)" title="Xem chi tiết">
                         <i class="bi bi-eye"></i>
-                      </button>
-                      <button
-                        class="btn-imei"
-                        (click)="openImeiModal(product)"
-                        title="Quản lý IMEI"
-                      >
-                        <i class="bi bi-phone"></i>
                       </button>
                     </div>
                   </td>
@@ -332,7 +329,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold"
-                >Số lượng tồn <span class="text-danger">*</span></label
+                >Số lượng <span class="text-danger">*</span></label
               >
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-box"></i></span>
@@ -653,14 +650,3 @@
   (close)="onQuickAddClose()"
   (save)="onQuickAddSave($event)"
 ></app-quick-add-modal>
-
-<!-- IMEI Modal - Chế độ chỉ xem từ danh sách sản phẩm -->
-<app-imei-modal
-  [isVisible]="showImeiModal"
-  [sanPhamId]="currentProductForImei?.id || null"
-  [sanPhamTen]="currentProductForImei?.name || ''"
-  [sanPhamMa]="currentProductForImei?.code || ''"
-  [isViewOnly]="true"
-  (close)="onImeiModalClose()"
-  (save)="onImeiModalSave($event)"
-></app-imei-modal>

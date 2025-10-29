@@ -40,7 +40,9 @@
                 [class.is-invalid]="hasFieldError('code')"
                 [(ngModel)]="newProduct.code"
                 name="code"
-                placeholder="Nhập mã sản phẩm"
+                [value]="newProduct.code"
+                readonly
+                style="background-color: #f8f9fa; cursor: not-allowed"
                 (blur)="markFieldTouched('code')"
               />
               <div *ngIf="hasFieldError('code')" class="invalid-feedback">
@@ -93,7 +95,7 @@
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold"
-              >Số lượng tồn <span class="text-danger">*</span></label
+              >Số lượng <span class="text-danger">*</span></label
             >
             <div class="input-group">
               <span class="input-group-text"><i class="bi bi-box"></i></span>
@@ -325,29 +327,6 @@
           </div>
         </div>
 
-        <!-- Quản lý IMEI Section -->
-        <div class="section-title mb-3">
-          <h6 class="text-orange fw-bold mb-0"><i class="bi bi-phone me-2"></i>IMEI sản phẩm</h6>
-          <hr class="mt-2" />
-        </div>
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <div class="imei-management-section">
-              <button
-                type="button"
-                class="btn btn-info"
-                (click)="openImeiModal()"
-                title="Quản lý IMEI cho sản phẩm"
-              >
-                <i class="bi bi-phone me-2"></i>Thêm IMEI
-                <span *ngIf="tempImeis.length > 0" class="badge bg-warning ms-2">{{
-                  tempImeis.length
-                }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- Mô tả sản phẩm -->
         <div class="section-title mb-3">
           <h6 class="text-orange fw-bold mb-0">
@@ -387,17 +366,6 @@
     </div>
   </div>
 </div>
-
-<!-- IMEI Modal - Chế độ đầy đủ từ form thêm/sửa sản phẩm -->
-<app-imei-modal
-  [isVisible]="showImeiModal"
-  [sanPhamId]="currentProductId"
-  [sanPhamTen]="newProduct.name"
-  [sanPhamMa]="newProduct.code"
-  [isViewOnly]="false"
-  (close)="onImeiModalClose()"
-  (save)="onImeiModalSave($event)"
-></app-imei-modal>
 
 <!-- Quick Add Modal -->
 <app-quick-add-modal

@@ -544,6 +544,20 @@
   border-radius: 0 0 12px 12px;
 }
 
+/* Dim parent modal when child (address) modal is open */
+.modal.blurred .modal-content {
+  position: relative; /* to anchor overlay */
+  pointer-events: none; /* prevent interaction while dimmed */
+}
+
+.modal.blurred .modal-content::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35); /* dark overlay */
+  border-radius: inherit;
+}
+
 .btn-primary {
   background-color: #febc49;
   border-color: #febc49;
@@ -574,6 +588,71 @@
   background-color: #5a6268;
   border-color: #5a6268;
   transform: translateY(-1px);
+}
+
+/* ===== ADDRESS SECTION (FORM) ===== */
+.address-section {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.address-item {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.address-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.address-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #333;
+  font-weight: 500;
+}
+
+.address-icon {
+  color: #febc49;
+}
+
+.address-text {
+  max-width: 520px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.address-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.add-address-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.address-empty {
+  color: #6c757d;
+  font-style: italic;
 }
 
 /* ===== LOADING OVERLAY ===== */
@@ -647,11 +726,8 @@
 }
 
 .customer-code {
-  font-size: 1rem;
-  color: #febc49;
-  font-weight: 500;
-  margin: 0 0 12px 0;
-  font-family: 'Courier New', monospace;
+  color: black;
+  font-weight: 600;
 }
 
 .status-indicator {
